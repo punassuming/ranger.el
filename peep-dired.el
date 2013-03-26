@@ -1,5 +1,9 @@
 (defvar peep-dired-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<down>")      'peep-dired-next-file)
+    (define-key map (kbd "C-n")         'peep-dired-next-file)
+    (define-key map (kbd "<up>")        'peep-dired-prev-file)
+    (define-key map (kbd "C-p")         'peep-dired-prev-file)
     (define-key map (kbd "<SPC>")       'peep-dired-scroll-page-down)
     (define-key map (kbd "C-<SPC>")     'peep-dired-scroll-page-up)
     (define-key map (kbd "<backspace>") 'peep-dired-scroll-page-up)
@@ -9,14 +13,18 @@
 (defvar peep-dired-mode-hook nil
   "Hook for `peep-dired-mode'.")
 
-(defadvice dired-next-line (after peep-dired-ad disable)
+(defun peep-dired-next-file ()
+  (interactive)
+  (dired-next-line 1)
   (peep-dired-display-file-other-window))
 
-(defadvice dired-previous-line (after peep-dired-ad disable)
+(defun peep-dired-prev-file ()
+  (interactive)
+  (dired-previous-line 1)
   (peep-dired-display-file-other-window))
 
 (defun peep-dired-display-file-other-window ()
-    (display-buffer (find-file-noselect (dired-file-name-at-point))))
+  (display-buffer (find-file-noselect (dired-file-name-at-point))))
 
 (defun peep-dired-scroll-page-down ()
   (interactive)
@@ -27,12 +35,6 @@
   (scroll-other-window '-))
 
 (defun peep-dired-disable ()
-  (ad-disable-advice 'dired-next-line 'after 'peep-dired-ad)
-  (ad-activate 'dired-next-line)
-
-  (ad-disable-advice 'dired-previous-line 'after 'peep-dired-ad)
-  (ad-activate 'dired-previous-line)
-
   (let ((current-point (point)))
     (jump-to-register :peep_dired_before)
     (goto-char current-point)))
@@ -42,17 +44,10 @@
     (error "Run it from dired buffer"))
 
   (window-configuration-to-register :peep_dired_before)
-
   (peep-dired-display-file-other-window)
-
-  (ad-enable-advice 'dired-next-line 'after 'peep-dired-ad)
-  (ad-activate 'dired-next-line)
-  
-  (ad-enable-advice 'dired-previous-line 'after 'peep-dired-ad)
-  (ad-activate 'dired-previous-line)
-
   (run-hooks 'peep-dired-mode-hook))
 
+;;;###autoload
 (define-minor-mode peep-dired
   "A convienent way to look up file contents in other window while browsing directory in dired"
   :init-value nil
@@ -61,8 +56,6 @@
 
   (if peep-dired
       (peep-dired-enable)
-    (peep-dired-disable)
-    )
-  )
+    (peep-dired-disable)))
 
 (provide 'peep-dired)
