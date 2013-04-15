@@ -13,6 +13,14 @@
 (defvar peep-dired-mode-hook nil
   "Hook for `peep-dired-mode'.")
 
+(defvar peep-dired-peeped-buffers ()
+  "List with buffers of peeped files")
+
+(defcustom peep-dired-cleanup-on-disable t
+  "Cleanup opened buffers when disabling the minor mode"
+  :group 'peep-dired
+  :type 'boolean)
+
 (defun peep-dired-next-file ()
   (interactive)
   (dired-next-line 1)
@@ -24,7 +32,11 @@
   (peep-dired-display-file-other-window))
 
 (defun peep-dired-display-file-other-window ()
-  (display-buffer (find-file-noselect (dired-file-name-at-point))))
+  (add-to-list 'peep-dired-peeped-buffers
+               (window-buffer
+                (display-buffer
+                 (find-file-noselect
+                  (dired-file-name-at-point))))))
 
 (defun peep-dired-scroll-page-down ()
   (interactive)
@@ -37,6 +49,8 @@
 (defun peep-dired-disable ()
   (let ((current-point (point)))
     (jump-to-register :peep_dired_before)
+    (when peep-dired-cleanup-on-disable
+      (mapc 'kill-buffer-if-not-modified peep-dired-peeped-buffers))
     (goto-char current-point)))
 
 (defun peep-dired-enable ()
@@ -44,6 +58,7 @@
     (error "Run it from dired buffer"))
 
   (window-configuration-to-register :peep_dired_before)
+  (make-local-variable 'peep-dired-peeped-buffers)
   (peep-dired-display-file-other-window)
   (run-hooks 'peep-dired-mode-hook))
 
