@@ -14,6 +14,8 @@ Run `peep-dired` from a dired buffer. That will open file at point in the other 
 `C-p` and `<up>` will show the previous file in the other window.
 `<SPC>` will scroll the page down and `C-<SPC>` will scroll the page up.
 
+![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
+
 # Evil integration
 Adjust the state name depending on an evil state you open dired in:
 
