@@ -2,10 +2,10 @@
 
 This is a minor mode that can be enabled from a dired buffer.
 Once enabled it will show the file from point in the other window.
-Moving to the other file within the dired buffer with <down>/<up> or
+Moving to the other file within the dired buffer with <kbd>down</kbd>/<kbd>up</kbd> or
 <kbd>C-n</kbd>/<kbd>C-p</kbd> will display different file.
-Hitting <kbd><SPC></kbd> will scroll the peeped file down, whereas
-<kbd>C-<SPC></kbd> and <kbd><backspace></kbd> will scroll it up.
+Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
+<kbd>C-SPC</kbd> and <kbd>backspace</kbd> will scroll it up.
 
 ![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
 
