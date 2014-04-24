@@ -1,3 +1,14 @@
+# Peep Dired
+
+This is a minor mode that can be enabled from a dired buffer.
+Once enabled it will show the file from point in the other window.
+Moving to the other file within the dired buffer with <down>/<up> or
+<kbd>C-n</kbd>/<kbd>C-p</kbd> will display different file.
+Hitting <kbd><SPC></kbd> will scroll the peeped file down, whereas
+<kbd>C-<SPC></kbd> and <kbd><backspace></kbd> will scroll it up.
+
+![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
+
 # Instalation
 
 Clone the repository somewhere on your hard drive. And add this to your emacs setup:
@@ -6,15 +17,6 @@ Clone the repository somewhere on your hard drive. And add this to your emacs se
 (add-to-list 'load-path "/path/to/peep-dired/")
 (require 'peep-dired)
 ```
-
-# Usage
-
-Run `peep-dired` from a dired buffer. That will open file at point in the other window.
-`C-n` and `<down>` will show the next file in the other window.
-`C-p` and `<up>` will show the previous file in the other window.
-`<SPC>` will scroll the page down and `C-<SPC>` will scroll the page up.
-
-![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
 
 # Evil integration
 Adjust the state name depending on an evil state you open dired in:
