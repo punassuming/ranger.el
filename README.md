@@ -9,7 +9,7 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 ![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
 
-# Instalation
+# Installation
 
 Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
 
