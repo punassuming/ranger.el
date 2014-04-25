@@ -13,11 +13,6 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
 
-```
-(add-to-list 'load-path "/path/to/peep-dired/")
-(require 'peep-dired)
-```
-
 # Evil integration
 Adjust the state name depending on an evil state you open dired in:
 
