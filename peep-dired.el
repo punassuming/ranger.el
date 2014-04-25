@@ -1,4 +1,4 @@
-;;; peep-dired.el --- A minor mode for dired buffers which allows to peep files in other window  -*- lexical-binding: t; -*-
+;;; peep-dired.el --- Peep at files in another window from dired buffers
 
 ;; Copyright (C) 2014  Adam Sokolnicki
 
