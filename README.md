@@ -11,7 +11,7 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 # Instalation
 
-Clone the repository somewhere on your hard drive. And add this to your emacs setup:
+Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
 
 ```
 (add-to-list 'load-path "/path/to/peep-dired/")
