@@ -9,7 +9,7 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 ![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
 
-# Instalation
+# Installation
 
 Clone the repository somewhere on your hard drive. And add this to your emacs setup:
 
