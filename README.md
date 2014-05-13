@@ -9,11 +9,11 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 ![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
 
-# Installation
+## Installation
 
 Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
 
-# Evil integration
+## Evil integration
 Adjust the state name depending on an evil state you open dired in:
 
 ```
@@ -23,4 +23,19 @@ Adjust the state name depending on an evil state you open dired in:
 (evil-define-key 'normal peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
 (evil-define-key 'normal peep-dired-mode-map (kbd "k") 'peep-dired-prev-file)
 (add-hook 'peep-dired-mode-hook 'evil-normalize-keymaps)
+```
+
+## Contribution
+
+Install [cask](https://github.com/rejeep/cask.el) if you haven't already, then:
+
+```bash
+$ cd /path/to/peep-dired
+$ cask
+```
+
+Run all tests with:
+
+```bash
+$ make test
 ```
