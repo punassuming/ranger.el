@@ -97,8 +97,7 @@
   (window-configuration-to-register :peep_dired_before)
   (make-local-variable 'peep-dired-peeped-buffers)
   (delete-other-windows)
-  (peep-dired-display-file-other-window)
-  (run-hooks 'peep-dired-mode-hook))
+  (peep-dired-display-file-other-window))
 
 ;;;###autoload
 (define-minor-mode peep-dired
