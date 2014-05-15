@@ -41,9 +41,6 @@
     map)
   "Keymap for `peep-dired-mode'.")
 
-(defvar peep-dired-mode-hook nil
-  "Hook for `peep-dired-mode'.")
-
 (defvar peep-dired-peeped-buffers ()
   "List with buffers of peeped files")
 
