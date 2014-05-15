@@ -48,3 +48,7 @@
 (Given "^I open \"\\(.+\\)\" file$"
        (lambda (filename)
 	 (find-file (expand-file-name filename peep-dired-root-path))))
+
+(Then "^key \"\\(.+\\)\" should be mapped to \"\\(.+\\)\"$"
+      (lambda (key command)
+	(should (equal (key-binding (kbd key)) (intern command)))))
