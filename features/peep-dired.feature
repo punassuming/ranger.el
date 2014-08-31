@@ -34,3 +34,14 @@ Feature: Looking up the contents of a file
     And I run "peep-dired"
     When I run "peep-dired-next-file"
     Then the only visible windows are "peep-dired" and "peep-dired.el"
+
+  Scenario: Browsing dired buffer and peeping an already visited buffer
+    Given I open "peep-dired.el" file
+    And I open dired buffer in the root directory
+    And I place cursor on "features" entry
+    And I run "peep-dired"
+    When I run "peep-dired-next-file"
+    And I run "peep-dired-kill-buffers-without-window"
+    Then the peeped buffer "features" should be killed
+    And the only visible windows are "peep-dired" and "peep-dired.el"
+    When I run "peep-dired"

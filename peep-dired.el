@@ -29,6 +29,8 @@
 
 ;;; Code:
 
+(require 'cl-macs)
+
 (defvar peep-dired-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "<down>")      'peep-dired-next-file)
@@ -58,6 +60,13 @@
   (interactive)
   (dired-previous-line 1)
   (peep-dired-display-file-other-window))
+
+(defun peep-dired-kill-buffers-without-window ()
+  "Will kill all peep buffers that are not displayed in any window"
+  (interactive)
+  (cl-loop for buffer in peep-dired-peeped-buffers do
+           (unless (get-buffer-window buffer t)
+             (kill-buffer-if-not-modified buffer))))
 
 (defun peep-dired-display-file-other-window ()
   (let ((entry-name (dired-file-name-at-point)))

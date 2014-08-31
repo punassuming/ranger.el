@@ -25,6 +25,10 @@ Adjust the state name depending on an evil state you open dired in:
 (add-hook 'peep-dired-hook 'evil-normalize-keymaps)
 ```
 
+## Note about created buffers
+
+For now the buffers opened when browsing a directory will not be killed until disabling the mode. If you want kill them manually you can run command `peep-dired-kill-buffers-without-window`.
+
 ## Contribution
 
 Install [cask](https://github.com/rejeep/cask.el) if you haven't already, then:
