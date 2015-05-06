@@ -51,6 +51,12 @@
   :group 'peep-dired
   :type 'boolean)
 
+(defcustom peep-dired-ignored-extensions
+  '("mkv" "iso" "mp4")
+  "Extensions to not try to open"
+  :group 'peep-dired
+  :type 'list)
+
 (defun peep-dired-next-file ()
   (interactive)
   (dired-next-line 1)
@@ -70,15 +76,16 @@
 
 (defun peep-dired-display-file-other-window ()
   (let ((entry-name (dired-file-name-at-point)))
-    (add-to-list 'peep-dired-peeped-buffers
-		 (window-buffer
-		  (display-buffer
-		   (or
-		       (find-buffer-visiting entry-name)
-		       (car (or (dired-buffers-for-dir entry-name) ()))
-		       (find-file-noselect entry-name))
-		   t))))
-  )
+    (unless (member (file-name-extension entry-name)
+                    peep-dired-ignored-extensions)
+      (add-to-list 'peep-dired-peeped-buffers
+                   (window-buffer
+                    (display-buffer
+                     (or
+                      (find-buffer-visiting entry-name)
+                      (car (or (dired-buffers-for-dir entry-name) ()))
+                      (find-file-noselect entry-name))
+                     t))))))
 
 (defun peep-dired-scroll-page-down ()
   (interactive)

@@ -29,6 +29,14 @@ Adjust the state name depending on an evil state you open dired in:
 
 For now the buffers opened when browsing a directory will not be killed until disabling the mode. If you want kill them manually you can run command `peep-dired-kill-buffers-without-window`.
 
+## Ignoring Certain File Extensions
+
+You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
+
+```
+(setq peep-dired-ignored-extensions '("mkv" "iso" "mp4"))
+```
+
 ## Contribution
 
 Install [cask](https://github.com/rejeep/cask.el) if you haven't already, then:
