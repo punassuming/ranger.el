@@ -60,3 +60,7 @@
 (Then "^key \"\\(.+\\)\" should be mapped to \"\\(.+\\)\"$"
       (lambda (key command)
         (should (equal (key-binding (kbd key)) (intern command)))))
+
+;; Local Variables:
+;; flycheck-disabled-checkers: (emacs-lisp-checkdoc)
+;; End:

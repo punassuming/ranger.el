@@ -118,4 +118,8 @@
 
 (provide 'peep-dired)
 
+;; Local Variables:
+;; flycheck-disabled-checkers: (emacs-lisp-checkdoc)
+;; End:
+
 ;;; peep-dired.el ends here
