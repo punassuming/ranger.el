@@ -51,6 +51,11 @@
   :group 'peep-dired
   :type 'boolean)
 
+(defcustom peep-dired-cleanup-eagerly nil
+  "Cleanup opened buffers upon `peep-dired-next-file' & `peep-dired-prev-file'"
+  :group 'peep-dired
+  :type 'boolean)
+
 (defcustom peep-dired-enable-on-directories t
   "When t it will enable the mode when visiting directories"
   :group 'peep-dired
@@ -59,12 +64,16 @@
 (defun peep-dired-next-file ()
   (interactive)
   (dired-next-line 1)
-  (peep-dired-display-file-other-window))
+  (peep-dired-display-file-other-window)
+  (when peep-dired-cleanup-eagerly
+    (peep-dired-cleanup)))
 
 (defun peep-dired-prev-file ()
   (interactive)
   (dired-previous-line 1)
-  (peep-dired-display-file-other-window))
+  (peep-dired-display-file-other-window)
+  (when peep-dired-cleanup-eagerly
+    (peep-dired-cleanup)))
 
 (defun peep-dired-kill-buffers-without-window ()
   "Will kill all peep buffers that are not displayed in any window"
@@ -101,6 +110,10 @@
 (defun peep-dired-scroll-page-up ()
   (interactive)
   (scroll-other-window '-))
+
+(defun peep-dired-cleanup ()
+  (mapc 'kill-buffer-if-not-modified peep-dired-peeped-buffers)
+  (setq peep-dired-peeped-buffers ()))
 
 (defun peep-dired-disable ()
   (let ((current-point (point)))
