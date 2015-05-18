@@ -13,7 +13,26 @@ Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
 
 Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
 
-## Evil integration
+## Configuration
+
+### Customizing
+
+When disabling the mode you can choose to kill the buffers that were opened while browsing the directories.
+```el
+(setq peep-dired-cleanup-on-disable t)
+```
+
+Or you can choose to kill the buffer just after you move to another entry in the dired buffer.
+```el
+(setq peep-dired-cleanup-eagerly t)
+```
+
+If you want the dired buffers that were peeped to have the mode enabled set it to true.
+```el
+(setq peep-dired-enable-on-directories t)
+```
+
+### Evil integration
 Adjust the state name depending on an evil state you open dired in:
 
 ```
@@ -24,10 +43,6 @@ Adjust the state name depending on an evil state you open dired in:
                                              (kbd "k") 'peep-dired-prev-file)
 (add-hook 'peep-dired-hook 'evil-normalize-keymaps)
 ```
-
-## Note about created buffers
-
-For now the buffers opened when browsing a directory will not be killed until disabling the mode. If you want kill them manually you can run command `peep-dired-kill-buffers-without-window`.
 
 ## Contribution
 
