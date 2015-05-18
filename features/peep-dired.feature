@@ -13,6 +13,7 @@ Feature: Looking up the contents of a file
     And I place cursor on "screenshots" entry
     When I run "peep-dired"
     And the only visible windows are "peep-dired" and "screenshots"
+    And the mode is enabled for the dired buffer "screenshots"
     When I run "peep-dired"
     Then the peeped buffers should be killed
 

@@ -61,6 +61,7 @@
       (lambda (key command)
         (should (equal (key-binding (kbd key)) (intern command)))))
 
-;; Local Variables:
-;; flycheck-disabled-checkers: (emacs-lisp-checkdoc)
-;; End:
+(Then "^the mode is enabled for the dired buffer \"\\(.+\\)\"$"
+      (lambda (buffername)
+        (with-current-buffer buffername
+          (should peep-dired))))

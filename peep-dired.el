@@ -51,6 +51,11 @@
   :group 'peep-dired
   :type 'boolean)
 
+(defcustom peep-dired-enable-on-directories t
+  "When t it will enable the mode when visiting directories"
+  :group 'peep-dired
+  :type 'boolean)
+
 (defun peep-dired-next-file ()
   (interactive)
   (dired-next-line 1)
@@ -68,17 +73,26 @@
            (unless (get-buffer-window buffer t)
              (kill-buffer-if-not-modified buffer))))
 
+(defun peep-dired-dir-buffer (entry-name)
+  (with-current-buffer (or
+                        (car (or (dired-buffers-for-dir entry-name) ()))
+                        (dired-noselect entry-name))
+    (when peep-dired-enable-on-directories
+      (setq peep-dired 1)
+      (run-hooks 'peep-dired-hook))
+    (current-buffer)))
+
 (defun peep-dired-display-file-other-window ()
   (let ((entry-name (dired-file-name-at-point)))
     (add-to-list 'peep-dired-peeped-buffers
-		 (window-buffer
-		  (display-buffer
-		   (or
-		       (find-buffer-visiting entry-name)
-		       (car (or (dired-buffers-for-dir entry-name) ()))
-		       (find-file-noselect entry-name))
-		   t))))
-  )
+                 (window-buffer
+                  (display-buffer
+                   (if (file-directory-p entry-name)
+                       (peep-dired-dir-buffer entry-name)
+                     (or
+                      (find-buffer-visiting entry-name)
+                      (find-file-noselect entry-name)))
+                   t)))))
 
 (defun peep-dired-scroll-page-down ()
   (interactive)
@@ -101,7 +115,6 @@
     (error "Run it from dired buffer"))
 
   (window-configuration-to-register :peep_dired_before)
-  (make-local-variable 'peep-dired-peeped-buffers)
   (delete-other-windows)
   (peep-dired-display-file-other-window))
 
@@ -117,9 +130,5 @@
     (peep-dired-disable)))
 
 (provide 'peep-dired)
-
-;; Local Variables:
-;; flycheck-disabled-checkers: (emacs-lisp-checkdoc)
-;; End:
 
 ;;; peep-dired.el ends here
