@@ -1,17 +1,27 @@
-# Peep Dired
+# Evil Ranger
 
-This is a minor mode that can be enabled from a dired buffer.
-Once enabled it will show the file from point in the other window.
-Moving to the other file within the dired buffer with <kbd>down</kbd>/<kbd>up</kbd> or
-<kbd>C-n</kbd>/<kbd>C-p</kbd> will display different file.
-Hitting <kbd>SPC</kbd> will scroll the peeped file down, whereas
-<kbd>C-SPC</kbd> and <kbd>backspace</kbd> will scroll it up.
-
-![Screenshot](https://github.com/asok/peep-dired/raw/master/screenshots/peep-dired-cast.gif)
+This is a minor mode that runs within dired emulating many of the features of
+ranger. This minor mode takes some of the ideas from Peep-Dired to display
+previews for selected files in the primary dired buffer.
 
 ## Installation
 
-Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can use `package-install` command to install Peep Dired. The package name is `peep-dired`.
+<!-- Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can -->
+<!-- use `package-install` command to install Evil Ranger. The package name is `evil-ranger`. -->
+
+### Screenshot
+
+evil-ranger mode active
+![Ranger Mode Active](screenshots/evil-ranger.png) 
+
+evil-ranger mode with preview enabled
+![Ranger Mode Active](screenshots/evil-ranger-preview.png) 
+
+## Todo
+
+* Allow click of parent directories to jump primary buffer to that directory
+* Create bindings to increment number of parent nests
+* Create bindings to go up / down the next directory
 
 ## Configuration
 
@@ -19,50 +29,28 @@ Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can 
 
 When disabling the mode you can choose to kill the buffers that were opened while browsing the directories.
 ```el
-(setq peep-dired-cleanup-on-disable t)
+(setq evil-ranger-cleanup-on-disable t)
 ```
 
 Or you can choose to kill the buffer just after you move to another entry in the dired buffer.
 ```el
-(setq peep-dired-cleanup-eagerly t)
+(setq evil-ranger-cleanup-eagerly t)
 ```
 
 If you want the dired buffers that were peeped to have the mode enabled set it to true.
 ```el
-(setq peep-dired-enable-on-directories t)
+(setq evil-ranger-enable-on-directories t)
 ```
 
-### Evil integration
-Adjust the state name depending on an evil state you open dired in:
-
-```
-(evil-define-key 'normal peep-dired-mode-map (kbd "<SPC>") 'peep-dired-scroll-page-down
-                                             (kbd "C-<SPC>") 'peep-dired-scroll-page-up
-                                             (kbd "<backspace>") 'peep-dired-scroll-page-up
-                                             (kbd "j") 'peep-dired-next-file
-                                             (kbd "k") 'peep-dired-prev-file)
-(add-hook 'peep-dired-hook 'evil-normalize-keymaps)
+You can set the number of folders to nest to the left
+```el
+(setq evil-ranger-parent-depth 2)
 ```
 
-## Ignoring Certain File Extensions
+## Ignoring Certain File Extensions During Preview
 
 You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
 
 ```
-(setq peep-dired-ignored-extensions '("mkv" "iso" "mp4"))
-```
-
-## Contribution
-
-Install [cask](https://github.com/rejeep/cask.el) if you haven't already, then:
-
-```bash
-$ cd /path/to/peep-dired
-$ cask
-```
-
-Run all tests with:
-
-```bash
-$ make test
+(setq evil-ranger-ignored-extensions '("mkv" "iso" "mp4"))
 ```
