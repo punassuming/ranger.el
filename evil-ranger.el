@@ -84,35 +84,45 @@
 (defvar evil-ranger-parent-buffers ()
   "List with buffers of parent buffers")
 
-(defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode))
+(defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
+                                      ;; evil-ranger-disable-mouse-click
+                                      ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun evil-ranger-disable-mouse-click ()
+  (make-local-variable 'mouse-1-click-follows-link)
+  (setq mouse-1-click-follows-link nil)
+  )
 
 (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
 
 ;; define keymaps
-(evil-define-key 'visual evil-ranger-mode-map "u"  'dired-unmark)
+(evil-define-key 'visual evil-ranger-mode-map "u" 'dired-unmark)
 (evil-define-key 'normal evil-ranger-mode-map
-  "j" 'evil-ranger-next-file
-  "k" 'evil-ranger-prev-file
-  (kbd "C-j") 'evil-ranger-scroll-page-down
-  (kbd "C-k") 'evil-ranger-scroll-page-up
-  "f" 'helm-find-files
-  "i" 'evil-ranger-preview
-  "h"  'evil-ranger-up-directory
-  "l"  'evil-ranger-find-file
-  (kbd "RET")  'evil-ranger-find-file
-  "v"  'dired-toggle-marks
-  "V"  'evil-visual-line
-  "S"  'eshell
-  "n"  'evil-search-next
-  "N"  'evil-search-previous
+  "j"            'evil-ranger-next-file
+  "k"            'evil-ranger-prev-file
+  (kbd "C-j")    'evil-ranger-scroll-page-down
+  (kbd "C-k")    'evil-ranger-scroll-page-up
+  "f"            'helm-find-files
+  "i"            'evil-ranger-preview
+  "h"            'evil-ranger-up-directory
+  "l"            'evil-ranger-find-file
+  "r"            '(lambda ()
+                    (interactive)
+                    (evil-ranger-setup)
+                    (dired-do-redisplay)
+                    (scroll-right)
+                    )
+  (kbd "RET")    'evil-ranger-find-file
+  "v"            'dired-toggle-marks
+  "V"            'evil-visual-line
+  "S"            'eshell
+  "n"            'evil-search-next
+  "N"            'evil-search-previous
   (kbd "C-SPC")  'dired-mark)
 
   (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
-
-(defadvice dired-find-file (after evil-ranger-find-file activate)
-  (evil-ranger-enable))
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
 
@@ -343,6 +353,7 @@ of the selected frame."
   (evil-ranger-mode -1))
 
 (defun evil-ranger-setup ()
+  (interactive)
   (delete-other-windows)
   (evil-ranger-setup-parents)
   (evil-ranger-setup-preview)
@@ -363,18 +374,27 @@ of the selected frame."
         (unless (string= major-mode "dired-mode")
           (error "Run it from dired buffer"))
 
-        (window-configuration-to-register :ranger_dired_before)
+        ;; (message (format "%s" (register-read-with-preview "Prompt")))
+        (unless :ranger_dired_before
+          (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
         (evil-ranger-setup)
         (dired-hide-details-mode -1)
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
+
         (defadvice find-file (before evil-ranger-find-file activate)
           (evil-ranger-disable))
 
-        ;; (defadvice quit-window (before evil-ranger-find-file activate)
-        ;;   (evil-ranger-disable))
+        (defadvice dired-find-file (after evil-ranger-find-file activate)
+          (evil-ranger-enable))
 
+        (defadvice quit-window (before evil-ranger-quit activate)
+          (when evil-ranger-mode (evil-ranger-disable)))
+
+        ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
         (add-hook 'dired-mode-hook #'auto-revert-mode)
+        ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
+        ;; (setq window-size-change-functions '())
         ;; (add-hook 'dired-mode-hook #'evil-ranger-enable)
         )
     (progn
@@ -392,7 +412,8 @@ of the selected frame."
       ;; remove find-file advice
       (ignore-errors
         (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
-        ;; (ad-remove-advice 'quit-window 'before 'evil-ranger-find-file)
+        (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
+        (ad-remove-advice 'dired-find-file 'after 'evil-ranger-quit)
         )
       )))
 
