@@ -92,19 +92,16 @@
                                       evil-ranger-omit
                                       evil-ranger-point-to-child
                                       hl-line-mode
-                                      evil-ranger-child-click
-                                      ;; evil-ranger-disable-mouse-click
+                                      evil-ranger-parent-click
                                       ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun evil-ranger-point-to-child ()
   (when evil-ranger-child-name
-    (dired-goto-file evil-ranger-child-name)
-    )
-  )
+    (dired-goto-file evil-ranger-child-name)))
 
-(defun evil-ranger-child-click ()
+(defun evil-ranger-parent-click ()
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'dired-find-file))
