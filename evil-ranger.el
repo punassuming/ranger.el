@@ -302,7 +302,7 @@ of the selected frame."
     ))
 
 (defun evil-ranger-setup-preview ()
-  (let ((entry-name (dired-get-file-for-visit))
+  (let ((entry-name (dired-get-filename nil t))
         (window-min-width 1)
         (even-window-heights nil))
     (when (and evil-ranger-preview-window
