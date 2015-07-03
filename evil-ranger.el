@@ -309,21 +309,18 @@ of the selected frame."
                evil-ranger-preview-file)
       (unless (member (file-name-extension entry-name)
                       evil-ranger-ignored-extensions)
-        (let* ((win (display-buffer
+        (let* ((preview-window (display-buffer
                      (if (file-directory-p entry-name)
                          (evil-ranger-dir-buffer entry-name)
                        (or
                         (find-buffer-visiting entry-name)
                         (find-file-noselect entry-name nil evil-ranger-show-literal)))
                      `(display-buffer-in-side-window . ((side . right)
-                                                        ;; (inhibit-same-window . t)
-                                                        ;; (window . ,atom-root)
-                                                        ;; (slot . 0)
                                                         (window-width . 0.42)))))
-               (wb
-                (window-buffer win)))
-          (add-to-list 'evil-ranger-preview-buffers wb)
-          (setq evil-ranger-preview-window win)))
+               (preview-buffer
+                (window-buffer preview-window)))
+          (add-to-list 'evil-ranger-preview-buffers preview-buffer)
+          (setq evil-ranger-preview-window preview-window)))
       ;; (message (format "%s" (window-tree)))
       )))
 
