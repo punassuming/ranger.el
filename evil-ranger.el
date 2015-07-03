@@ -137,7 +137,7 @@
   "N"            'evil-search-previous
   (kbd "C-SPC")  'dired-mark)
 
-  (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
+(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
 
@@ -340,7 +340,7 @@ of the selected frame."
 
 (defun evil-ranger-cleanup ()
   (mapc #'(lambda (window) (ignore-errors (delete-window window))
-           evil-ranger-parent-windows))
+            evil-ranger-parent-windows))
   (setq evil-ranger-parent-windows ())
   (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
   (setq evil-ranger-parent-buffers ())
@@ -424,8 +424,8 @@ of the selected frame."
         (remove-hook 'dired-mode-hook #'auto-revert-mode)
         ;; (remove-hook 'dired-mode-hook #'evil-ranger-enable)
         (when (get-register :ranger_dired_before)
-                            (jump-to-register :ranger_dired_before)
-                            (set-register :ranger_dired_before nil))
+          (jump-to-register :ranger_dired_before)
+          (set-register :ranger_dired_before nil))
         (when evil-ranger-cleanup-on-disable
           (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
         (setq evil-ranger-preview-buffers ()
