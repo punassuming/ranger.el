@@ -167,12 +167,13 @@
 
 (defun evil-ranger-find-file ()
   (interactive)
-  (let ((entry-name (dired-get-file-for-visit)))
+  (let ((entry-name (dired-get-filename nil t)))
     ;; (delete-other-windows)
-    (evil-ranger-disable)
-    (find-file entry-name)
-    (when (file-directory-p entry-name)
-        (evil-ranger-enable))
+    (when entry-name
+      (evil-ranger-disable)
+      (find-file entry-name)
+      (when (file-directory-p entry-name)
+        (evil-ranger-enable)))
     ))
 
 (defun evil-ranger-next-file ()
@@ -309,10 +310,10 @@ of the selected frame."
                (window-at-side-p evil-ranger-preview-window 'right)
                )
       (ignore-errors (delete-window evil-ranger-preview-window)))
-    (unless (member (file-name-extension entry-name)
-                    evil-ranger-ignored-extensions)
-      (when (and entry-name
-                 (eq evil-ranger-preview-file t))
+    (when (and entry-name
+               evil-ranger-preview-file)
+      (unless (member (file-name-extension entry-name)
+                      evil-ranger-ignored-extensions)
         (let* ((win (display-buffer
                      (if (file-directory-p entry-name)
                          (evil-ranger-dir-buffer entry-name)
