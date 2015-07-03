@@ -124,8 +124,9 @@
   "r"            '(lambda ()
                     (interactive)
                     (evil-ranger-setup)
-                    (dired-do-redisplay)
                     (scroll-right)
+                    (dired-do-redisplay)
+                    (revert-buffer)
                     )
   (kbd "RET")    'evil-ranger-find-file
   "v"            'dired-toggle-marks
