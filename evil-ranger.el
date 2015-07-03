@@ -76,6 +76,10 @@
 
 (defvar evil-ranger-mode nil)
 
+(defvar evil-ranger-child-name nil)
+
+(make-local-variable 'evil-ranger-child-name)
+
 (defvar evil-ranger-preview-buffers ()
   "List with buffers of previewed files")
 
@@ -85,10 +89,19 @@
   "List with buffers of parent buffers")
 
 (defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
+                                      evil-ranger-omit
+                                      evil-ranger-point-to-child
+                                      hl-line-mode
                                       ;; evil-ranger-disable-mouse-click
                                       ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun evil-ranger-point-to-child ()
+  (when evil-ranger-child-name
+    (dired-goto-file evil-ranger-child-name)
+    )
+  )
 
 (defun evil-ranger-disable-mouse-click ()
   (make-local-variable 'mouse-1-click-follows-link)
