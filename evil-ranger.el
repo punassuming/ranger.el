@@ -373,6 +373,13 @@ of the selected frame."
   (evil-ranger-setup-preview)
   )
 
+(add-hook 'evil-ranger-mode-hook #'evil-ranger-omit)
+
+(defun evil-ranger-omit ()
+  (setq dired-omit-verbose nil)
+  (dired-omit-mode t)
+  )
+
 ;;;###autoload
 (define-minor-mode evil-ranger-mode
   "A convienent way to look up file contents in other window while browsing directory in dired"
