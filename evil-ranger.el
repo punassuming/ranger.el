@@ -166,10 +166,10 @@
 (defun evil-ranger-find-file ()
   (interactive)
   (let ((entry-name (dired-get-filename nil t)))
-    ;; (delete-other-windows)
     (when entry-name
       (evil-ranger-disable)
-      (find-file entry-name)
+      (ignore-errors
+        (find-file entry-name))
       (when (file-directory-p entry-name)
         (evil-ranger-enable)))
     ))
@@ -201,12 +201,12 @@
              (kill-buffer-if-not-modified buffer))))
 
 (defun evil-ranger-dir-buffer (entry-name)
-  (with-current-buffer (or
-                        (car (or (dired-buffers-for-dir entry-name) ()))
-                        (dired-noselect entry-name))
-    (when evil-ranger-enable-on-directories
-      (run-hooks 'evil-ranger-parent-dir-hook))
-    (current-buffer)))
+  (ignore-errors (with-current-buffer (or
+                                       (car (or (dired-buffers-for-dir entry-name) ()))
+                                       (dired-noselect entry-name))
+                   (when evil-ranger-enable-on-directories
+                     (run-hooks 'evil-ranger-parent-dir-hook))
+                   (current-buffer))))
 
 (defun evil-ranger-parent-directory (entry)
   "find the parent directory of entry"
