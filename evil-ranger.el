@@ -397,11 +397,12 @@ of the selected frame."
           (error "Run it from dired buffer"))
 
         ;; (message (format "%s" (register-read-with-preview "Prompt")))
-        (unless :ranger_dired_before
+        (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
         (evil-ranger-setup)
         (dired-hide-details-mode -1)
+
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
 
         (defadvice find-file (before evil-ranger-find-file activate)
@@ -424,9 +425,10 @@ of the selected frame."
         ;; (remove-hook 'dired-after-readin-hook #'evil-ranger-enable)
         (remove-hook 'dired-mode-hook #'auto-revert-mode)
         ;; (remove-hook 'dired-mode-hook #'evil-ranger-enable)
-        (jump-to-register :ranger_dired_before)
+        (when (get-register :ranger_dired_before)
+                            (jump-to-register :ranger_dired_before)
+                            (set-register :ranger_dired_before nil))
         (when evil-ranger-cleanup-on-disable
-          (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
           (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
         (setq evil-ranger-preview-buffers ()
               evil-ranger-parent-buffers ())
