@@ -92,6 +92,7 @@
                                       evil-ranger-omit
                                       evil-ranger-point-to-child
                                       hl-line-mode
+                                      evil-ranger-child-click
                                       ;; evil-ranger-disable-mouse-click
                                       ))
 
@@ -103,10 +104,10 @@
     )
   )
 
-(defun evil-ranger-disable-mouse-click ()
+(defun evil-ranger-child-click ()
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
-  )
+  (local-set-key (kbd  "<mouse-1>") 'dired-find-file))
 
 (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
 
