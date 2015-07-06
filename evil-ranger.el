@@ -238,7 +238,7 @@
     (setq-local window-size-fixed 'width)
     ))
 
-(defun evil-ranger-display-buffer-at-left (buffer alist)
+(defun evil-ranger-display-buffer-at-side (buffer alist)
   "Try displaying BUFFER in a window at the bottom of the selected frame.
 This either splits the window at the bottom of the frame or the
 frame's root window, or reuses an existing window at the bottom
@@ -259,7 +259,8 @@ of the selected frame."
     ;;  (lambda (window) (unless left-window (setq left-window window))) nil nil 'nomini)
     ;; (message (format "%s" (ceiling  (* (frame-width) size))))
     (or (and (not (frame-parameter nil 'unsplittable))
-             (setq window (ignore-errors (split-window left-window width side)))
+             ;; (setq window (ignore-errors (split-window left-window width side)))
+             (setq window (ignore-errors (split-window left-window nil side)))
              (window--display-buffer
               buffer window 'window alist display-buffer-mark-dedicated)
              )
@@ -280,8 +281,8 @@ of the selected frame."
   (let ((parent-name (evil-ranger-parent-directory default-directory))
         (current-name default-directory)
         ;; (split-width-threshold 10)
-        (even-window-heights nil)
-        (window-min-width 1)
+        ;; (even-window-heights nil)
+        ;; (window-min-width 1)
         (i 0)
         )
     ;; clear out everything
@@ -308,8 +309,8 @@ of the selected frame."
          (parent-window
           (display-buffer
            (evil-ranger-dir-buffer parent-name)
-           `(evil-ranger-display-buffer-at-left . ((side . left)
-                                                   (inhibit-same-window . t)
+           `(evil-ranger-display-buffer-at-side . ((side . left)
+                                                   ;; (inhibit-same-window . t)
                                                    (window-width . 0.12)))))
          (parent-buffer (window-buffer parent-window)))
     (setq evil-ranger-child-name current-name)
