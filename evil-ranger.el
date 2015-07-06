@@ -405,6 +405,20 @@ of the selected frame."
   (dired-omit-mode t)
   )
 
+(defun evil-ranger-header-line ()
+  ;; (message
+  (concat
+   (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
+  (format " pw:%s pb:%s w:%s b:%s "
+          ;; evil-ranger-parent-dirs
+          evil-ranger-preview-window
+          evil-ranger-preview-buffers
+          evil-ranger-parent-windows
+          evil-ranger-parent-buffers
+          ))
+  ;; )
+  )
+
 ;;;###autoload
 (define-minor-mode evil-ranger-mode
   "A convienent way to look up file contents in other window while browsing directory in dired"
@@ -440,6 +454,8 @@ of the selected frame."
 
         ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
         (add-hook 'dired-mode-hook #'auto-revert-mode)
+        (make-local-variable 'header-line-format)
+        (setq header-line-format '(:eval (evil-ranger-header-line)))
         ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
         ;; (setq window-size-change-functions '())
         ;; (add-hook 'dired-mode-hook #'evil-ranger-enable)
@@ -449,8 +465,10 @@ of the selected frame."
         ;; (remove-hook 'dired-after-readin-hook #'evil-ranger-enable)
         (remove-hook 'dired-mode-hook #'auto-revert-mode)
         ;; (remove-hook 'dired-mode-hook #'evil-ranger-enable)
+        (setq header-line-format nil)
         (when (get-register :ranger_dired_before)
-          (jump-to-register :ranger_dired_before)
+          (ignore-errors
+            (jump-to-register :ranger_dired_before))
           (set-register :ranger_dired_before nil))
         (when evil-ranger-cleanup-on-disable
           (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
