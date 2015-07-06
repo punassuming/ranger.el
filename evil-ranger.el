@@ -114,7 +114,7 @@
 (defun evil-ranger-parent-click ()
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
-  (local-set-key (kbd  "<mouse-1>") 'dired-find-file))
+  (local-set-key (kbd  "<mouse-1>") 'evil-ranger-find-file))
 
 (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
 
@@ -182,16 +182,18 @@
   (evil-ranger-enable)
   )
 
-(defun evil-ranger-find-file ()
+(defun evil-ranger-find-file (&optional entry)
   (interactive)
-  (let ((entry-name (dired-get-filename nil t)))
+  (let ((entry-name (or entry
+                        (dired-get-filename nil t))))
     (when entry-name
       (evil-ranger-disable)
-      (ignore-errors
-        (find-file entry-name))
+      (unless 
+          (ignore-errors
+            (find-file entry-name))
+        (evil-ranger-enable))
       (when (file-directory-p entry-name)
-        (evil-ranger-enable)))
-    ))
+        (evil-ranger-enable)))))
 
 (defun evil-ranger-next-file ()
   (interactive)
@@ -422,8 +424,8 @@ of the selected frame."
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
-        (evil-ranger-setup)
         (dired-hide-details-mode -1)
+        (evil-ranger-setup)
 
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
 
