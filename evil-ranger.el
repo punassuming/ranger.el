@@ -61,6 +61,11 @@
   :group 'evil-ranger
   :type 'list)
 
+(defcustom evil-ranger-max-preview-size 3
+  "File size in MB to prevent preview of files"
+  :group 'evil-ranger
+  :type 'integer)
+
 (defcustom evil-ranger-show-literal t
   "When t it will show file literally"
   :group 'evil-ranger
@@ -302,9 +307,14 @@ of the selected frame."
     ))
 
 (defun evil-ranger-setup-preview ()
-  (let ((entry-name (dired-get-filename nil t))
-        (window-min-width 1)
-        (even-window-heights nil))
+  (let* ((entry-name (dired-get-filename nil t))
+        (fsize
+         (nth 7 (file-attributes entry-name))
+         )
+        ;; (window-min-width 1)
+        ;; (even-window-heights nil)
+        )
+    ;; (message (format "%s" fsize))
     (when (and evil-ranger-preview-window
                (window-live-p evil-ranger-preview-window)
                (window-at-side-p evil-ranger-preview-window 'right)
@@ -312,22 +322,27 @@ of the selected frame."
       (ignore-errors (delete-window evil-ranger-preview-window)))
     (when (and entry-name
                evil-ranger-preview-file)
-      (unless (member (file-name-extension entry-name)
-                      evil-ranger-ignored-extensions)
-        (let* ((preview-window (display-buffer
-                     (if (file-directory-p entry-name)
-                         (evil-ranger-dir-buffer entry-name)
-                       (or
-                        (find-buffer-visiting entry-name)
-                        (find-file-noselect entry-name nil evil-ranger-show-literal)))
-                     `(display-buffer-in-side-window . ((side . right)
-                                                        (window-width . 0.42)))))
-               (preview-buffer
-                (window-buffer preview-window)))
-          (add-to-list 'evil-ranger-preview-buffers preview-buffer)
-          (setq evil-ranger-preview-window preview-window)))
+      (unless (or
+              (> fsize (* 1024 1024 evil-ranger-max-preview-size)) 
+               (member (file-name-extension entry-name)
+                       evil-ranger-excluded-extensions))
+          (let* ((preview-window (display-buffer
+                                  (if (file-directory-p entry-name)
+                                      (evil-ranger-dir-buffer entry-name)
+                                    (or
+                                     (find-buffer-visiting entry-name)
+                                     (find-file-noselect entry-name nil evil-ranger-show-literal)))
+                                  `(evil-ranger-display-buffer-at-side . ((side . right)
+                                                                     ;; (inhibit-same-window . t)
+                                                                     (window-width . 0.42)))))
+                 (preview-buffer
+                  (window-buffer preview-window)))
+            (add-to-list 'evil-ranger-preview-buffers preview-buffer)
+            (setq evil-ranger-preview-window preview-window)
+            (dired-hide-details-mode t)
+            )))
       ;; (message (format "%s" (window-tree)))
-      )))
+      ))
 
 (defun evil-ranger-scroll-page-down ()
   (interactive)
