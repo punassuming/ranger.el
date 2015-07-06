@@ -99,9 +99,9 @@
   "List with buffers of parent buffers")
 
 (defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
-                                      evil-ranger-omit
-                                      evil-ranger-point-to-child
-                                      hl-line-mode
+                                      evil-ranger-omit           ; ; hide extraneous stuf
+                                      evil-ranger-point-to-child ; ; point to child directory
+                                      hl-line-mode               ; ; show line at current file
                                       evil-ranger-parent-click
                                       ))
 
@@ -389,6 +389,7 @@ of the selected frame."
 (add-hook 'evil-ranger-mode-hook #'evil-ranger-omit)
 
 (defun evil-ranger-omit ()
+  (make-local-variable 'dired-omit-verbose)
   (setq dired-omit-verbose nil)
   (dired-omit-mode t)
   )
