@@ -427,14 +427,14 @@ of the selected frame."
 
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
 
-        (defadvice find-file (before evil-ranger-find-file activate)
-          (evil-ranger-disable))
+        ;; (defadvice find-file (before evil-ranger-find-file activate)
+        ;;   (evil-ranger-disable))
 
-        (defadvice dired-find-file (after evil-ranger-find-file activate)
-          (evil-ranger-enable))
+        ;; (defadvice dired-find-file (after evil-ranger-find-file activate)
+        ;;   (evil-ranger-enable))
 
-        (defadvice quit-window (before evil-ranger-quit activate)
-          (when evil-ranger-mode (evil-ranger-disable)))
+        ;; (defadvice quit-window (before evil-ranger-quit activate)
+        ;;   (when evil-ranger-mode (evil-ranger-disable)))
 
         ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
         (add-hook 'dired-mode-hook #'auto-revert-mode)
@@ -457,9 +457,9 @@ of the selected frame."
         (goto-char current-point))
       ;; remove find-file advice
       (ignore-errors
-        (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
-        (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
-        (ad-remove-advice 'dired-find-file 'after 'evil-ranger-quit)
+        ;; (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
+        ;; (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
+        ;; (ad-remove-advice 'dired-find-file 'after 'evil-ranger-quit)
         )
       )))
 
