@@ -50,9 +50,14 @@
   :group 'evil-ranger
   :type 'boolean)
 
-(defcustom evil-ranger-ignored-extensions
-  '("mkv" "iso" "mp4")
-  "Extensions to not try to open"
+(defcustom evil-ranger-excluded-extensions
+  '("mkv"
+    "iso"
+    "mp4"
+    "bin"
+    "exe"
+    "msi")
+  "File extensions to not preview"
   :group 'evil-ranger
   :type 'list)
 
