@@ -473,6 +473,8 @@ of the selected frame."
           (set-register :ranger_dired_before nil))
         (when evil-ranger-cleanup-on-disable
           (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
+        (when evil-ranger-cleanup-on-disable
+          (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers))
         (setq evil-ranger-preview-buffers ()
               evil-ranger-parent-buffers ())
         (goto-char current-point))
