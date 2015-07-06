@@ -125,8 +125,8 @@
   "k"            'evil-ranger-prev-file
   (kbd "C-j")    'evil-ranger-scroll-page-down
   (kbd "C-k")    'evil-ranger-scroll-page-up
-  "f"            'helm-find-files
-  "i"            'evil-ranger-preview
+  "f"            'evil-ranger-search-files
+  "i"            'evil-ranger-preview-toggle
   "h"            'evil-ranger-up-directory
   "l"            'evil-ranger-find-file
   "r"            '(lambda ()
@@ -148,7 +148,15 @@
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
 
-(defun evil-ranger-preview ()
+(defun evil-ranger-search-files ()
+  (interactive)
+  (if (featurep 'helm)
+      (call-interactively 'helm-find-files)
+    (call-interactively 'ido-find-file))
+  (when (string= major-mode "dired-mode")
+    (evil-ranger-enable)))
+
+(defun evil-ranger-preview-toggle ()
   "Toggle preview of selected file"
   (interactive)
   (if (eq evil-ranger-preview-file t)
@@ -156,12 +164,13 @@
         (when (and evil-ranger-preview-window
                    (window-live-p evil-ranger-preview-window)
                    (window-at-side-p evil-ranger-preview-window 'right))
-          (delete-window evil-ranger-preview-window)
+          (ignore-errors
+            (delete-window evil-ranger-preview-window)))
           (dired-hide-details-mode -1)
-          )
         (setq evil-ranger-preview-file nil))
-    (setq evil-ranger-preview-file t)
-    (dired-hide-details-mode t)
+    (progn
+      (setq evil-ranger-preview-file t)
+      (dired-hide-details-mode t))
     (evil-ranger-setup-preview)
     )
   )
