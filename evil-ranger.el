@@ -165,13 +165,13 @@
   (if (featurep 'helm)
       (call-interactively 'helm-find-files)
     (call-interactively 'ido-find-file))
-  (when (string= major-mode "dired-mode")
+  (when (derived-mode-p 'dired-mode)
     (evil-ranger-enable)))
 
 (defun evil-ranger-preview-toggle ()
   "Toggle preview of selected file"
   (interactive)
-  (if (eq evil-ranger-preview-file t)
+  (if evil-ranger-preview-file
       (progn
         (when (and evil-ranger-preview-window
                    (window-live-p evil-ranger-preview-window)
@@ -200,7 +200,7 @@
                         (dired-get-filename nil t))))
     (when entry-name
       (evil-ranger-disable)
-      (unless 
+      (unless
           (ignore-errors
             (find-file entry-name))
         (evil-ranger-enable))
@@ -374,7 +374,7 @@ This splits the window at the designated `side' of the frame."
 (defun evil-ranger ()
   "Launch dired in evil-ranger-minor-mode"
   (interactive)
-  (unless (string= major-mode "dired-mode")
+  (unless (derived-mode-p 'dired-mode)
     (dired-jump))
   (evil-ranger-mode t)
   )
@@ -389,7 +389,7 @@ This splits the window at the designated `side' of the frame."
 
 (defun evil-ranger-setup ()
   (interactive)
-  (delete-other-windows)
+  ;; (delete-other-windows)
   (evil-ranger-setup-parents)
   (evil-ranger-setup-preview)
   )
@@ -428,7 +428,7 @@ This splits the window at the designated `side' of the frame."
   ;; only run from dired-mode
   (if evil-ranger-mode
       (progn
-        (unless (string= major-mode "dired-mode")
+        (unless (derived-mode-p 'dired-mode)
           (error "Run it from dired buffer"))
 
         ;; (message (format "%s" (register-read-with-preview "Prompt")))
