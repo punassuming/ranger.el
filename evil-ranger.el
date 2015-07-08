@@ -409,13 +409,13 @@ This splits the window at the designated `side' of the frame."
   ;; (message
   (concat
    (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
-  (format " pw:%s pb:%s w:%s b:%s "
-          ;; evil-ranger-parent-dirs
-          evil-ranger-preview-window
-          evil-ranger-preview-buffers
-          evil-ranger-parent-windows
-          evil-ranger-parent-buffers
-          ))
+   (format " pw:%s pb:%s w:%s b:%s "
+           ;; evil-ranger-parent-dirs
+           evil-ranger-preview-window
+           evil-ranger-preview-buffers
+           evil-ranger-parent-windows
+           evil-ranger-parent-buffers
+           ))
   ;; )
   )
 
