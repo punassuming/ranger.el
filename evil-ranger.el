@@ -140,6 +140,7 @@
   "i"            'evil-ranger-preview-toggle
   "h"            'evil-ranger-up-directory
   "l"            'evil-ranger-find-file
+  "q" 'evil-ranger-disable
   "r"            '(lambda ()
                     (interactive)
                     (evil-ranger-setup)
