@@ -178,14 +178,13 @@
                    (window-at-side-p evil-ranger-preview-window 'right))
           (ignore-errors
             (delete-window evil-ranger-preview-window)))
-          (dired-hide-details-mode -1)
+        (dired-hide-details-mode -1)
+        (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
         (setq evil-ranger-preview-file nil))
     (progn
       (setq evil-ranger-preview-file t)
       (dired-hide-details-mode t))
-    (evil-ranger-setup-preview)
-    )
-  )
+    (evil-ranger-setup-preview)))
 
 (defun evil-ranger-up-directory ()
   (interactive)
@@ -435,7 +434,10 @@ This splits the window at the designated `side' of the frame."
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
+
         (dired-hide-details-mode -1)
+        ;; hide details line at top
+        (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
         (evil-ranger-setup)
 
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
