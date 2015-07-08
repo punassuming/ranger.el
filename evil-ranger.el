@@ -81,13 +81,24 @@
   :group 'evil-ranger
   :type 'boolean)
 
-(make-local-variable 'evil-ranger-preview-file)
+;; (make-local-variable 'evil-ranger-preview-file)
+
+(defcustom evil-ranger-width-parents 0.12
+  "Fraction of frame width taken by parent windows"
+  :group 'evil-ranger
+  :type 'float
+  )
+
+(defcustom evil-ranger-width-preview 0.55
+  "Fraction of frame width taken by preview window"
+  :group 'evil-ranger
+  :type 'float
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar evil-ranger-mode nil)
-
 (defvar evil-ranger-child-name nil)
-
 (make-local-variable 'evil-ranger-child-name)
 
 (defvar evil-ranger-preview-buffers ()
@@ -222,12 +233,29 @@
              (kill-buffer-if-not-modified buffer))))
 
 (defun evil-ranger-dir-buffer (entry-name)
-  (ignore-errors (with-current-buffer (or
-                                       (car (or (dired-buffers-for-dir entry-name) ()))
-                                       (dired-noselect entry-name))
-                   (when evil-ranger-enable-on-directories
-                     (run-hooks 'evil-ranger-parent-dir-hook))
-                   (current-buffer))))
+  ;; (ignore-errors
+  (with-current-buffer (or
+                        (car (or (dired-buffers-for-dir entry-name) ()))
+                        (dired-noselect entry-name))
+    (when evil-ranger-enable-on-directories
+      (run-hooks 'evil-ranger-parent-dir-hook))
+    (current-buffer)))
+;; )
+
+(defun evil-ranger-preview-buffer (entry-name)
+  (let ((temp-buffer (or (get-buffer "*preview*")
+                         (generate-new-buffer "*preview*"))))
+    (with-current-buffer temp-buffer
+      (erase-buffer)
+      (insert-file-contents entry-name)
+      (current-buffer))))
+
+;; (with-current-buffer
+;;  (or
+;;   (find-buffer-visiting entry-name)
+;;   (find-file-noselect entry-name nil evil-ranger-show-literal)))
+;; )
+
 
 (defun evil-ranger-parent-directory (entry)
   "find the parent directory of entry"
@@ -239,50 +267,23 @@
     ))
 
 (defun evil-ranger-display-buffer-at-side (buffer alist)
-  "Try displaying BUFFER in a window at the bottom of the selected frame.
-This either splits the window at the bottom of the frame or the
-frame's root window, or reuses an existing window at the bottom
-of the selected frame."
+  "Try displaying BUFFER at one side of the selected frame
+This splits the window at the designated `side' of the frame."
   (let ((side (or (cdr (assq 'side alist)) 'bottom))
-        (left-window window)
-        (split-width-threshold 10)
-        (window-min-width 1)
-        (width (max 14 (ceiling  (* (frame-width) 0.12))))
-        )
+        (window-width (or (cdr (assq 'window-width alist)) 0.5))
+        (current-window window))
     (cond
      ((not (memq side '(top bottom left right)))
       (error "Invalid side %s specified" side)))
-    ;; (setq left-window (window-left ))
-    ;; (while (window-left left-window)
-    ;;   (setq left-window (window-left left-window)))
-    ;; (walk-window-tree
-    ;;  (lambda (window) (unless left-window (setq left-window window))) nil nil 'nomini)
-    ;; (message (format "%s" (ceiling  (* (frame-width) size))))
+    (setq window-size (ceiling  (* (frame-width) window-width)))
     (or (and (not (frame-parameter nil 'unsplittable))
-             ;; (setq window (ignore-errors (split-window left-window width side)))
-             (setq window (ignore-errors (split-window left-window nil side)))
+             (setq window (ignore-errors (split-window current-window window-size side)))
              (window--display-buffer
-              buffer window 'window alist display-buffer-mark-dedicated)
-             )
-        ;; (and (not (frame-parameter nil 'unsplittable))
-        ;;      (setq window
-        ;;            (condition-case nil
-        ;;                (split-window (window--major-non-side-window))
-        ;;              (error nil)))
-        ;;      (window--display-buffer
-        ;;       buffer window 'window alist display-buffer-mark-dedicated))
-        ;; (and (setq window left-window)
-        ;;      (not (window-dedicated-p window))
-        ;;      (window--display-buffer
-        ;;       buffer window 'reuse alist display-buffer-mark-dedicated))
-        )))
+              buffer window 'window alist display-buffer-mark-dedicated)))))
 
 (defun evil-ranger-setup-parents ()
   (let ((parent-name (evil-ranger-parent-directory default-directory))
         (current-name default-directory)
-        ;; (split-width-threshold 10)
-        ;; (even-window-heights nil)
-        ;; (window-min-width 1)
         (i 0)
         )
     ;; clear out everything
@@ -311,7 +312,7 @@ of the selected frame."
            (evil-ranger-dir-buffer parent-name)
            `(evil-ranger-display-buffer-at-side . ((side . left)
                                                    ;; (inhibit-same-window . t)
-                                                   (window-width . 0.12)))))
+                                                   (window-width . ,evil-ranger-width-parents)))))
          (parent-buffer (window-buffer parent-window)))
     (setq evil-ranger-child-name current-name)
     (add-to-list 'evil-ranger-parent-buffers parent-buffer)
@@ -320,41 +321,35 @@ of the selected frame."
 
 (defun evil-ranger-setup-preview ()
   (let* ((entry-name (dired-get-filename nil t))
-        (fsize
-         (nth 7 (file-attributes entry-name))
-         )
-        ;; (window-min-width 1)
-        ;; (even-window-heights nil)
-        )
+         (fsize
+          (nth 7 (file-attributes entry-name))))
     ;; (message (format "%s" fsize))
     (when (and evil-ranger-preview-window
                (window-live-p evil-ranger-preview-window)
-               (window-at-side-p evil-ranger-preview-window 'right)
+               ;; (window-at-side-p evil-ranger-preview-window 'right)
                )
       (ignore-errors (delete-window evil-ranger-preview-window)))
     (when (and entry-name
                evil-ranger-preview-file)
       (unless (or
-              (> fsize (* 1024 1024 evil-ranger-max-preview-size)) 
+               (> fsize (* 1024 1024 evil-ranger-max-preview-size))
                (member (file-name-extension entry-name)
                        evil-ranger-excluded-extensions))
-          (let* ((preview-window (display-buffer
-                                  (if (file-directory-p entry-name)
-                                      (evil-ranger-dir-buffer entry-name)
-                                    (or
-                                     (find-buffer-visiting entry-name)
-                                     (find-file-noselect entry-name nil evil-ranger-show-literal)))
-                                  `(evil-ranger-display-buffer-at-side . ((side . right)
-                                                                     ;; (inhibit-same-window . t)
-                                                                     (window-width . 0.42)))))
-                 (preview-buffer
-                  (window-buffer preview-window)))
-            (add-to-list 'evil-ranger-preview-buffers preview-buffer)
-            (setq evil-ranger-preview-window preview-window)
-            (dired-hide-details-mode t)
-            )))
-      ;; (message (format "%s" (window-tree)))
-      ))
+        (let* ((preview-window (display-buffer
+                                (if (file-directory-p entry-name)
+                                    (evil-ranger-dir-buffer entry-name)
+                                  (evil-ranger-preview-buffer entry-name))
+                                `(evil-ranger-display-buffer-at-side . ((side . right)
+                                                                        ;; (inhibit-same-window . t)
+                                                                        (window-width . ,evil-ranger-width-preview)))))
+               (preview-buffer
+                (window-buffer preview-window)))
+          (add-to-list 'evil-ranger-preview-buffers preview-buffer)
+          (setq evil-ranger-preview-window preview-window)
+          (dired-hide-details-mode t)
+          )))
+    ;; (message (format "%s" (window-tree)))
+    ))
 
 (defun evil-ranger-scroll-page-down ()
   (interactive)
