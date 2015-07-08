@@ -209,6 +209,8 @@
 (defun evil-ranger-next-file ()
   (interactive)
   (dired-next-line 1)
+  (if (eobp)
+      (dired-next-line -1))
   (when evil-ranger-preview-file
     (evil-ranger-setup-preview)
     (when evil-ranger-cleanup-eagerly
@@ -217,6 +219,8 @@
 (defun evil-ranger-prev-file ()
   (interactive)
   (dired-previous-line 1)
+  (if (bobp)
+      (dired-next-line 1))
   (when evil-ranger-preview-file
     (evil-ranger-setup-preview)
     (when evil-ranger-cleanup-eagerly
