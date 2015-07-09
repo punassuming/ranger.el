@@ -61,7 +61,7 @@
   :group 'evil-ranger
   :type 'list)
 
-(defcustom evil-ranger-max-preview-size 3
+(defcustom evil-ranger-max-preview-size 10
   "File size in MB to prevent preview of files"
   :group 'evil-ranger
   :type 'integer)
