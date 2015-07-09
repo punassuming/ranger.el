@@ -219,9 +219,11 @@
     (setq evil-ranger-show-literal t)
     )
   (ignore-errors
-    (delete-window evil-ranger-preview-window))
-  (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
-  (evil-ranger-setup-preview)
+    (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
+    (delete-window evil-ranger-preview-window)
+    )
+  (when evil-ranger-preview-file
+    (evil-ranger-setup-preview))
   (message (format "Literal Preview: %s"  evil-ranger-show-literal))
   )
 
@@ -386,7 +388,7 @@ This splits the window at the designated `side' of the frame."
                                     (evil-ranger-dir-buffer entry-name)
                                   (evil-ranger-preview-buffer entry-name))
                                 `(evil-ranger-display-buffer-at-side . ((side . right)
-                                                                        ;; (inhibit-same-window . t)
+                                                                        (inhibit-same-window . t)
                                                                         (window-width . ,evil-ranger-width-preview)))))
                (preview-buffer
                 (window-buffer preview-window)))
