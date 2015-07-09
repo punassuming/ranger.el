@@ -71,6 +71,12 @@
   :group 'evil-ranger
   :type 'boolean)
 
+(defcustom evil-ranger-show-dotfiles t
+  "When t it will show dotfiles in directory"
+  :group 'evil-ranger
+  :type 'boolean)
+
+
 (defcustom evil-ranger-parent-depth 2
   "Number of directories up to traverse"
   :group 'evil-ranger
@@ -138,6 +144,8 @@
   (kbd "C-k")    'evil-ranger-scroll-page-up
   "f"            'evil-ranger-search-files
   "i"            'evil-ranger-preview-toggle
+  "zi"            'evil-ranger-toggle-literal
+  "zh"            'evil-ranger-toggle-dotfiles
   "h"            'evil-ranger-up-directory
   "l"            'evil-ranger-find-file
   "q" 'evil-ranger-disable
@@ -157,6 +165,7 @@
   (kbd "C-SPC")  'dired-mark)
 
 (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
 
@@ -185,6 +194,36 @@
       (setq evil-ranger-preview-file t)
       (dired-hide-details-mode t))
     (evil-ranger-setup-preview)))
+
+(defun evil-ranger-toggle-dotfiles ()
+  "Show/hide dot-files"
+  (interactive)
+    (if evil-ranger-show-dotfiles ; if currently showing
+        (progn
+          (setq evil-ranger-show-dotfiles nil)
+          (evil-ranger-hide-dotfiles))
+      (progn (revert-buffer) ; otherwise just revert to re-show
+             (setq evil-ranger-show-dotfiles t)))
+    (message (format "Show Dotfiles: %s"  evil-ranger-show-dotfiles))
+    )
+
+(defun evil-ranger-hide-dotfiles ()
+  (unless evil-ranger-show-dotfiles
+    (dired-mark-files-regexp "^\\\.")
+    (dired-do-kill-lines nil "")))
+
+(defun evil-ranger-toggle-literal ()
+  (interactive)
+  (if evil-ranger-show-literal
+      (setq evil-ranger-show-literal nil)
+    (setq evil-ranger-show-literal t)
+    )
+  (ignore-errors
+    (delete-window evil-ranger-preview-window))
+  (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
+  (evil-ranger-setup-preview)
+  (message (format "Literal Preview: %s"  evil-ranger-show-literal))
+  )
 
 (defun evil-ranger-up-directory ()
   (interactive)
