@@ -286,18 +286,21 @@
 ;; )
 
 (defun evil-ranger-preview-buffer (entry-name)
-  (let ((temp-buffer (or (get-buffer "*preview*")
-                         (generate-new-buffer "*preview*"))))
-    (with-current-buffer temp-buffer
-      (erase-buffer)
-      (insert-file-contents entry-name)
-      (current-buffer))))
+  (with-current-buffer
+      (or
+       (find-buffer-visiting entry-name)
+       (find-file-noselect entry-name nil evil-ranger-show-literal))
+    ;; (message (format "%s" (image-type-from-buffer)))
+    (current-buffer))
+  )
 
-;; (with-current-buffer
-;;  (or
-;;   (find-buffer-visiting entry-name)
-;;   (find-file-noselect entry-name nil evil-ranger-show-literal)))
-;; )
+;; (let ((temp-buffer (or (get-buffer "*preview*")
+;;                        (generate-new-buffer "*preview*"))))
+;;   (with-current-buffer temp-buffer
+;;     (erase-buffer)
+;;     (insert-file-contents entry-name)
+;;     (current-buffer))))
+
 
 
 (defun evil-ranger-parent-directory (entry)
