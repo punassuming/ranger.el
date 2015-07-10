@@ -75,6 +75,10 @@
   :group 'evil-ranger
   :type 'boolean)
 
+(defcustom evil-ranger-history-length 30
+  "When t it will show dotfiles in directory"
+  :group 'evil-ranger
+  :type 'integer)
 
 (defcustom evil-ranger-parent-depth 2
   "Number of directories up to traverse"
@@ -103,6 +107,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar evil-ranger-mode nil)
+
+(defvar evil-ranger-history-ring ())
+
 (defvar evil-ranger-child-name nil)
 (make-local-variable 'evil-ranger-child-name)
 
