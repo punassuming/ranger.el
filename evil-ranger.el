@@ -472,12 +472,11 @@ This splits the window at the designated `side' of the frame."
   (evil-ranger-setup-preview)
   )
 
-(add-hook 'evil-ranger-mode-hook #'evil-ranger-omit)
-
 (defun evil-ranger-omit ()
-  (make-local-variable 'dired-omit-verbose)
-  (setq dired-omit-verbose nil)
-  (dired-omit-mode t)
+  (let ((dired-omit-verbose nil)) 
+    (dired-omit-mode t)))
+
+(defun evil-ranger-sort ()
   )
 
 (defun evil-ranger-header-line ()
