@@ -369,7 +369,7 @@ This splits the window at the designated `side' of the frame."
         )
     ;; clear out everything
     (delete-other-windows)
-    (mapc 'kill-buffer evil-ranger-parent-buffers)
+    ;; (mapc 'kill-buffer evil-ranger-parent-buffers)
     (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-parent-windows ())
     (setq evil-ranger-parent-dirs ())
