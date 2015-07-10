@@ -123,6 +123,8 @@
 
 (defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
                                       evil-ranger-omit           ; ; hide extraneous stuf
+                                      auto-revert-mode
+                                      evil-ranger-sort
                                       evil-ranger-point-to-child ; ; point to child directory
                                       hl-line-mode               ; ; show line at current file
                                       evil-ranger-parent-click
@@ -164,17 +166,15 @@
                     (revert-buffer)
                     )
   (kbd "RET")    'evil-ranger-find-file
-  "v"            'dired-toggle-marks
-  "V"            'evil-visual-line
   "z-"           'evil-ranger-less-parents
   "z+"           'evil-ranger-more-parents
+  "v"            'dired-toggle-marks
+  "V"            'evil-visual-line
   "S"            'eshell
   "n"            'evil-search-next
   "N"            'evil-search-previous
   (kbd "C-SPC")  'dired-mark)
 
-(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
 
@@ -207,14 +207,14 @@
 (defun evil-ranger-toggle-dotfiles ()
   "Show/hide dot-files"
   (interactive)
-    (if evil-ranger-show-dotfiles ; if currently showing
-        (progn
-          (setq evil-ranger-show-dotfiles nil)
-          (evil-ranger-hide-dotfiles))
-      (progn (revert-buffer) ; otherwise just revert to re-show
-             (setq evil-ranger-show-dotfiles t)))
-    (message (format "Show Dotfiles: %s"  evil-ranger-show-dotfiles))
-    )
+  (if evil-ranger-show-dotfiles ; if currently showing
+      (progn
+        (setq evil-ranger-show-dotfiles nil)
+        (evil-ranger-hide-dotfiles))
+    (progn (revert-buffer) ; otherwise just revert to re-show
+           (setq evil-ranger-show-dotfiles t)))
+  (message (format "Show Dotfiles: %s"  evil-ranger-show-dotfiles))
+  )
 
 (defun evil-ranger-hide-dotfiles ()
   (unless evil-ranger-show-dotfiles
@@ -241,7 +241,7 @@
   (interactive
    (list
     (read-char-choice "criteria [name]: size(S) extension(X) time(t) name(N) -- reverse sort(r) " '(?q ?r ?+ ?- ?G ?E ?D ?S ?X ?t ?N))
-        ))
+    ))
   (unless (eq criteria ?q)
     (dired-sort-other
      (concat dired-listing-switches
@@ -269,7 +269,7 @@
 (defun evil-ranger-find-file (&optional entry)
   (interactive)
   (let ((find-name (or entry
-                        (dired-get-filename nil t))))
+                       (dired-get-filename nil t))))
     (when find-name
       ;; (evil-ranger-enable)
       (unless (file-directory-p find-name)
@@ -397,14 +397,12 @@ This splits the window at the designated `side' of the frame."
          (parent-buffer (window-buffer parent-window)))
     (setq evil-ranger-child-name current-name)
     (add-to-list 'evil-ranger-parent-buffers parent-buffer)
-    (add-to-list 'evil-ranger-parent-windows parent-window)
-    ))
+    (add-to-list 'evil-ranger-parent-windows parent-window)))
 
 (defun evil-ranger-setup-preview ()
   (let* ((entry-name (dired-get-filename nil t))
          (fsize
           (nth 7 (file-attributes entry-name))))
-    ;; (message (format "%s" fsize))
     (when (and evil-ranger-preview-window
                (window-live-p evil-ranger-preview-window)
                ;; (window-at-side-p evil-ranger-preview-window 'right)
@@ -515,6 +513,12 @@ This splits the window at the designated `side' of the frame."
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
+(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
+(add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
+
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
@@ -533,7 +537,6 @@ This splits the window at the designated `side' of the frame."
         ;;   (when evil-ranger-mode (evil-ranger-disable)))
 
         ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
-        (add-hook 'dired-mode-hook #'auto-revert-mode)
         (make-local-variable 'header-line-format)
         (setq header-line-format '(:eval (evil-ranger-header-line)))
         ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
@@ -542,9 +545,6 @@ This splits the window at the designated `side' of the frame."
         )
     (progn
       (let ((current-point (point)))
-        ;; (remove-hook 'dired-after-readin-hook #'evil-ranger-enable)
-        (remove-hook 'dired-mode-hook #'auto-revert-mode)
-        ;; (remove-hook 'dired-mode-hook #'evil-ranger-enable)
         (setq header-line-format nil)
         (when (get-register :ranger_dired_before)
           (ignore-errors
@@ -561,6 +561,7 @@ This splits the window at the designated `side' of the frame."
       (ignore-errors
         ;; (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
         ;; (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
+
         ;; (ad-remove-advice 'dired-find-file 'after 'evil-ranger-quit)
         )
       )))
