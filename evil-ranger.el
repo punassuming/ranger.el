@@ -166,6 +166,8 @@
   (kbd "RET")    'evil-ranger-find-file
   "v"            'dired-toggle-marks
   "V"            'evil-visual-line
+  "z-"           'evil-ranger-less-parents
+  "z+"           'evil-ranger-more-parents
   "S"            'eshell
   "n"            'evil-search-next
   "N"            'evil-search-previous
@@ -234,10 +236,6 @@
   (message (format "Literal Preview: %s"  evil-ranger-show-literal))
   )
 
-(defun evil-ranger-up-directory ()
-  (interactive)
-  (evil-ranger-disable)
-  (dired-up-directory)
 (defun evil-ranger-sort-criteria (criteria)
   "sort-dired by different criteria"
   (interactive
@@ -250,21 +248,36 @@
              (char-to-string criteria)))
     (run-hooks 'evil-ranger-mode-hook)))
 
-  (evil-ranger-enable)
+(defun evil-ranger-up-directory ()
+  (interactive)
+  (let ((parent (evil-ranger-parent-directory default-directory)))
+    (when parent
+      (evil-ranger-find-file parent))))
+
+(defun evil-ranger-less-parents ()
+  (interactive)
+  (setq evil-ranger-parent-depth (max 1 (- evil-ranger-parent-depth 1)))
+  (evil-ranger-setup)
+  )
+
+(defun evil-ranger-more-parents ()
+  (interactive)
+  (setq evil-ranger-parent-depth (+ evil-ranger-parent-depth 1))
+  (evil-ranger-setup)
   )
 
 (defun evil-ranger-find-file (&optional entry)
   (interactive)
-  (let ((entry-name (or entry
+  (let ((find-name (or entry
                         (dired-get-filename nil t))))
-    (when entry-name
-      (evil-ranger-disable)
-      (unless
-          (ignore-errors
-            (find-file entry-name))
+    (when find-name
+      ;; (evil-ranger-enable)
+      (unless (file-directory-p find-name)
+        (evil-ranger-disable))
+      (find-file find-name)
+      (when (file-directory-p find-name)
         (evil-ranger-enable))
-      (when (file-directory-p entry-name)
-        (evil-ranger-enable)))))
+      )))
 
 (defun evil-ranger-next-file ()
   (interactive)
@@ -302,7 +315,8 @@
                         (car (or (dired-buffers-for-dir entry-name) ()))
                         (dired-noselect entry-name))
     (when evil-ranger-enable-on-directories
-      (run-hooks 'evil-ranger-parent-dir-hook))
+      (run-hooks 'evil-ranger-parent-dir-hook)
+      )
     (current-buffer)))
 ;; )
 
