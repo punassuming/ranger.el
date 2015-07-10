@@ -348,19 +348,37 @@
     ))
 
 (defun evil-ranger-display-buffer-at-side (buffer alist)
-  "Try displaying BUFFER at one side of the selected frame
-This splits the window at the designated `side' of the frame."
-  (let ((side (or (cdr (assq 'side alist)) 'bottom))
-        (window-width (or (cdr (assq 'window-width alist)) 0.5))
-        (current-window window))
-    (cond
-     ((not (memq side '(top bottom left right)))
-      (error "Invalid side %s specified" side)))
-    (setq window-size (ceiling  (* (frame-width) window-width)))
-    (or (and (not (frame-parameter nil 'unsplittable))
-             (setq window (ignore-errors (split-window current-window window-size side)))
-             (window--display-buffer
-              buffer window 'window alist display-buffer-mark-dedicated)))))
+  "Try displaying BUFFER at one side of the selected frame This splits the
+window at the designated `side' of the frame. Accepts `window-width' as a
+fraction of the total frame size"
+  (let* ((side (or (cdr (assq 'side alist)) 'bottom))
+         (slot (or (cdr (assq 'slot alist)) 0))
+         (split-side (cond
+                      ((eq side 'left) 'right)
+                      ((eq side 'right) 'left)
+                      ((eq side 'bottom) 'top)
+                      ((eq side 'top) 'bottom)))
+         (window-width (or (cdr (assq 'window-width alist)) 0.5))
+         (window-size (ceiling  (* (frame-width) window-width)))
+         (current-window window)
+         ;; (reuse-window
+         ;;  (let (window)
+         ;;    (walk-window-tree
+         ;;     (lambda (window)
+         ;;       (when (and
+         ;;              (eq (window-parameter window 'window-side) side)
+         ;;              (eq (window-parameter window 'window-slot) slot)
+         ;;              )
+         ;;         (setq window window)))
+         ;;     nil nil 'nomini)))
+         (new-window (split-window current-window window-size side)))
+    ;; (message (format "%s" reuse-window))
+    (when new-window
+      (set-window-parameter new-window 'window-side side)
+      ;; (set-window-parameter new-window 'window-slot slot)
+      (window--display-buffer
+       buffer new-window 'window alist display-buffer-mark-dedicated)
+      )))
 
 (defun evil-ranger-setup-parents ()
   (let ((parent-name (evil-ranger-parent-directory default-directory))
@@ -377,7 +395,7 @@ This splits the window at the designated `side' of the frame."
                 (< i evil-ranger-parent-depth))
       (setq i (+ i 1))
       (unless (string-equal current-name parent-name)
-        (add-to-list 'evil-ranger-parent-dirs (cons current-name parent-name))
+        (add-to-list 'evil-ranger-parent-dirs (cons (cons current-name parent-name) i))
         (setq current-name (evil-ranger-parent-directory current-name))
         (setq parent-name (evil-ranger-parent-directory parent-name)))))
   ;; (message (format "%s" evil-ranger-parent-dirs))
@@ -386,12 +404,14 @@ This splits the window at the designated `side' of the frame."
   )
 
 (defun evil-ranger-make-parent (parent)
-  (let* ((parent-name (cdr parent))
-         (current-name (car parent))
+  (let* ((parent-name (cdar parent))
+         (current-name (caar parent))
+         (slot (cdr parent))
          (parent-window
           (display-buffer
            (evil-ranger-dir-buffer parent-name)
            `(evil-ranger-display-buffer-at-side . ((side . left)
+                                                   ;; (slot . ,(- 0 slot))
                                                    ;; (inhibit-same-window . t)
                                                    (window-width . ,evil-ranger-width-parents)))))
          (parent-buffer (window-buffer parent-window)))
@@ -419,7 +439,8 @@ This splits the window at the designated `side' of the frame."
                                     (evil-ranger-dir-buffer entry-name)
                                   (evil-ranger-preview-buffer entry-name))
                                 `(evil-ranger-display-buffer-at-side . ((side . right)
-                                                                        (inhibit-same-window . t)
+                                                                        ;; (slot . 1)
+                                                                        ;; (inhibit-same-window . t)
                                                                         (window-width . ,evil-ranger-width-preview)))))
                (preview-buffer
                 (window-buffer preview-window)))
@@ -467,7 +488,6 @@ This splits the window at the designated `side' of the frame."
 
 (defun evil-ranger-setup ()
   (interactive)
-  ;; (delete-other-windows)
   (evil-ranger-setup-parents)
   (evil-ranger-setup-preview)
   )
@@ -493,6 +513,12 @@ This splits the window at the designated `side' of the frame."
   ;; )
   )
 
+(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
+(add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
+
 ;;;###autoload
 (define-minor-mode evil-ranger-mode
   "A convienent way to look up file contents in other window while browsing directory in dired"
@@ -512,12 +538,6 @@ This splits the window at the designated `side' of the frame."
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
-(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
-(add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
-
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
@@ -538,6 +558,7 @@ This splits the window at the designated `side' of the frame."
         ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
         (make-local-variable 'header-line-format)
         (setq header-line-format '(:eval (evil-ranger-header-line)))
+
         ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
         ;; (setq window-size-change-functions '())
         ;; (add-hook 'dired-mode-hook #'evil-ranger-enable)
@@ -560,7 +581,6 @@ This splits the window at the designated `side' of the frame."
       (ignore-errors
         ;; (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
         ;; (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
-
         ;; (ad-remove-advice 'dired-find-file 'after 'evil-ranger-quit)
         )
       )))
