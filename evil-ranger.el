@@ -150,11 +150,12 @@
   (kbd "C-k")    'evil-ranger-scroll-page-up
   "f"            'evil-ranger-search-files
   "i"            'evil-ranger-preview-toggle
-  "zi"            'evil-ranger-toggle-literal
-  "zh"            'evil-ranger-toggle-dotfiles
+  "zi"           'evil-ranger-toggle-literal
+  "zh"           'evil-ranger-toggle-dotfiles
+  "o"            'evil-ranger-sort-criteria
   "h"            'evil-ranger-up-directory
   "l"            'evil-ranger-find-file
-  "q" 'evil-ranger-disable
+  "q"            'evil-ranger-disable
   "r"            '(lambda ()
                     (interactive)
                     (evil-ranger-setup)
@@ -237,6 +238,18 @@
   (interactive)
   (evil-ranger-disable)
   (dired-up-directory)
+(defun evil-ranger-sort-criteria (criteria)
+  "sort-dired by different criteria"
+  (interactive
+   (list
+    (read-char-choice "criteria [name]: size(S) extension(X) time(t) name(N) -- reverse sort(r) " '(?q ?r ?+ ?- ?G ?E ?D ?S ?X ?t ?N))
+        ))
+  (unless (eq criteria ?q)
+    (dired-sort-other
+     (concat dired-listing-switches
+             (char-to-string criteria)))
+    (run-hooks 'evil-ranger-mode-hook)))
+
   (evil-ranger-enable)
   )
 
