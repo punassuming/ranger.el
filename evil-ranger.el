@@ -23,12 +23,11 @@
 ;;; Commentary:
 
 ;; This is a minor mode forked from peep-dired
-;; <https://github.com/asok/peep-dired> This is a minor mode that can be
-;; enabled from a dired buffer. Once enabled it will show the file from
-;; point in the other window. Moving to the other file within the dired
-;; buffer with <down>/<up> or C-n/C-p will display different file.
-;; Hitting <SPC> will scroll the previewed file down, whereas C-<SPC> and
-;; <backspace> will scroll it up.
+;; <https://github.com/asok/peep-dired>, which can only be enabled from a dired
+;; buffer. Once enabled it will modify dired to work like ranger, to show the
+;; parent direcory of the current folder, and optionally preview the seclected
+;; file in the other window. Moving to the other file within the dired buffer
+;; with j/k. Hitting <C-j>/<C-k> will scroll the previewed file down / up.
 
 ;;; Code:
 
