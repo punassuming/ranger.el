@@ -273,8 +273,9 @@
     (when find-name
       ;; (evil-ranger-enable)
       (unless (file-directory-p find-name)
-        (evil-ranger-disable))
-      (find-file find-name)
+        (evil-ranger-revert)
+        )
+      (find-alternate-file find-name)
       (when (file-directory-p find-name)
         (evil-ranger-enable))
       )))
@@ -353,40 +354,49 @@ window at the designated `side' of the frame. Accepts `window-width' as a
 fraction of the total frame size"
   (let* ((side (or (cdr (assq 'side alist)) 'bottom))
          (slot (or (cdr (assq 'slot alist)) 0))
-         (split-side (cond
-                      ((eq side 'left) 'right)
-                      ((eq side 'right) 'left)
-                      ((eq side 'bottom) 'top)
-                      ((eq side 'top) 'bottom)))
+         ;; (split-side (cond
+         ;;              ((eq side 'left) 'right)
+         ;;              ((eq side 'right) 'left)
+         ;;              ((eq side 'bottom) 'top)
+         ;;              ((eq side 'top) 'bottom)))
          (window-width (or (cdr (assq 'window-width alist)) 0.5))
          (window-size (ceiling  (* (frame-width) window-width)))
+         (split-width-threshold 0)
          (current-window window)
-         ;; (reuse-window
-         ;;  (let (window)
-         ;;    (walk-window-tree
-         ;;     (lambda (window)
-         ;;       (when (and
-         ;;              (eq (window-parameter window 'window-side) side)
-         ;;              (eq (window-parameter window 'window-slot) slot)
-         ;;              )
-         ;;         (setq window window)))
-         ;;     nil nil 'nomini)))
-         (new-window (split-window current-window window-size side)))
-    ;; (message (format "%s" reuse-window))
-    (when new-window
-      (set-window-parameter new-window 'window-side side)
-      ;; (set-window-parameter new-window 'window-slot slot)
-      (window--display-buffer
-       buffer new-window 'window alist display-buffer-mark-dedicated)
-      )))
+         new-window
+         reuse-window)
+
+    (walk-window-tree
+     (lambda (window)
+       (when (eq (window-parameter window 'window-slot) slot)
+         (setq reuse-window window)))
+     nil nil 'nomini)
+
+    (message (format "%s : %s" slot reuse-window))
+
+    (if reuse-window
+        (progn
+          (window--display-buffer
+           buffer reuse-window 'reuse alist display-buffer-mark-dedicated))
+      (progn
+        (setq new-window (split-window current-window window-size side))
+        (set-window-parameter new-window 'window-slot slot)
+        (window--display-buffer
+         buffer new-window 'window alist display-buffer-mark-dedicated))
+      )
+
+    ))
 
 (defun evil-ranger-setup-parents ()
   (let ((parent-name (evil-ranger-parent-directory default-directory))
         (current-name default-directory)
         (i 0)
+        unused-window
         )
     ;; clear out everything
-    (delete-other-windows)
+    (cl-loop for buffer in evil-ranger-parent-buffers do
+             (unless (get-buffer-window (current-buffer))
+               (kill-buffer-if-not-modified buffer)))
     ;; (mapc 'kill-buffer evil-ranger-parent-buffers)
     (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-parent-windows ())
@@ -394,10 +404,20 @@ fraction of the total frame size"
     (while (and (file-directory-p parent-name)
                 (< i evil-ranger-parent-depth))
       (setq i (+ i 1))
-      (unless (string-equal current-name parent-name)
-        (add-to-list 'evil-ranger-parent-dirs (cons (cons current-name parent-name) i))
-        (setq current-name (evil-ranger-parent-directory current-name))
-        (setq parent-name (evil-ranger-parent-directory parent-name)))))
+      (if (string-equal current-name parent-name)
+          (walk-window-tree
+           (lambda (window)
+             (when (eq (window-parameter window 'window-slot) (- 0 i))
+               (setq unused-window window)
+               ))
+           nil nil 'nomini)
+        (progn
+          (add-to-list 'evil-ranger-parent-dirs (cons (cons current-name parent-name) i))
+          (setq current-name (evil-ranger-parent-directory current-name))
+          (setq parent-name (evil-ranger-parent-directory parent-name))))
+      (when (and unused-window
+                 (window-live-p unused-window))
+        (delete-window unused-window))))
   ;; (message (format "%s" evil-ranger-parent-dirs))
   (mapc 'evil-ranger-make-parent evil-ranger-parent-dirs)
   ;; (mapc 'evil-ranger-fix-width evil-ranger-parent-windows)
@@ -411,7 +431,7 @@ fraction of the total frame size"
           (display-buffer
            (evil-ranger-dir-buffer parent-name)
            `(evil-ranger-display-buffer-at-side . ((side . left)
-                                                   ;; (slot . ,(- 0 slot))
+                                                   (slot . ,(- 0 slot))
                                                    ;; (inhibit-same-window . t)
                                                    (window-width . ,evil-ranger-width-parents)))))
          (parent-buffer (window-buffer parent-window)))
@@ -439,7 +459,7 @@ fraction of the total frame size"
                                     (evil-ranger-dir-buffer entry-name)
                                   (evil-ranger-preview-buffer entry-name))
                                 `(evil-ranger-display-buffer-at-side . ((side . right)
-                                                                        ;; (slot . 1)
+                                                                        (slot . 1)
                                                                         ;; (inhibit-same-window . t)
                                                                         (window-width . ,evil-ranger-width-preview)))))
                (preview-buffer
@@ -473,6 +493,7 @@ fraction of the total frame size"
 (defun evil-ranger ()
   "Launch dired in evil-ranger-minor-mode"
   (interactive)
+  (delete-other-windows)
   (unless (derived-mode-p 'dired-mode)
     (dired-jump))
   (evil-ranger-mode t)
@@ -519,6 +540,23 @@ fraction of the total frame size"
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
 (add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
 
+
+(defun evil-ranger-revert ()
+  (let ((current-point (point)))
+    (setq header-line-format nil)
+    (when (get-register :ranger_dired_before)
+      (ignore-errors
+        (jump-to-register :ranger_dired_before))
+      (set-register :ranger_dired_before nil))
+    (when evil-ranger-cleanup-on-disable
+      (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
+    (when evil-ranger-cleanup-on-disable
+      (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers))
+    (setq evil-ranger-preview-buffers ()
+          evil-ranger-parent-buffers ())
+    (goto-char current-point))
+  )
+
 ;;;###autoload
 (define-minor-mode evil-ranger-mode
   "A convienent way to look up file contents in other window while browsing directory in dired"
@@ -542,6 +580,7 @@ fraction of the total frame size"
         (dired-hide-details-mode -1)
         ;; hide details line at top
         (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+        ;; (delete-other-windows)
         (evil-ranger-setup)
 
         ;; (add-hook 'dired-after-readin-hook #'evil-ranger-enable)
@@ -564,19 +603,7 @@ fraction of the total frame size"
         ;; (add-hook 'dired-mode-hook #'evil-ranger-enable)
         )
     (progn
-      (let ((current-point (point)))
-        (setq header-line-format nil)
-        (when (get-register :ranger_dired_before)
-          (ignore-errors
-            (jump-to-register :ranger_dired_before))
-          (set-register :ranger_dired_before nil))
-        (when evil-ranger-cleanup-on-disable
-          (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
-        (when evil-ranger-cleanup-on-disable
-          (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers))
-        (setq evil-ranger-preview-buffers ()
-              evil-ranger-parent-buffers ())
-        (goto-char current-point))
+      (evil-ranger-revert) 
       ;; remove find-file advice
       (ignore-errors
         ;; (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
