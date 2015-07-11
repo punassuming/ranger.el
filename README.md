@@ -47,10 +47,31 @@ You can set the number of folders to nest to the left
 (setq evil-ranger-parent-depth 2)
 ```
 
+You can set the size of the preview and parent windows as a fraction of the
+frame size
+```el
+(setq evil-ranger-width-parents 0.12)
+(setq evil-ranger-width-preview 0.55)
+```
+
+You can set the size of the preview and parent windows as a fraction of the
+frame size
+```el
+(setq evil-ranger-width-preview 0.55)
+```
+
 ## Ignoring Certain File Extensions During Preview
 
 You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
 
+```el
+(setq evil-ranger-ignored-extensions '("mkv" "iso" "mp4"))el
 ```
-(setq evil-ranger-ignored-extensions '("mkv" "iso" "mp4"))
+
+To set the max files size, set the following parameter:
+
+```el
+(setq evil-ranger-max-preview-size 10)
 ```
+
+
