@@ -523,14 +523,23 @@ fraction of the total frame size"
 (defun evil-ranger-header-line ()
   ;; (message
   (concat
-   (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
-   (format " pw:%s pb:%s w:%s b:%s "
-           ;; evil-ranger-parent-dirs
-           evil-ranger-preview-window
-           evil-ranger-preview-buffers
-           evil-ranger-parent-windows
-           evil-ranger-parent-buffers
-           ))
+   (propertize
+    (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
+    'face
+    '(
+      :background "#ffffff"
+                  :foreground "#000000"
+                  :weight bold
+                  )
+    )
+   ;; (format " pw:%s pb:%s w:%s b:%s "
+   ;;         ;; evil-ranger-parent-dirs
+   ;;         evil-ranger-preview-window
+   ;;         evil-ranger-preview-buffers
+   ;;         evil-ranger-parent-windows
+   ;;         evil-ranger-parent-buffers
+   ;;         )
+   )
   ;; )
   )
 
@@ -604,7 +613,6 @@ fraction of the total frame size"
         )
     (progn
       (evil-ranger-revert) 
-      ;; remove find-file advice
       (ignore-errors
         ;; (ad-remove-advice 'find-file 'before 'evil-ranger-find-file)
         ;; (ad-remove-advice 'quit-window 'before 'evil-ranger-quit)
