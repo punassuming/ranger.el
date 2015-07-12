@@ -125,21 +125,26 @@
                                       evil-ranger-omit           ; ; hide extraneous stuf
                                       auto-revert-mode
                                       evil-ranger-sort
-                                      evil-ranger-point-to-child ; ; point to child directory
                                       hl-line-mode               ; ; show line at current file
-                                      evil-ranger-parent-click
+                                      evil-ranger-parent-window-setup
                                       ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun evil-ranger-point-to-child ()
-  (when evil-ranger-child-name
-    (dired-goto-file evil-ranger-child-name)))
+(defun evil-ranger-parent-window-setup ()
 
-(defun evil-ranger-parent-click ()
+  ;; select child
+  (when evil-ranger-child-name
+    (dired-goto-file evil-ranger-child-name))
+
+  ;; allow mouse click to jump to that directory
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
-  (local-set-key (kbd  "<mouse-1>") 'evil-ranger-find-file))
+  (local-set-key (kbd  "<mouse-1>") 'evil-ranger-find-file)
+
+  (setq header-line-format nil)
+  ;; (setq header-line-format '(:eval (evil-ranger-header-line)))
+  )
 
 (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
 
@@ -519,28 +524,34 @@ fraction of the total frame size"
     (dired-omit-mode t)))
 
 (defun evil-ranger-sort ()
+  "Perform current sort on directory"
   )
 
 (defun evil-ranger-header-line ()
   ;; (message
-  (concat
-   (propertize
-    (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
-    'face
-    '(
-      :background "#ffffff"
-                  :foreground "#000000"
-                  :weight bold
-                  )
-    )
-   ;; (format " pw:%s pb:%s w:%s b:%s "
-   ;;         ;; evil-ranger-parent-dirs
-   ;;         evil-ranger-preview-window
-   ;;         evil-ranger-preview-buffers
-   ;;         evil-ranger-parent-windows
-   ;;         evil-ranger-parent-buffers
-   ;;         )
-   )
+  (let ((current-name default-directory)
+        (parent-name (evil-ranger-parent-directory default-directory)))
+    (concat
+     (propertize
+      (if (string-equal current-name parent-name)
+          current-name
+        (file-relative-name current-name parent-name))
+      ;; (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
+      'face
+      '(
+        :background "#ffffff"
+                    :foreground "#000000"
+                    :weight bold
+                    )
+      )
+     ;; (format " pw:%s pb:%s w:%s b:%s "
+     ;;         ;; evil-ranger-parent-dirs
+     ;;         evil-ranger-preview-window
+     ;;         evil-ranger-preview-buffers
+     ;;         evil-ranger-parent-windows
+     ;;         evil-ranger-parent-buffers
+     ;;         )
+     ))
   ;; )
   )
 
