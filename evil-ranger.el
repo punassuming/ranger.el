@@ -331,7 +331,7 @@
       (unless (file-directory-p find-name)
         (evil-ranger-revert)
         )
-      (find-alternate-file find-name)
+      (find-file find-name)
       (when (file-directory-p find-name)
         (evil-ranger-enable))
       )))
@@ -428,32 +428,76 @@ fraction of the total frame size"
          (setq reuse-window window)))
      nil nil 'nomini)
 
+    (walk-window-tree
+     (lambda (window)
+       (unless (window-left window)
+         (setq leftmost-window window)))
+     nil nil 'nomini)
+
     ;; (message (format "%s : %s" slot reuse-window))
 
     (if reuse-window
         (progn
+          (debug-message "Reusing window")
           (shrink-window (-  window-size (window-width reuse-window)) t)
           ;; (set-window-parameter reuse-window 'window-slot slot)
-          (window--display-buffer
-           buffer reuse-window 'reuse alist display-buffer-mark-dedicated))
+          ;; (window--display-buffer
+          ;;  buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
+          )
       (progn
+        (debug-message "Making window")
         (setq new-window (split-window current-window window-size side))
         (set-window-parameter new-window 'window-slot slot)
         (window--display-buffer
          buffer new-window 'window alist display-buffer-mark-dedicated))
       )))
 
+
+(setq er-debug-mode nil)
+
+(defun debug-message (title)
+  (when er-debug-mode
+    (redisplay)
+    (message title)
+    (sleep-for 2)))
+
+(defun ranger-test ()
+  (interactive)
+  (evil-ranger-find-file "~/documents/")
+  (debug-message "Documents")
+  (evil-ranger-up-directory)
+  (debug-message "Up directory")
+  (evil-ranger-disable)
+  (debug-message "Disable")
+  (evil-ranger-find-file "D:/")
+  (debug-message "D:")
+  (evil-ranger-up-directory)
+  (debug-message "Up directory")
+  (evil-ranger-disable)
+  (debug-message "Disable")
+  (evil-ranger-find-file "C:/")
+  (debug-message "C:")
+  (evil-ranger-disable)
+  (debug-message "Disable")
+  (evil-ranger-find-file "D:/Dropbox/dev/")
+  (debug-message "dev")
+  (evil-ranger-disable)
+  (debug-message "Disable")
+  (evil-ranger-find-file "~/Desktop")
+  (debug-message "Desktop")
+  (evil-ranger-up-directory)
+  (debug-message "Up directory")
+  )
+
 (defun evil-ranger-setup-parents ()
   (let ((parent-name (evil-ranger-parent-directory default-directory))
         (current-name default-directory)
         (i 0)
-        unused-window
+        (unused-windows ())
         )
     ;; clear out everything
     (delete-other-windows)
-    (cl-loop for buffer in evil-ranger-parent-buffers do
-             (unless (get-buffer-window (current-buffer))
-               (kill-buffer-if-not-modified buffer)))
+    (setq evil-ranger-window (get-buffer-window (current-buffer)))
     ;; (mapc 'kill-buffer evil-ranger-parent-buffers)
     (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-parent-windows ())
@@ -462,24 +506,35 @@ fraction of the total frame size"
                 (file-directory-p parent-name)
                 (< i evil-ranger-parent-depth))
       (setq i (+ i 1))
-      (if (string-equal current-name parent-name)
-          (walk-window-tree
-           (lambda (window)
-             (when (eq (window-parameter window 'window-slot) (- 0 i))
-               (setq unused-window window)
-               ))
-           nil nil 'nomini)
+      (unless (string-equal current-name parent-name)
+        ;; (walk-window-tree
+        ;;  (lambda (window)
+        ;;    (when (eq (window-parameter window 'window-slot) (- 0 i))
+        ;;      (setq unused-window window)
+        ;;      ))
+        ;;  nil nil 'nomini)
         (progn
           (add-to-list 'evil-ranger-parent-dirs (cons (cons current-name parent-name) i))
           (setq current-name (evil-ranger-parent-directory current-name))
           (setq parent-name (evil-ranger-parent-directory parent-name))))
-      (when (and unused-window
-                 (window-live-p unused-window))
-        (delete-window unused-window)))
+      )
     ;; (message (format "%s" evil-ranger-parent-dirs))
-    (setq evil-ranger-parent-depth i)
-    )
-  (mapc 'evil-ranger-make-parent evil-ranger-parent-dirs)
+    (mapc 'evil-ranger-make-parent evil-ranger-parent-dirs)
+
+    (walk-window-tree
+     (lambda (window)
+       (unless (or
+                (member window evil-ranger-parent-windows)
+                (eq window evil-ranger-window))
+         (add-to-list 'unused-windows window)
+         ))
+     nil nil 'nomini)
+
+    (cl-loop for unused-window in unused-windows do
+             (when (and unused-window
+                        (window-live-p unused-window))
+               (delete-window unused-window))
+             ))
   ;; (mapc 'evil-ranger-fix-width evil-ranger-parent-windows)
   )
 
