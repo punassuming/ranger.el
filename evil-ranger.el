@@ -149,7 +149,13 @@
   (local-set-key (kbd  "<mouse-1>") 'evil-ranger-find-file)
 
   (setq header-line-format nil)
-  ;; (setq header-line-format '(:eval (evil-ranger-header-line)))
+  ;; (setq header-line-format
+  ;;       '(:eval
+  ;;                            (format "sl: %s"
+  ;;                                    (window-parameter (get-buffer-window) 'window-slot)
+  ;;                                    )
+  ;;                            )
+  ;; )
   )
 
 (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
@@ -539,14 +545,29 @@ fraction of the total frame size"
 
 (defun evil-ranger-header-line ()
   ;; (message
-  (let ((current-name default-directory)
-        (parent-name (evil-ranger-parent-directory default-directory)))
+  (let* ((current-name default-directory)
+         (parent-name (evil-ranger-parent-directory default-directory))
+         (relative
+          (if (string-equal current-name parent-name)
+              current-name
+            (file-relative-name current-name parent-name)))
+         (rhs
+          (format " pw:%s pb:%s w:%s b:%s "
+                  ;; evil-ranger-parent-dirs
+                  evil-ranger-preview-window
+                  evil-ranger-preview-buffers
+                  (length 
+                   evil-ranger-parent-windows)
+                  evil-ranger-parent-buffers
+                  ))
+         (used-length (+ (length rhs) (length relative)))
+         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " ")))
+         )
     (concat
      (propertize
-      (if (string-equal current-name parent-name)
-          current-name
-        (file-relative-name current-name parent-name))
+      ;; if at base directory, show base
       ;; (file-relative-name evil-ranger-child-name (evil-ranger-parent-directory evil-ranger-child-name))
+      relative
       'face
       '(
         :background "#ffffff"
@@ -554,16 +575,11 @@ fraction of the total frame size"
                     :weight bold
                     )
       )
-     ;; (format " pw:%s pb:%s w:%s b:%s "
-     ;;         ;; evil-ranger-parent-dirs
-     ;;         evil-ranger-preview-window
-     ;;         evil-ranger-preview-buffers
-     ;;         evil-ranger-parent-windows
-     ;;         evil-ranger-parent-buffers
-     ;;         )
-     ))
-  ;; )
-  )
+     filler
+     rhs
+     )
+    ;; )
+    ))
 
 (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
@@ -608,7 +624,6 @@ fraction of the total frame size"
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
 
-        (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
