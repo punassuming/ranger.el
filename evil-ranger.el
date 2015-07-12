@@ -131,6 +131,10 @@
                                       evil-ranger-parent-click
                                       ))
 
+(defvar evil-ranger-window nil)
+(defvar evil-ranger-parent-windows nil)
+(defvar evil-ranger-parent-dirs nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun evil-ranger-point-to-child ()
