@@ -459,7 +459,7 @@ fraction of the total frame size"
     (setq evil-ranger-parent-windows ())
     (setq evil-ranger-parent-dirs ())
     (while (and parent-name
-                 (file-directory-p parent-name)
+                (file-directory-p parent-name)
                 (< i evil-ranger-parent-depth))
       (setq i (+ i 1))
       (if (string-equal current-name parent-name)
@@ -475,8 +475,10 @@ fraction of the total frame size"
           (setq parent-name (evil-ranger-parent-directory parent-name))))
       (when (and unused-window
                  (window-live-p unused-window))
-        (delete-window unused-window))))
-  ;; (message (format "%s" evil-ranger-parent-dirs))
+        (delete-window unused-window)))
+    ;; (message (format "%s" evil-ranger-parent-dirs))
+    (setq evil-ranger-parent-depth i)
+    )
   (mapc 'evil-ranger-make-parent evil-ranger-parent-dirs)
   ;; (mapc 'evil-ranger-fix-width evil-ranger-parent-windows)
   )
@@ -493,7 +495,7 @@ fraction of the total frame size"
                                                    ;; (inhibit-same-window . t)
                                                    (window-width . ,(min
                                                                      (/ evil-ranger-max-parent-width
-                                                                        evil-ranger-parent-depth)
+                                                                        (length evil-ranger-parent-dirs))
                                                                      evil-ranger-width-parents))))))
          (parent-buffer (window-buffer parent-window)))
     (setq evil-ranger-child-name current-name)
@@ -591,13 +593,14 @@ fraction of the total frame size"
               current-name
             (file-relative-name current-name parent-name)))
          (rhs
-          (format " pw:%s pb:%s w:%s b:%s "
+          (format " pw:%s pb:%s b:%s %s/%s "
                   ;; evil-ranger-parent-dirs
                   evil-ranger-preview-window
                   evil-ranger-preview-buffers
+                  evil-ranger-parent-buffers
                   (length 
                    evil-ranger-parent-windows)
-                  evil-ranger-parent-buffers
+                  evil-ranger-parent-depth
                   ))
          (used-length (+ (length rhs) (length relative)))
          (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " ")))
@@ -663,6 +666,8 @@ fraction of the total frame size"
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
 
+
+    (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
