@@ -444,61 +444,21 @@ fraction of the total frame size"
     ;;    (unless (window-left window)
     ;;      (setq leftmost-window window)))
     ;;  nil nil 'nomini)
-    (message (format "%s : %s" slot reuse-window))
+    ;; (message (format "%s : %s" slot reuse-window))
 
     (if reuse-window
         (progn
-          (debug-message "Reusing window")
           (shrink-window (-  window-size (window-width reuse-window)) t)
           ;; (set-window-parameter reuse-window 'window-slot slot)
           ;; (window--display-buffer
           ;;  buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
           )
       (progn
-        (debug-message "Making window")
         (setq new-window (split-window current-window window-size side))
         (set-window-parameter new-window 'window-slot slot)
         (window--display-buffer
          buffer new-window 'window alist display-buffer-mark-dedicated))
       )))
-
-
-(setq er-debug-mode nil)
-
-(defun debug-message (title)
-  (when er-debug-mode
-    (redisplay)
-    (message title)
-    (sleep-for 2)))
-
-(defun ranger-test ()
-  "Test function for evil ranger"
-  (interactive)
-  (evil-ranger-find-file "~/documents/")
-  (debug-message "Documents")
-  (evil-ranger-up-directory)
-  (debug-message "Up directory")
-  (evil-ranger-disable)
-  (debug-message "Disable")
-  (evil-ranger-find-file "D:/")
-  (debug-message "D:")
-  (evil-ranger-up-directory)
-  (debug-message "Up directory")
-  (evil-ranger-disable)
-  (debug-message "Disable")
-  (evil-ranger-find-file "C:/")
-  (debug-message "C:")
-  (evil-ranger-disable)
-  (debug-message "Disable")
-  (evil-ranger-find-file "D:/Dropbox/dev/")
-  (debug-message "dev")
-  (evil-ranger-disable)
-  (debug-message "Disable")
-  (evil-ranger-find-file "~/Desktop")
-  (debug-message "Desktop")
-  (evil-ranger-up-directory)
-  (debug-message "Up directory")
-  )
 
 (defun evil-ranger-setup-parents ()
   "Setup all parent directories."
