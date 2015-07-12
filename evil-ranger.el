@@ -306,13 +306,24 @@
   "Call sort-dired by different `CRITERIA'."
   (interactive
    (list
-    (read-char-choice "criteria [name]: size(S) extension(X) time(t) name(N) -- reverse sort(r) " '(?q ?r ?+ ?- ?G ?E ?D ?S ?X ?t ?N))
-    ))
+    (read-char-choice
+     "criteria: (n/N)ame (e/E)xt (s/S)ize (t/T)ime" '(?q ?n ?N ?e ?E ?s ?S ?t ?T))))
   (unless (eq criteria ?q)
-    (dired-sort-other
-     (concat dired-listing-switches
-             (char-to-string criteria)))
-    (run-hooks 'evil-ranger-mode-hook)))
+    (let* ((c (char-to-string criteria))
+           (uppercasep (and (stringp c) (string-equal c (upcase c)) ))
+           (cc (downcase c))
+           (evil-ranger-sort-flag
+            (cond
+             ((string-equal cc "n") "N")
+             ((string-equal cc "e") "X")
+             ((string-equal cc "t") "t")
+             ((string-equal cc "s") "S")))
+           )
+      (dired-sort-other
+       (concat dired-listing-switches
+               evil-ranger-sort-flag
+               (when uppercasep "r")))
+      (run-hooks 'evil-ranger-mode-hook))))
 
 (defun evil-ranger-up-directory ()
   "Move to parent directory."
