@@ -109,7 +109,7 @@ frame size
 (setq evil-ranger-width-preview 0.55)
 ```
 
-## Ignoring Certain File Extensions During Preview
+### Ignoring Certain File Extensions During Preview
 
 You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
 

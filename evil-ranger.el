@@ -362,7 +362,7 @@ fraction of the total frame size"
          (window-width (or (cdr (assq 'window-width alist)) 0.5))
          (window-size (ceiling  (* (frame-width) window-width)))
          (split-width-threshold 0)
-         (current-window window)
+         (current-window evil-ranger-window)
          new-window
          reuse-window)
 
@@ -372,10 +372,12 @@ fraction of the total frame size"
          (setq reuse-window window)))
      nil nil 'nomini)
 
-    (message (format "%s : %s" slot reuse-window))
+    ;; (message (format "%s : %s" slot reuse-window))
 
     (if reuse-window
         (progn
+          (shrink-window (-  window-size (window-width reuse-window)) t)
+          ;; (set-window-parameter reuse-window 'window-slot slot)
           (window--display-buffer
            buffer reuse-window 'reuse alist display-buffer-mark-dedicated))
       (progn
@@ -383,9 +385,7 @@ fraction of the total frame size"
         (set-window-parameter new-window 'window-slot slot)
         (window--display-buffer
          buffer new-window 'window alist display-buffer-mark-dedicated))
-      )
-
-    ))
+      )))
 
 (defun evil-ranger-setup-parents ()
   (let ((parent-name (evil-ranger-parent-directory default-directory))
@@ -394,6 +394,7 @@ fraction of the total frame size"
         unused-window
         )
     ;; clear out everything
+    (delete-other-windows)
     (cl-loop for buffer in evil-ranger-parent-buffers do
              (unless (get-buffer-window (current-buffer))
                (kill-buffer-if-not-modified buffer)))
@@ -585,6 +586,8 @@ fraction of the total frame size"
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
         (setq evil-ranger-preview-window nil)
+
+        (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
