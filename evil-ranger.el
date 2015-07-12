@@ -6,6 +6,7 @@
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Original Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 ;; Keywords: files, convenience
+;; Package-Requires: ((evil "1.0.0") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
