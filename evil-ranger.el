@@ -32,7 +32,7 @@
 ;;; Code:
 
 (require 'cl-macs)
-(require 'evil)
+(require 'evil nil t)
 
 (defcustom evil-ranger-cleanup-on-disable t
   "Cleanup opened buffers when disabling the minor mode"
@@ -158,42 +158,81 @@
   ;; )
   )
 
-(evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
+(defun evil-ranger-define-maps ()
+  (if (featurep 'evil)
+      (progn
+        (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
 
-;; define keymaps
-(evil-define-key 'visual evil-ranger-mode-map "u" 'dired-unmark)
-(evil-define-key 'normal evil-ranger-mode-map
-  "j"            'evil-ranger-next-file
-  "k"            'evil-ranger-prev-file
-  (kbd "C-j")    'evil-ranger-scroll-page-down
-  (kbd "C-k")    'evil-ranger-scroll-page-up
-  "f"            'evil-ranger-search-files
-  "i"            'evil-ranger-preview-toggle
-  "zi"           'evil-ranger-toggle-literal
-  "zh"           'evil-ranger-toggle-dotfiles
-  "o"            'evil-ranger-sort-criteria
-  "h"            'evil-ranger-up-directory
-  "l"            'evil-ranger-find-file
-  "q"            'evil-ranger-disable
-  "r"            '(lambda ()
-                    (interactive)
-                    (evil-ranger-setup)
-                    (scroll-right)
-                    (dired-do-redisplay)
-                    (revert-buffer)
-                    )
-  (kbd "RET")    'evil-ranger-find-file
-  "z-"           'evil-ranger-less-parents
-  "z+"           'evil-ranger-more-parents
-  "v"            'dired-toggle-marks
-  "V"            'evil-visual-line
-  "S"            'eshell
-  "n"            'evil-search-next
-  "N"            'evil-search-previous
-  (kbd "C-SPC")  'dired-mark)
+        ;; define keymaps
+        (evil-define-key 'visual evil-ranger-mode-map "u" 'dired-unmark)
+        (evil-define-key 'normal evil-ranger-mode-map
+          "j"            'evil-ranger-next-file
+          "k"            'evil-ranger-prev-file
+          (kbd "C-j")    'evil-ranger-scroll-page-down
+          (kbd "C-k")    'evil-ranger-scroll-page-up
+          "f"            'evil-ranger-search-files
+          "i"            'evil-ranger-preview-toggle
+          "zi"           'evil-ranger-toggle-literal
+          "zh"           'evil-ranger-toggle-dotfiles
+          "o"            'evil-ranger-sort-criteria
+          "h"            'evil-ranger-up-directory
+          "l"            'evil-ranger-find-file
+          "q"            'evil-ranger-disable
+          "r"            'evil-ranger-refresh
+          (kbd "RET")    'evil-ranger-find-file
+          "z-"           'evil-ranger-less-parents
+          "z+"           'evil-ranger-more-parents
+          "v"            'dired-toggle-marks
+          "V"            'evil-visual-line
+          "S"            'eshell
+          "n"            'evil-search-next
+          "N"            'evil-search-previous
+          (kbd "C-SPC")  'dired-mark)
+        (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
+
+        )
+    (progn
+      (define-key dired-mode-map (kbd "C-p") 'evil-ranger-mode)
+
+      ;; define keymaps
+      (let ((map evil-ranger-mode-map))
+        (define-key map "u" 'dired-unmark)
+        (define-key map  "j"            'evil-ranger-next-file)
+        (define-key map  "k"            'evil-ranger-prev-file)
+        (define-key map  (kbd "C-j")    'evil-ranger-scroll-page-down)
+        (define-key map  (kbd "C-k")    'evil-ranger-scroll-page-up)
+        (define-key map  "f"            'evil-ranger-search-files)
+        (define-key map  "i"            'evil-ranger-preview-toggle)
+        (define-key map  "zi"           'evil-ranger-toggle-literal)
+        (define-key map  "zh"           'evil-ranger-toggle-dotfiles)
+        (define-key map  "o"            'evil-ranger-sort-criteria)
+        (define-key map  "h"            'evil-ranger-up-directory)
+        (define-key map  "l"            'evil-ranger-find-file)
+        (define-key map  "q"            'evil-ranger-disable)
+        (define-key map  "r"            'evil-ranger-refresh)
+        (define-key map  (kbd "RET")    'evil-ranger-find-file)
+        (define-key map  "z-"           'evil-ranger-less-parents)
+        (define-key map  "z+"           'evil-ranger-more-parents)
+        (define-key map  "v"            'dired-toggle-marks)
+        ;; (define-key map  "V"            'evil-visual-line)
+        (define-key map  "S"            'eshell)
+        ;; (define-key map  "n"            'evil-search-next)
+        ;; (define-key map  "N"            'evil-search-previous)
+        (define-key map  (kbd "C-SPC")  'dired-mark))
+      )
+    )
+  )
 
 
 ;; (add-hook 'evil-ranger-hook 'evil-normalize-keymaps)
+
+(defun evil-ranger-refresh ()
+  (interactive)
+  (evil-ranger-setup)
+  (scroll-right)
+  (dired-do-redisplay)
+  (revert-buffer)
+  )
 
 (defun evil-ranger-search-files ()
   (interactive)
@@ -581,7 +620,6 @@ fraction of the total frame size"
     ;; )
     ))
 
-(add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps)
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
@@ -619,6 +657,7 @@ fraction of the total frame size"
         (unless (derived-mode-p 'dired-mode)
           (error "Run it from dired buffer"))
 
+        (evil-ranger-define-maps)
         ;; (message (format "%s" (register-read-with-preview "Prompt")))
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
