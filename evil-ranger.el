@@ -407,7 +407,8 @@ fraction of the total frame size"
     (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-parent-windows ())
     (setq evil-ranger-parent-dirs ())
-    (while (and (file-directory-p parent-name)
+    (while (and parent-name
+                 (file-directory-p parent-name)
                 (< i evil-ranger-parent-depth))
       (setq i (+ i 1))
       (if (string-equal current-name parent-name)
