@@ -486,8 +486,8 @@ fraction of the total frame size"
   (scroll-other-window '-))
 
 (defun evil-ranger-cleanup ()
-  (mapc #'(lambda (window) (ignore-errors (delete-window window))
-            evil-ranger-parent-windows))
+  (mapc #'(lambda (window) (ignore-errors (delete-window window)))
+        evil-ranger-parent-windows)
   (setq evil-ranger-parent-windows ())
   (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
   (setq evil-ranger-parent-buffers ())
