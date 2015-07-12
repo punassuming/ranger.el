@@ -1,8 +1,26 @@
 # Evil Ranger
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
+**Table of Contents**
+
+- [Evil Ranger](#evil-ranger)
+    - [Description](#description)
+    - [Installation](#installation)
+        - [Screenshot](#screenshot)
+    - [Todo](#todo)
+    - [Key bindings](#key-bindings)
+    - [Configuration](#configuration)
+        - [Customizing](#customizing)
+    - [Ignoring Certain File Extensions During Preview](#ignoring-certain-file-extensions-during-preview)
+
+<!-- markdown-toc end -->
+
+## Description
+
 This is a minor mode that runs within dired emulating many of the features of
 ranger. This minor mode takes some of the ideas from Peep-Dired to display
 previews for selected files in the primary dired buffer.
+
 
 ## Installation
 
@@ -12,18 +30,49 @@ previews for selected files in the primary dired buffer.
 ### Screenshot
 
 evil-ranger mode active
-![Ranger Mode Active](screenshots/evil-ranger.png) 
+![Ranger Mode Active](screenshots/evil-ranger.png)
 
 evil-ranger mode with preview enabled
-![Ranger Mode Active](screenshots/evil-ranger-preview.png) 
+![Ranger Mode Active](screenshots/evil-ranger-preview.png)
 
 ## Todo
 
-* Allow click of parent directories to jump primary buffer to that directory
-* Create bindings to increment number of parent nests
 * Create bindings to go up / down the next directory
+* Log evil-ranger history and allow prompt to navigate back
+* Add ranger style copy and pasted
+* Improve headerline display
+* Set up tabs and navigation between
+* Improve sorting
+
+## Key bindings
+
+| Keybindings | Description                                 |
+| ----------- | --------------------------------------      |
+| `C-p`       | toggle evil-ranger in dired buffer          |
+| `j`         | navigate down                               |
+| `k`         | navigate up                                 |
+| `C-j`       | scroll preview window down                  |
+| `C-k`       | scroll preview window up                    |
+| `f`         | search for file names                       |
+| `i`         | show preview of current file                |
+| `zi`        | toggle showing literal / full-text previews |
+| `zh`        | toggle showing dotfiles                     |
+| `o`         | sort options                                |
+| `h`         | go up directory                             |
+| `l` / `RET` | find file / enter directory                 |
+| `q`         | quit                                        |
+| `r`         | revert buffer                               |
+| `z-`        | reduce number of parents                    |
+| `z+`        | increment number of parents                 |
+| `v`         | toggle all marks                            |
+| `V`         | visually select lines                       |
+| `S`         | enter shell                                 |
+| `C-SPC`     | mark current file                           |
 
 ## Configuration
+
+Most parameters can be toggled on and off and stay within the current emacs
+session. Any settings that are desired on startup should be set below. 
 
 ### Customizing
 
@@ -73,5 +122,3 @@ To set the max files size, set the following parameter:
 ```el
 (setq evil-ranger-max-preview-size 10)
 ```
-
-
