@@ -98,7 +98,13 @@
   :type 'float
   )
 
-(defcustom evil-ranger-width-preview 0.55
+(defcustom evil-ranger-max-parent-width 0.36
+  "The max width allocated to showing parent windows"
+  :group 'evil-ranger
+  :type 'float
+  )
+
+(defcustom evil-ranger-width-preview 0.50
   "Fraction of frame width taken by preview window"
   :group 'evil-ranger
   :type 'float
@@ -261,7 +267,7 @@
 
 (defun evil-ranger-less-parents ()
   (interactive)
-  (setq evil-ranger-parent-depth (max 1 (- evil-ranger-parent-depth 1)))
+  (setq evil-ranger-parent-depth (max 0 (- evil-ranger-parent-depth 1)))
   (evil-ranger-setup)
   )
 
@@ -440,7 +446,10 @@ fraction of the total frame size"
            `(evil-ranger-display-buffer-at-side . ((side . left)
                                                    (slot . ,(- 0 slot))
                                                    ;; (inhibit-same-window . t)
-                                                   (window-width . ,evil-ranger-width-parents)))))
+                                                   (window-width . ,(min
+                                                                     (/ evil-ranger-max-parent-width
+                                                                        evil-ranger-parent-depth)
+                                                                     evil-ranger-width-parents))))))
          (parent-buffer (window-buffer parent-window)))
     (setq evil-ranger-child-name current-name)
     (add-to-list 'evil-ranger-parent-buffers parent-buffer)
