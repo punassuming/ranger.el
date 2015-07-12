@@ -1,5 +1,3 @@
-# Evil Ranger
-
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
 
@@ -7,13 +5,16 @@
     - [Description](#description)
     - [Installation](#installation)
         - [Screenshot](#screenshot)
+        - [Screencast](#screencast)
     - [Todo](#todo)
     - [Key bindings](#key-bindings)
     - [Configuration](#configuration)
         - [Customizing](#customizing)
-    - [Ignoring Certain File Extensions During Preview](#ignoring-certain-file-extensions-during-preview)
+        - [Ignoring Certain File Extensions During Preview](#ignoring-certain-file-extensions-during-preview)
 
 <!-- markdown-toc end -->
+# Evil Ranger
+
 
 ## Description
 
@@ -33,7 +34,13 @@ evil-ranger mode active
 ![Ranger Mode Active](screenshots/evil-ranger.png)
 
 evil-ranger mode with preview enabled
-![Ranger Mode Active](screenshots/evil-ranger-preview.png)
+![Ranger Mode with Preview](screenshots/evil-ranger-preview.png)
+
+### Screencast
+
+evil-ranger screencast
+![Ranger Mode Screencast](screenshots/hello-ranger.gif)
+
 
 ## Todo
 

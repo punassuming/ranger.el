@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Original Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
+;; Original peep-dired Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 ;; Keywords: files, convenience
 ;; Package-Requires: ((evil "1.0.0") (cl-lib "0.5"))
 
