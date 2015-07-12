@@ -631,10 +631,11 @@ slot)."
             (file-relative-name current-name parent-name)))
          (rhs
           ;; (format " pw:%s pb:%s b:%s %s/%s "
-                  (format " prev:%s %s %s/%s "
+          (format " prev:%s %s %s/%s "
                   ;; evil-ranger-parent-dirs
                   ;; evil-ranger-preview-window
-                  evil-ranger-preview-buffers
+                  (length
+                   evil-ranger-preview-buffers)
                   evil-ranger-parent-buffers
                   (length 
                    evil-ranger-parent-windows)
@@ -706,7 +707,7 @@ slot)."
         (setq evil-ranger-preview-window nil)
 
 
-    (setq evil-ranger-window (get-buffer-window (current-buffer)))
+        (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
         (dired-hide-details-mode -1)
         ;; hide details line at top
