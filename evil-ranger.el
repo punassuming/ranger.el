@@ -6,6 +6,7 @@
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Original Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 ;; Keywords: files, convenience
+;; Package-Requires: ((evil "1.0.0") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,6 +34,8 @@
 
 (require 'cl-macs)
 (require 'evil nil t)
+
+(declare-function dired-omit-mode "dired-x")
 
 (defcustom evil-ranger-cleanup-on-disable t
   "Cleanup opened buffers when disabling the minor mode."
@@ -132,6 +135,10 @@
                                       hl-line-mode               ; ; show line at current file
                                       evil-ranger-parent-window-setup
                                       ))
+
+(defvar evil-ranger-window nil)
+(defvar evil-ranger-parent-windows nil)
+(defvar evil-ranger-parent-dirs nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,8 +583,8 @@ slot)."
 
 (defun evil-ranger-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
-  (mapc #'(lambda (window) (ignore-errors (delete-window window))
-            evil-ranger-parent-windows))
+  (mapc #'(lambda (window) (ignore-errors (delete-window window)))
+        evil-ranger-parent-windows)
   (setq evil-ranger-parent-windows ())
   (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
   (setq evil-ranger-parent-buffers ())
