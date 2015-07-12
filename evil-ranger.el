@@ -35,6 +35,8 @@
 (require 'cl-macs)
 (require 'evil)
 
+(declare-function dired-omit-mode "dired-x")
+
 (defcustom evil-ranger-cleanup-on-disable t
   "Cleanup opened buffers when disabling the minor mode"
   :group 'evil-ranger
