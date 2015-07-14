@@ -100,16 +100,20 @@
   )
 
 (defcustom evil-ranger-max-parent-width 0.36
-  "The max width allocated to showing parent windows"
+  "The max width allocated to showing parent windows."
   :group 'evil-ranger
   :type 'float
   )
 
 (defcustom evil-ranger-width-preview 0.50
-  "Fraction of frame width taken by preview window"
+  "Fraction of frame width taken by preview window."
   :group 'evil-ranger
   :type 'float
   )
+
+(defvar evil-ranger-header-func 'evil-ranger-header-line
+  "Function used to output header of primary evil-ranger window.
+Outputs a string that will show up on the header-line.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,14 +653,14 @@ slot)."
             (file-relative-name current-name parent-name)))
          (rhs
           ;; (format " pw:%s pb:%s b:%s %s/%s "
-          (format " prev:%s %s %s/%s "
+          (format "depth: %s "
                   ;; evil-ranger-parent-dirs
                   ;; evil-ranger-preview-window
-                  (length
-                   evil-ranger-preview-buffers)
-                  evil-ranger-parent-buffers
-                  (length 
-                   evil-ranger-parent-windows)
+                  ;; (length
+                  ;;  evil-ranger-preview-buffers)
+                  ;; evil-ranger-parent-buffers
+                  ;; (length 
+                  ;;  evil-ranger-parent-windows)
                   evil-ranger-parent-depth
                   ))
          (used-length (+ (length rhs) (length relative)))
@@ -746,7 +750,7 @@ slot)."
 
         ;; (add-hook 'dired-mode-hook #'evil-ranger-mode)
         (make-local-variable 'header-line-format)
-        (setq header-line-format '(:eval (evil-ranger-header-line)))
+        (setq header-line-format '(:eval (funcall evil-ranger-header-func)))
 
         ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
         ;; (setq window-size-change-functions '())
