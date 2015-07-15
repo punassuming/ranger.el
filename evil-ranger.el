@@ -47,11 +47,6 @@
   :group 'evil-ranger
   :type 'boolean)
 
-(defcustom evil-ranger-enable-on-directories t
-  "When t it will enable the mode when visiting directories."
-  :group 'evil-ranger
-  :type 'boolean)
-
 (defcustom evil-ranger-excluded-extensions
   '("mkv"
     "iso"
@@ -404,9 +399,7 @@ currently selected file in ranger."
   (with-current-buffer (or
                         (car (or (dired-buffers-for-dir entry) ()))
                         (dired-noselect entry))
-    (when evil-ranger-enable-on-directories
-      (run-hooks 'evil-ranger-parent-dir-hook)
-      )
+    (run-hooks 'evil-ranger-parent-dir-hook)
     (current-buffer)))
 ;; )
 
@@ -427,8 +420,6 @@ is set, show literally instead of actual buffer."
 ;;     (erase-buffer)
 ;;     (insert-file-contents entry-name)
 ;;     (current-buffer))))
-
-
 
 (defun evil-ranger-parent-directory (entry)
   "Find the parent directory of `ENTRY'."
