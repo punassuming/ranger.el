@@ -37,6 +37,7 @@
 
 (declare-function dired-omit-mode "dired-x")
 
+;; directory options
 (defcustom evil-ranger-cleanup-on-disable t
   "Cleanup opened buffers when disabling the minor mode."
   :group 'evil-ranger
@@ -47,6 +48,22 @@
   :group 'evil-ranger
   :type 'boolean)
 
+(defcustom evil-ranger-show-dotfiles t
+  "When t it will show dotfiles in directory."
+  :group 'evil-ranger
+  :type 'boolean)
+
+(defcustom evil-ranger-history-length 30
+  "When t it will show dotfiles in directory."
+  :group 'evil-ranger
+  :type 'integer)
+
+(defcustom evil-ranger-parent-depth 2
+  "Number of directories up to traverse."
+  :group 'evil-ranger
+  :type 'integer)
+
+;; preview options
 (defcustom evil-ranger-excluded-extensions
   '("mkv"
     "iso"
@@ -68,26 +85,17 @@
   :group 'evil-ranger
   :type 'boolean)
 
-(defcustom evil-ranger-show-dotfiles t
-  "When t it will show dotfiles in directory."
-  :group 'evil-ranger
-  :type 'boolean)
-
-(defcustom evil-ranger-history-length 30
-  "When t it will show dotfiles in directory."
-  :group 'evil-ranger
-  :type 'integer)
-
-(defcustom evil-ranger-parent-depth 2
-  "Number of directories up to traverse."
-  :group 'evil-ranger
-  :type 'integer)
-
 (defcustom evil-ranger-preview-file nil
   "When t preview the selected file."
   :group 'evil-ranger
   :type 'boolean)
 
+(defcustom evil-ranger-width-preview 0.50
+  "Fraction of frame width taken by preview window."
+  :group 'evil-ranger
+  :type 'float)
+
+;; parent options
 (defcustom evil-ranger-width-parents 0.12
   "Fraction of frame width taken by parent windows"
   :group 'evil-ranger
@@ -98,11 +106,7 @@
   :group 'evil-ranger
   :type 'float)
 
-(defcustom evil-ranger-width-preview 0.50
-  "Fraction of frame width taken by preview window."
-  :group 'evil-ranger
-  :type 'float)
-
+;; header functions
 (defvar evil-ranger-header-func 'evil-ranger-header-line
   "Function used to output header of primary evil-ranger window.
 Outputs a string that will show up on the header-line.")
@@ -120,13 +124,16 @@ Outputs a string that will show up on the header-line.")
 (defvar evil-ranger-child-name nil)
 (make-local-variable 'evil-ranger-child-name)
 
+(defvar evil-ranger-window nil)
+
+(defvar evil-ranger-preview-window nil)
 (defvar evil-ranger-preview-buffers ()
   "List with buffers of previewed files.")
 
-(defvar evil-ranger-preview-window nil)
-
+(defvar evil-ranger-parent-windows nil)
 (defvar evil-ranger-parent-buffers ()
   "List with buffers of parent buffers.")
+(defvar evil-ranger-parent-dirs nil)
 
 (defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
                                       evil-ranger-omit           ; ; hide extraneous stuf
@@ -135,12 +142,9 @@ Outputs a string that will show up on the header-line.")
                                       hl-line-mode               ; ; show line at current file
                                       evil-ranger-parent-window-setup))
 
-(defvar evil-ranger-window nil)
-(defvar evil-ranger-parent-windows nil)
-(defvar evil-ranger-parent-dirs nil)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; parent window
 (defun evil-ranger-parent-window-setup ()
   "Parent window options."
   ;; select child
@@ -158,6 +162,7 @@ Outputs a string that will show up on the header-line.")
   ;; (setq header-line-format '(:eval (format "sl: %s" (window-parameter (get-buffer-window) 'window-slot))))
   )
 
+;; mappings
 (if (featurep 'evil)
     (evil-define-key 'normal dired-mode-map (kbd "C-p") 'evil-ranger-mode)
   (define-key dired-mode-map (kbd "C-p") 'evil-ranger-mode))
@@ -220,13 +225,16 @@ Outputs a string that will show up on the header-line.")
         ;; (define-key map  "N"            'evil-search-previous)
         (define-key map  (kbd "C-SPC")  'dired-mark)))))
 
+;; interaction
 (defun evil-ranger-refresh ()
   "Refresh evil ranger buffer."
   (interactive)
   (evil-ranger-setup)
   (scroll-right)
-  (dired-do-redisplay)
-  (revert-buffer))
+  ;; (dired-do-redisplay)
+  (revert-buffer)
+  (evil-ranger-clear-dired-header)
+  (run-hooks 'evil-ranger-mode-hook))
 
 (defun evil-ranger-search-files ()
   "Search for files / directories in folder."
@@ -274,19 +282,6 @@ Outputs a string that will show up on the header-line.")
     (dired-mark-files-regexp "^\\\.")
     (dired-do-kill-lines nil "")))
 
-(defun evil-ranger-toggle-literal ()
-  "Toggle showing literal / actual preview of file."
-  (interactive)
-  (if evil-ranger-show-literal
-      (setq evil-ranger-show-literal nil)
-    (setq evil-ranger-show-literal t))
-  ;; (ignore-errors
-  ;;   (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
-  ;;   (delete-window evil-ranger-preview-window))
-  (when evil-ranger-preview-file
-    (evil-ranger-setup-preview))
-  (message (format "Literal Preview: %s"  evil-ranger-show-literal)))
-
 (defun evil-ranger-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
   (interactive
@@ -308,7 +303,8 @@ Outputs a string that will show up on the header-line.")
        (concat dired-listing-switches
                evil-ranger-sort-flag
                (when uppercasep "r")))
-      (run-hooks 'evil-ranger-mode-hook))))
+      (evil-ranger-refresh)
+      )))
 
 (defun evil-ranger-up-directory ()
   "Move to parent directory."
@@ -316,18 +312,6 @@ Outputs a string that will show up on the header-line.")
   (let ((parent (evil-ranger-parent-directory default-directory)))
     (when parent
       (evil-ranger-find-file parent))))
-
-(defun evil-ranger-less-parents ()
-  "Reduce number of ranger parents."
-  (interactive)
-  (setq evil-ranger-parent-depth (max 0 (- evil-ranger-parent-depth 1)))
-  (evil-ranger-setup))
-
-(defun evil-ranger-more-parents ()
-  "Increase number of ranger parents."
-  (interactive)
-  (setq evil-ranger-parent-depth (+ evil-ranger-parent-depth 1))
-  (evil-ranger-setup))
 
 (defun evil-ranger-find-file (&optional entry)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
@@ -366,101 +350,18 @@ currently selected file in ranger."
       (evil-ranger-cleanup))
     (evil-ranger-setup-preview)))
 
-(defun evil-ranger-kill-buffers-without-window ()
-  "Will kill all ranger buffers that are not displayed in any window."
+;; parent window functions
+(defun evil-ranger-less-parents ()
+  "Reduce number of ranger parents."
   (interactive)
-  (cl-loop for buffer in evil-ranger-parent-buffers do
-           (unless (get-buffer-window buffer t)
-             (kill-buffer-if-not-modified buffer)))
-  (cl-loop for buffer in evil-ranger-preview-buffers do
-           (unless (get-buffer-window buffer t)
-             (kill-buffer-if-not-modified buffer))))
+  (setq evil-ranger-parent-depth (max 0 (- evil-ranger-parent-depth 1)))
+  (evil-ranger-setup))
 
-(defun evil-ranger-dir-buffer (entry)
-  "Open `ENTRY' in dired buffer."
-  ;; (ignore-errors
-  (with-current-buffer (or
-                        (car (or (dired-buffers-for-dir entry) ()))
-                        (dired-noselect entry))
-    (run-hooks 'evil-ranger-parent-dir-hook)
-    (current-buffer)))
-
-(defun evil-ranger-preview-buffer (entry-name)
-  "Create the preview buffer of `ENTRY-NAME'.  If `evil-ranger-show-literal'
-is set, show literally instead of actual buffer."
-  (if evil-ranger-show-literal
-      (let ((temp-buffer (or (get-buffer "*literal*")
-                             (generate-new-buffer "*literal*"))))
-        (with-current-buffer temp-buffer
-          (erase-buffer)
-          (insert-file-contents entry-name)
-          (current-buffer)))
-    (with-current-buffer
-        (let ((buffer-file-coding-system nil)
-              (locale-coding-system nil)
-              )
-          (or
-           (find-buffer-visiting entry-name)
-           (find-file-noselect entry-name nil evil-ranger-show-literal)))
-      (current-buffer))))
-
-;; test using made buffer
-;; (let ((temp-buffer (or (get-buffer "*preview*")
-;;                        (generate-new-buffer "*preview*"))))
-;;   (with-current-buffer temp-buffer
-;;     (erase-buffer)
-;;     (insert-file-contents entry-name)
-;;     (current-buffer))))
-
-(defun evil-ranger-parent-directory (entry)
-  "Find the parent directory of `ENTRY'."
-  (file-name-directory (directory-file-name entry)))
-
-(defun evil-ranger-fix-width (window)
-  "Fix the width of `WINDOW'."
-  (with-selected-window window
-    (setq-local window-size-fixed 'width)))
-
-(defun evil-ranger-display-buffer-at-side (buffer alist)
-  "Try displaying `BUFFER' at one side of the selected frame. This splits the
-window at the designated `side' of the frame.  Accepts `window-width' as a
-fraction of the total frame size"
-  (let* ((side (or (cdr (assq 'side alist)) 'bottom))
-         (slot (or (cdr (assq 'slot alist)) 0))
-         (window-width (or (cdr (assq 'window-width alist)) 0.5))
-         (window-size (ceiling  (* (frame-width) window-width)))
-         (split-width-threshold 0)
-         (current-window evil-ranger-window)
-         new-window
-         reuse-window)
-
-    ;; (walk-window-tree
-    ;;  (lambda (window)
-    ;;    (when (and
-    ;;           (not (eq current-window window))
-    ;;           (eq (window-parameter window 'window-slot) slot)
-    ;;      (setq reuse-window window)))
-    ;;  nil nil 'nomini))
-
-    ;; (walk-window-tree
-    ;;  (lambda (window)
-    ;;    (unless (window-left window)
-    ;;      (setq leftmost-window window)))
-    ;;  nil nil 'nomini)
-    ;; (message (format "%s : %s" slot reuse-window))
-
-    (if reuse-window
-        (progn
-          (shrink-window (-  window-size (window-width reuse-window)) t)
-          ;; (set-window-parameter reuse-window 'window-slot slot)
-          ;; (window--display-buffer
-          ;;  buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
-          )
-      (progn
-        (setq new-window (split-window current-window window-size side))
-        (set-window-parameter new-window 'window-slot slot)
-        (window--display-buffer
-         buffer new-window 'window alist display-buffer-mark-dedicated)))))
+(defun evil-ranger-more-parents ()
+  "Increase number of ranger parents."
+  (interactive)
+  (setq evil-ranger-parent-depth (+ evil-ranger-parent-depth 1))
+  (evil-ranger-setup))
 
 (defun evil-ranger-setup-parents ()
   "Setup all parent directories."
@@ -530,6 +431,36 @@ slot)."
     (add-to-list 'evil-ranger-parent-buffers parent-buffer)
     (add-to-list 'evil-ranger-parent-windows parent-window)))
 
+;; find file subroutines
+(defun evil-ranger-dir-buffer (entry)
+  "Open `ENTRY' in dired buffer."
+  ;; (ignore-errors
+  (with-current-buffer (or
+                        (car (or (dired-buffers-for-dir entry) ()))
+                        (dired-noselect entry))
+    (run-hooks 'evil-ranger-parent-dir-hook)
+    (current-buffer)))
+
+(defun evil-ranger-preview-buffer (entry-name)
+  "Create the preview buffer of `ENTRY-NAME'.  If `evil-ranger-show-literal'
+is set, show literally instead of actual buffer."
+  (if evil-ranger-show-literal
+      (let ((temp-buffer (or (get-buffer "*literal*")
+                             (generate-new-buffer "*literal*"))))
+        (with-current-buffer temp-buffer
+          (erase-buffer)
+          (insert-file-contents entry-name)
+          (current-buffer)))
+    (with-current-buffer
+        (let ((buffer-file-coding-system nil)
+              (locale-coding-system nil)
+              )
+          (or
+           (find-buffer-visiting entry-name)
+           (find-file-noselect entry-name nil evil-ranger-show-literal)))
+      (current-buffer))))
+
+;; preview window functions
 (defun evil-ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
@@ -561,6 +492,19 @@ slot)."
           (dired-hide-details-mode t)
           )))))
 
+(defun evil-ranger-toggle-literal ()
+  "Toggle showing literal / actual preview of file."
+  (interactive)
+  (if evil-ranger-show-literal
+      (setq evil-ranger-show-literal nil)
+    (setq evil-ranger-show-literal t))
+  ;; (ignore-errors
+  ;;   (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
+  ;;   (delete-window evil-ranger-preview-window))
+  (when evil-ranger-preview-file
+    (evil-ranger-setup-preview))
+  (message (format "Literal Preview: %s"  evil-ranger-show-literal)))
+
 (defun evil-ranger-scroll-page-down ()
   "Scroll preview window up."
   (interactive)
@@ -570,6 +514,57 @@ slot)."
   "Scroll preview window down."
   (interactive)
   (scroll-other-window '-))
+
+;; utilities 
+(defun evil-ranger-parent-directory (entry)
+  "Find the parent directory of `ENTRY'."
+  (file-name-directory (directory-file-name entry)))
+
+(defun evil-ranger-fix-width (window)
+  "Fix the width of `WINDOW'."
+  (with-selected-window window
+    (setq-local window-size-fixed 'width)))
+
+(defun evil-ranger-display-buffer-at-side (buffer alist)
+  "Try displaying `BUFFER' at one side of the selected frame. This splits the
+window at the designated `side' of the frame.  Accepts `window-width' as a
+fraction of the total frame size"
+  (let* ((side (or (cdr (assq 'side alist)) 'bottom))
+         (slot (or (cdr (assq 'slot alist)) 0))
+         (window-width (or (cdr (assq 'window-width alist)) 0.5))
+         (window-size (ceiling  (* (frame-width) window-width)))
+         (split-width-threshold 0)
+         (current-window evil-ranger-window)
+         new-window
+         reuse-window)
+
+    ;; (walk-window-tree
+    ;;  (lambda (window)
+    ;;    (when (and
+    ;;           (not (eq current-window window))
+    ;;           (eq (window-parameter window 'window-slot) slot)
+    ;;      (setq reuse-window window)))
+    ;;  nil nil 'nomini))
+
+    ;; (walk-window-tree
+    ;;  (lambda (window)
+    ;;    (unless (window-left window)
+    ;;      (setq leftmost-window window)))
+    ;;  nil nil 'nomini)
+    ;; (message (format "%s : %s" slot reuse-window))
+
+    (if reuse-window
+        (progn
+          (shrink-window (-  window-size (window-width reuse-window)) t)
+          ;; (set-window-parameter reuse-window 'window-slot slot)
+          ;; (window--display-buffer
+          ;;  buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
+          )
+      (progn
+        (setq new-window (split-window current-window window-size side))
+        (set-window-parameter new-window 'window-slot slot)
+        (window--display-buffer
+         buffer new-window 'window alist display-buffer-mark-dedicated)))))
 
 (defun evil-ranger-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
@@ -581,39 +576,25 @@ slot)."
   (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
   (setq evil-ranger-preview-buffers ()))
 
-;;;###autoload
-(defun evil-ranger ()
-  "Launch dired in evil-ranger-minor-mode."
-  (interactive)
-  (delete-other-windows)
-  (unless (derived-mode-p 'dired-mode)
-    (dired-jump))
-  (evil-ranger-mode t))
-
-(defun evil-ranger-enable ()
-  "Interactively enable evil-ranger-mode."
-  (interactive)
-  (evil-ranger-mode t))
-
-(defun evil-ranger-disable ()
-  "Interactively disable evil-ranger-mode."
-  (interactive)
-  (evil-ranger-mode -1))
-
-(defun evil-ranger-setup ()
-  "Setup all associated evil-ranger windows."
-  (interactive)
-  (evil-ranger-setup-parents)
-  (evil-ranger-setup-preview))
-
 (defun evil-ranger-omit ()
   "Quietly omit files in dired."
-    (setq-local dired-omit-verbose nil)
-    (dired-omit-mode t))
+  (setq-local dired-omit-verbose nil)
+  (dired-omit-mode t))
 
 (defun evil-ranger-sort ()
   "Perform current sort on directory.")
 
+(defun evil-ranger-kill-buffers-without-window ()
+  "Will kill all ranger buffers that are not displayed in any window."
+  (interactive)
+  (cl-loop for buffer in evil-ranger-parent-buffers do
+           (unless (get-buffer-window buffer t)
+             (kill-buffer-if-not-modified buffer)))
+  (cl-loop for buffer in evil-ranger-preview-buffers do
+           (unless (get-buffer-window buffer t)
+             (kill-buffer-if-not-modified buffer))))
+
+;; header-line functions
 (defun evil-ranger-parent-header-line ()
   "Setup header-line for evil-ranger parent buffer."
   (let* ((current-name default-directory)
@@ -666,11 +647,40 @@ slot)."
      filler
      rhs)))
 
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
-(add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
-;; (add-hook 'evil-ranger-mode-hook 'evil-ranger-clear-dired-header)
+(defun evil-ranger-clear-dired-header ()
+  ;; (when (eq evil-ranger-window (get-buffer-window (current-buffer)))
+  (save-excursion
+    ;; (dired-hide-subdir)
+    (goto-char 0)
+    (let ((buffer-read-only nil)
+          (dired-header-match (point-at-eol)))
+      (when (search-forward-regexp ":$" dired-header-match t)
+        (kill-whole-line)))))
+
+;;;###autoload
+(defun evil-ranger ()
+  "Launch dired in evil-ranger-minor-mode."
+  (interactive)
+  (delete-other-windows)
+  (unless (derived-mode-p 'dired-mode)
+    (dired-jump))
+  (evil-ranger-mode t))
+
+(defun evil-ranger-enable ()
+  "Interactively enable evil-ranger-mode."
+  (interactive)
+  (evil-ranger-mode t))
+
+(defun evil-ranger-disable ()
+  "Interactively disable evil-ranger-mode."
+  (interactive)
+  (evil-ranger-mode -1))
+
+(defun evil-ranger-setup ()
+  "Setup all associated evil-ranger windows."
+  (interactive)
+  (evil-ranger-setup-parents)
+  (evil-ranger-setup-preview))
 
 (defun evil-ranger-revert ()
   "Revert evil-ranger settings."
@@ -689,7 +699,7 @@ slot)."
     ;; revert dired buffer
     (setq header-line-format nil)
     (when (derived-mode-p 'dired-mode)
-        (revert-buffer t))))
+      (revert-buffer t))))
 
 ;;;###autoload
 (define-minor-mode evil-ranger-mode
@@ -734,19 +744,11 @@ slot)."
       (evil-ranger-revert)
       )))
 
-;; cleanup function
-(defun evil-ranger-clear-dired-header ()
-  ;; (when (eq evil-ranger-window (get-buffer-window (current-buffer)))
-    (save-excursion
-      ;; (dired-hide-subdir)
-      (goto-char 0)
-      (let ((buffer-read-only nil)
-            (dired-header-match (point-at-eol)))
-        (when (search-forward-regexp ":$" dired-header-match t)
-          (kill-whole-line)))))
-;; )
-
-
+;; setup hooks
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
+(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
+(add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
 
 (provide 'evil-ranger)
 
