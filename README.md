@@ -1,3 +1,4 @@
+# Evil Ranger
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
 
@@ -13,20 +14,19 @@
         - [Ignoring Certain File Extensions During Preview](#ignoring-certain-file-extensions-during-preview)
 
 <!-- markdown-toc end -->
-# Evil Ranger
-
 
 ## Description
 
 This is a minor mode that runs within dired emulating many of the features of
-ranger. This minor mode takes some of the ideas from Peep-Dired to display
+ranger. This minor mode shows a stack of the parent directories and updates the
+parent buffers while nvaigating the file system. The preview window takes some
+of the ideas from [Peep-Dired][https://github.com/asok/peep-dired] to display
 previews for selected files in the primary dired buffer.
-
 
 ## Installation
 
-<!-- Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can -->
-<!-- use `package-install` command to install Evil Ranger. The package name is `evil-ranger`. -->
+Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can
+use `package-install` command to install Evil Ranger. The package name is `evil-ranger`.
 
 ### Screenshot
 
@@ -49,12 +49,12 @@ evil-ranger screencast
 * Add ranger style copy and pasted
 * Improve headerline display
 * Set up tabs and navigation between
-* Improve sorting
+* DONE: Improve sorting
 
 ## Key bindings
 
 | Keybindings | Description                                 |
-| ----------- | --------------------------------------      |
+| ----------- | -------------------------------------- |
 | `C-p`       | toggle evil-ranger in dired buffer          |
 | `j`         | navigate down                               |
 | `k`         | navigate up                                 |
@@ -93,38 +93,60 @@ Or you can choose to kill the buffer just after you move to another entry in the
 (setq evil-ranger-cleanup-eagerly t)
 ```
 
-If you want the dired buffers that were peeped to have the mode enabled set it to true.
+You can choose to show dotfiles at ranger startup, toggled by `zh`
 ```el
-(setq evil-ranger-enable-on-directories t)
+(setq evil-ranger-show-dotfiles t)
 ```
 
-You can set the number of folders to nest to the left
+Define custom function used to output header of primary evil-ranger window. Must
+return a string that is placed in the header-line.
+```el
+(setq evil-ranger-header-func 'evil-ranger-header-line)
+```
+
+Define custom function used to output header of parent and preview windows. Must
+return a string that is placed in the header-line.
+```el
+(setq evil-ranger-parent-header-func 'evil-ranger-parent-header-line)
+```
+
+### Parent options
+
+You can set the number of folders to nest to the left, adjusted by `z-` and `z+`
 ```el
 (setq evil-ranger-parent-depth 2)
 ```
 
-You can set the size of the preview and parent windows as a fraction of the
-frame size
+You can set the size of the parent windows as a fraction of the frame size
 ```el
 (setq evil-ranger-width-parents 0.12)
-(setq evil-ranger-width-preview 0.55)
 ```
 
-You can set the size of the preview and parent windows as a fraction of the
-frame size
+When increasing number of nested parent folders, set max width as fraction of
+frame size to prevent filling up entire frame with parents.
+```el
+(setq evil-ranger-max-parent-width 0.12)
+```
+
+### Preview options
+
+You can choose to show previews literally, or through find-file, toggled by `zi`
+```el
+(setq evil-ranger-show-dotfiles t)
+```
+
+You can set the size of the preview windows as a fraction of the frame size
 ```el
 (setq evil-ranger-width-preview 0.55)
 ```
-
-### Ignoring Certain File Extensions During Preview
 
 You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
 
 ```el
-(setq evil-ranger-ignored-extensions '("mkv" "iso" "mp4"))el
+(setq evil-ranger-ignored-extensions '("mkv" "iso" "mp4"))
 ```
 
-To set the max files size, set the following parameter:
+To set the max files size (in MB), set the following parameter:
 
 ```el
 (setq evil-ranger-max-preview-size 10)
