@@ -33,7 +33,7 @@
 ;;; Code:
 
 (require 'cl-macs)
-(require 'evil nil t)
+;; (require 'evil nil t)
 
 (declare-function dired-omit-mode "dired-x")
 
