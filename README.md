@@ -1,4 +1,5 @@
 # Evil Ranger
+[![MELPA](http://melpa.org/packages/evil-ranger-badge.svg)](http://melpa.org/#/evil-ranger)
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
 
