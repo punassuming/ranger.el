@@ -175,7 +175,7 @@ Outputs a string that will show up on the header-line.")
 
 (defun evil-ranger-define-maps ()
   "Define mappings for evil-ranger-mode."
-  (if (featurep 'evil)
+  (when (featurep 'evil)
       (progn
         ;; define keymaps
         (evil-define-key 'visual evil-ranger-mode-map "u" 'dired-unmark)
@@ -204,8 +204,6 @@ Outputs a string that will show up on the header-line.")
           "N"            'evil-search-previous
           (kbd "C-SPC")  'dired-mark)
         (add-hook 'evil-ranger-mode-hook 'evil-normalize-keymaps))
-    (progn
-
       ;; define keymaps
       (let ((map evil-ranger-mode-map))
         (define-key map "u" 'dired-unmark)
@@ -231,7 +229,7 @@ Outputs a string that will show up on the header-line.")
         (define-key map  "S"            'eshell)
         ;; (define-key map  "n"            'evil-search-next)
         ;; (define-key map  "N"            'evil-search-previous)
-        (define-key map  (kbd "C-SPC")  'dired-mark)))))
+        (define-key map  (kbd "C-SPC")  'dired-mark))))
 
 ;; interaction
 (defun evil-ranger-refresh ()
