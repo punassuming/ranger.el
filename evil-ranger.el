@@ -122,7 +122,7 @@ Outputs a string that will show up on the header-line.")
 (defvar evil-ranger-history-ring ())
 
 (defvar evil-ranger-child-name nil)
-(make-local-variable 'evil-ranger-child-name)
+(make-variable-buffer-local 'evil-ranger-child-name)
 
 (defvar evil-ranger-window nil)
 
@@ -309,9 +309,11 @@ Outputs a string that will show up on the header-line.")
 (defun evil-ranger-up-directory ()
   "Move to parent directory."
   (interactive)
-  (let ((parent (evil-ranger-parent-directory default-directory)))
+  (let ((current default-directory)
+        (parent (evil-ranger-parent-directory default-directory)))
     (when parent
-      (evil-ranger-find-file parent))))
+      (evil-ranger-find-file parent)
+      (dired-goto-file current))))
 
 (defun evil-ranger-find-file (&optional entry)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
@@ -326,8 +328,7 @@ currently selected file in ranger."
         )
       (find-file find-name)
       (when (file-directory-p find-name)
-        (evil-ranger-enable))
-      )))
+        (evil-ranger-enable)))))
 
 (defun evil-ranger-next-file ()
   "Move to next file in ranger."
@@ -373,6 +374,9 @@ currently selected file in ranger."
     ;; clear out everything
     (delete-other-windows)
     (setq evil-ranger-window (get-buffer-window (current-buffer)))
+    (cl-loop for buffer in evil-ranger-parent-buffers do
+             (unless (eq (get-buffer-window buffer) evil-ranger-window)
+               (kill-buffer buffer)))
     ;; (mapc 'kill-buffer evil-ranger-parent-buffers)
     (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-parent-windows ())
@@ -421,7 +425,7 @@ slot)."
            (evil-ranger-dir-buffer parent-name)
            `(evil-ranger-display-buffer-at-side . ((side . left)
                                                    (slot . ,(- 0 slot))
-                                                   ;; (inhibit-same-window . t)
+                                                   (inhibit-same-window . t)
                                                    (window-width . ,(min
                                                                      (/ evil-ranger-max-parent-width
                                                                         (length evil-ranger-parent-dirs))
@@ -568,11 +572,6 @@ fraction of the total frame size"
 
 (defun evil-ranger-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
-  ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
-  ;;       evil-ranger-parent-windows)
-  ;; (setq evil-ranger-parent-windows ())
-  ;; (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
-  ;; (setq evil-ranger-parent-buffers ())
   (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers)
   (setq evil-ranger-preview-buffers ()))
 
@@ -692,7 +691,12 @@ fraction of the total frame size"
     (when evil-ranger-cleanup-on-disable
       (mapc 'kill-buffer-if-not-modified evil-ranger-preview-buffers))
     (when evil-ranger-cleanup-on-disable
-      (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers))
+      (mapc 'kill-buffer evil-ranger-parent-buffers))
+    ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
+    ;;       evil-ranger-parent-windows)
+    ;; (setq evil-ranger-parent-windows ())
+    ;; (mapc 'kill-buffer-if-not-modified evil-ranger-parent-buffers)
+    ;; (setq evil-ranger-parent-buffers ())
     (setq evil-ranger-preview-buffers ()
           evil-ranger-parent-buffers ())
     (goto-char current-point)
@@ -720,9 +724,8 @@ fraction of the total frame size"
         ;; (message (format "%s" (register-read-with-preview "Prompt")))
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
+
         (setq evil-ranger-preview-window nil)
-
-
         (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
         (dired-hide-details-mode -1)
