@@ -6,7 +6,7 @@
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Original peep-dired Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 ;; Keywords: files, convenience
-;; Package-Requires: ((evil "1.0.0") (cl-lib "0.5"))
+;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,12 +23,11 @@
 
 ;;; Commentary:
 
-;; This is a minor mode forked from peep-dired
-;; <https://github.com/asok/peep-dired>, which can only be enabled from a dired
-;; buffer. Once enabled it will modify dired to work like ranger, to show the
-;; parent direcory of the current folder, and optionally preview the seclected
-;; file in the other window. Moving to the other file within the dired buffer
-;; with j/k. Hitting <C-j>/<C-k> will scroll the previewed file down / up.
+;; This is a minor mode that runs within dired emulating many of the features of
+;; ranger. This minor mode shows a stack of the parent directories and updates the
+;; parent buffers while nvaigating the file system. The preview window takes some
+;; of the ideas from [Peep-Dired][https://github.com/asok/peep-dired] to display
+;; previews for selected files in the primary dired buffer.
 
 ;;; Code:
 
@@ -126,7 +125,7 @@ Outputs a string that will show up on the header-line.")
 
 (defvar evil-ranger-sorting-switches nil)
 
-(defvar evil-ranger-history-ring ())
+(defvar evil-ranger-history-ring (make-ring 30))
 
 (defvar evil-ranger-child-name nil)
 (make-variable-buffer-local 'evil-ranger-child-name)
@@ -190,6 +189,7 @@ Outputs a string that will show up on the header-line.")
           "zi"           'evil-ranger-toggle-literal
           "zh"           'evil-ranger-toggle-dotfiles
           "o"            'evil-ranger-sort-criteria
+          "H"            'evil-ranger-history
           "h"            'evil-ranger-up-directory
           "l"            'evil-ranger-find-file
           "q"            'evil-ranger-disable
@@ -218,6 +218,7 @@ Outputs a string that will show up on the header-line.")
         (define-key map  "zi"           'evil-ranger-toggle-literal)
         (define-key map  "zh"           'evil-ranger-toggle-dotfiles)
         (define-key map  "o"            'evil-ranger-sort-criteria)
+        (define-key map  "H"            'evil-ranger-history)
         (define-key map  "h"            'evil-ranger-up-directory)
         (define-key map  "l"            'evil-ranger-find-file)
         (define-key map  "q"            'evil-ranger-disable)
@@ -324,6 +325,12 @@ Outputs a string that will show up on the header-line.")
       (evil-ranger-find-file parent)
       (dired-goto-file current))))
 
+(defun evil-ranger-history (history)
+  "Show history prompt for recent directories"
+  (interactive (list  (completing-read "Select from history" (ring-elements evil-ranger-history-ring))))
+  (when history
+    (evil-ranger-find-file history)))
+
 (defun evil-ranger-find-file (&optional entry)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
 currently selected file in ranger."
@@ -382,6 +389,10 @@ currently selected file in ranger."
         )
     ;; clear out everything
     (delete-other-windows)
+     
+    ;; insert directory in history
+    (ring-insert evil-ranger-history-ring current-name)
+
     (setq evil-ranger-window (get-buffer-window (current-buffer)))
     (cl-loop for buffer in evil-ranger-parent-buffers do
              (unless (eq (get-buffer-window buffer) evil-ranger-window)

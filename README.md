@@ -46,7 +46,7 @@ evil-ranger screencast
 ## Todo
 
 * Create bindings to go up / down the next directory
-* Log evil-ranger history and allow prompt to navigate back
+* DONE: Log evil-ranger history and allow prompt to navigate back
 * Add ranger style copy and pasted
 * Improve headerline display
 * Set up tabs and navigation between
@@ -63,6 +63,7 @@ evil-ranger screencast
 | `C-k`       | scroll preview window up                    |
 | `f`         | search for file names                       |
 | `i`         | show preview of current file                |
+| `H`         | search through history                      |
 | `zi`        | toggle showing literal / full-text previews |
 | `zh`        | toggle showing dotfiles                     |
 | `o`         | sort options                                |
