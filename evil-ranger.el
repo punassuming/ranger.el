@@ -81,7 +81,12 @@
   :type 'integer)
 
 (defcustom evil-ranger-show-literal t
-  "When t it will show file literally."
+  "When non-nil it will show file literally."
+  :group 'evil-ranger
+  :type 'boolean)
+
+(defcustom evil-ranger-persistent-sort nil
+  "When non-nil, sort all directories with the current flags."
   :group 'evil-ranger
   :type 'boolean)
 
@@ -119,6 +124,8 @@ Outputs a string that will show up on the header-line.")
 
 (defvar evil-ranger-mode nil)
 
+(defvar evil-ranger-sorting-switches nil)
+
 (defvar evil-ranger-history-ring ())
 
 (defvar evil-ranger-child-name nil)
@@ -136,9 +143,9 @@ Outputs a string that will show up on the header-line.")
 (defvar evil-ranger-parent-dirs nil)
 
 (defvar evil-ranger-parent-dir-hook '(dired-hide-details-mode
+                                      evil-ranger-sort
                                       evil-ranger-omit           ; ; hide extraneous stuf
                                       auto-revert-mode
-                                      evil-ranger-sort
                                       hl-line-mode               ; ; show line at current file
                                       evil-ranger-parent-window-setup))
 
@@ -299,10 +306,12 @@ Outputs a string that will show up on the header-line.")
              ((string-equal cc "t") "t")
              ((string-equal cc "s") "S")))
            )
+      (setq evil-ranger-sorting-switches
+            (concat evil-ranger-sort-flag
+                    (when uppercasep "r")))
       (dired-sort-other
        (concat dired-listing-switches
-               evil-ranger-sort-flag
-               (when uppercasep "r")))
+               evil-ranger-sorting-switches))
       (evil-ranger-refresh)
       )))
 
@@ -581,7 +590,11 @@ fraction of the total frame size"
   (dired-omit-mode t))
 
 (defun evil-ranger-sort ()
-  "Perform current sort on directory.")
+  "Perform current sort on directory."
+  (when evil-ranger-persistent-sort
+    (dired-sort-other
+     (concat dired-listing-switches
+             evil-ranger-sorting-switches))))
 
 (defun evil-ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -728,10 +741,12 @@ fraction of the total frame size"
         (setq evil-ranger-preview-window nil)
         (setq evil-ranger-window (get-buffer-window (current-buffer)))
 
+
         (dired-hide-details-mode -1)
         ;; hide details line at top
         (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
         ;; (delete-other-windows)
+        (evil-ranger-sort)
         (evil-ranger-setup)
 
         (make-local-variable 'header-line-format)
@@ -750,7 +765,6 @@ fraction of the total frame size"
 ;; setup hooks
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-hide-dotfiles)
 (add-hook 'evil-ranger-mode-hook 'evil-ranger-omit)
-(add-hook 'evil-ranger-mode-hook 'evil-ranger-sort)
 (add-hook 'evil-ranger-mode-hook 'auto-revert-mode)
 
 (provide 'evil-ranger)
