@@ -163,7 +163,7 @@ Outputs a string that will show up on the header-line.")
   (local-set-key (kbd  "<mouse-1>") 'evil-ranger-find-file)
 
   ;; (setq header-line-format nil)
-  (setq header-line-format '(:eval (funcall evil-ranger-parent-header-func)))
+  (setq header-line-format `(:eval (,evil-ranger-parent-header-func)))
   (evil-ranger-clear-dired-header)
   ;; (setq header-line-format '(:eval (format "sl: %s" (window-parameter (get-buffer-window) 'window-slot))))
   )
@@ -759,7 +759,7 @@ fraction of the total frame size"
         (evil-ranger-setup)
 
         (make-local-variable 'header-line-format)
-        (setq header-line-format '(:eval (funcall evil-ranger-header-func)))
+        (setq header-line-format `(:eval (,evil-ranger-header-func)))
         (evil-ranger-clear-dired-header)
 
         ;; (add-hook 'window-size-change-functions #'(lambda (window) (when evil-ranger-mode evil-ranger-setup)))
