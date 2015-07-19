@@ -174,7 +174,7 @@ Outputs a string that will show up on the header-line.")
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
-  (when (featurep 'evil)
+  (if (featurep 'evil)
       (progn
         ;; define keymaps
         (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
