@@ -141,11 +141,11 @@ Outputs a string that will show up on the header-line.")
 (defvar ranger-parent-dirs nil)
 
 (defvar ranger-parent-dir-hook '(dired-hide-details-mode
-                                      ranger-sort
-                                      ranger-omit           ; ; hide extraneous stuf
-                                      auto-revert-mode
-                                      hl-line-mode               ; ; show line at current file
-                                      ranger-parent-window-setup))
+                                 ranger-sort
+                                 ranger-omit           ; ; hide extraneous stuf
+                                 auto-revert-mode
+                                 hl-line-mode               ; ; show line at current file
+                                 ranger-parent-window-setup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,8 +277,8 @@ Outputs a string that will show up on the header-line.")
         (ranger-hide-dotfiles))
     (progn
       (revert-buffer) ; otherwise just revert to re-show
-           (ranger-clear-dired-header)
-           (setq ranger-show-dotfiles t)))
+      (ranger-clear-dired-header)
+      (setq ranger-show-dotfiles t)))
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
 
 (defun ranger-hide-dotfiles ()
@@ -348,7 +348,7 @@ currently selected file in ranger."
   (interactive)
   (dired-next-line 1)
   (when (eobp)
-      (dired-next-line -1))
+    (dired-next-line -1))
   (when ranger-preview-file
     (when ranger-cleanup-eagerly
       (ranger-cleanup))
@@ -386,7 +386,7 @@ currently selected file in ranger."
         )
     ;; clear out everything
     (delete-other-windows)
-     
+    
     ;; insert directory in history
     (ring-insert ranger-history-ring current-name)
 
@@ -441,12 +441,12 @@ slot)."
           (display-buffer
            (ranger-dir-buffer parent-name)
            `(ranger-display-buffer-at-side . ((side . left)
-                                                   (slot . ,(- 0 slot))
-                                                   (inhibit-same-window . t)
-                                                   (window-width . ,(min
-                                                                     (/ ranger-max-parent-width
-                                                                        (length ranger-parent-dirs))
-                                                                     ranger-width-parents))))))
+                                              (slot . ,(- 0 slot))
+                                              (inhibit-same-window . t)
+                                              (window-width . ,(min
+                                                                (/ ranger-max-parent-width
+                                                                   (length ranger-parent-dirs))
+                                                                ranger-width-parents))))))
          (parent-buffer (window-buffer parent-window)))
     (setq ranger-child-name current-name)
     (add-to-list 'ranger-parent-buffers parent-buffer)
@@ -503,9 +503,9 @@ is set, show literally instead of actual buffer."
                                     (ranger-dir-buffer entry-name)
                                   (ranger-preview-buffer entry-name))
                                 `(ranger-display-buffer-at-side . ((side . right)
-                                                                        (slot . 1)
-                                                                        ;; (inhibit-same-window . t)
-                                                                        (window-width . ,ranger-width-preview)))))
+                                                                   (slot . 1)
+                                                                   ;; (inhibit-same-window . t)
+                                                                   (window-width . ,ranger-width-preview)))))
                (preview-buffer
                 (window-buffer preview-window)))
           (add-to-list 'ranger-preview-buffers preview-buffer)
@@ -624,11 +624,11 @@ fraction of the total frame size"
               current-name
             (file-relative-name current-name parent-name))))
     (if (eq (get-buffer-window (current-buffer)) ranger-preview-window)
-      (concat
-       (propertize
-        ;; if at base directory, show base
-        (concat " " relative)
-        'face '(:background "#000000" :foreground "#ffffff" :weight bold)))
+        (concat
+         (propertize
+          ;; if at base directory, show base
+          (concat " " relative)
+          'face '(:background "#000000" :foreground "#ffffff" :weight bold)))
       (concat
        (propertize
         ;; if at base directory, show base
