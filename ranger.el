@@ -6,6 +6,7 @@
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Original peep-dired Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 ;; Keywords: files, convenience
+;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -121,8 +122,6 @@ Outputs a string that will show up on the header-line.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar ranger-mode nil)
-
 (defvar ranger-sorting-switches nil)
 
 (defvar ranger-history-ring (make-ring 30))
@@ -175,7 +174,7 @@ Outputs a string that will show up on the header-line.")
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
-  (when (featurep 'evil)
+  (if (featurep 'evil)
       (progn
         ;; define keymaps
         (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
