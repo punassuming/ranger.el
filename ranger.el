@@ -130,6 +130,11 @@ Outputs a string that will show up on the header-line.")
 (defvar ranger-child-name nil)
 (make-variable-buffer-local 'ranger-child-name)
 
+(defvar ranger-image-scale-ratio 1.3)
+(make-variable-buffer-local 'ranger-scale-image-ratio)
+
+(defvar ranger-image-fit-window t)
+
 (defvar ranger-window nil)
 
 (defvar ranger-preview-window nil)
@@ -186,8 +191,10 @@ Outputs a string that will show up on the header-line.")
         (kbd "C-k")    'ranger-scroll-page-up
         "f"            'ranger-search-files
         "i"            'ranger-preview-toggle
+        "I"            'dired-insert-subdir
         "zi"           'ranger-toggle-literal
         "zh"           'ranger-toggle-dotfiles
+        "zf"           'ranger-toggle-scale-images
         "o"            'ranger-sort-criteria
         "H"            'ranger-history
         "h"            'ranger-up-directory
@@ -213,8 +220,10 @@ Outputs a string that will show up on the header-line.")
     (define-key map  (kbd "C-k")    'ranger-scroll-page-up)
     (define-key map  "f"            'ranger-search-files)
     (define-key map  "i"            'ranger-preview-toggle)
+    (define-key map  "I"            'dired-insert-subdir)
     (define-key map  "zi"           'ranger-toggle-literal)
     (define-key map  "zh"           'ranger-toggle-dotfiles)
+    (define-key map  "zf"           'ranger-toggle-scale-images)
     (define-key map  "o"            'ranger-sort-criteria)
     (define-key map  "H"            'ranger-history)
     (define-key map  "h"            'ranger-up-directory)
@@ -238,6 +247,7 @@ Outputs a string that will show up on the header-line.")
   (ranger-setup)
   (scroll-right)
   ;; (dired-do-redisplay)
+  (dired-kill-tree dired-directory)
   (revert-buffer)
   (ranger-clear-dired-header)
   (run-hooks 'ranger-mode-hook))
@@ -268,6 +278,16 @@ Outputs a string that will show up on the header-line.")
       (setq ranger-preview-file t)
       (dired-hide-details-mode t))
     (ranger-setup-preview)))
+
+(defun ranger-toggle-scale-images ()
+  "Show/hide dot-files."
+  (interactive)
+  (if ranger-image-fit-window ; if currently showing
+      (setq ranger-image-fit-window nil)
+    (setq ranger-image-fit-window t))
+  (when ranger-preview-file
+    (ranger-setup-preview))
+  (message (format "Fit Images to Window: %s"  ranger-image-fit-window)))
 
 (defun ranger-toggle-dotfiles ()
   "Show/hide dot-files."
@@ -467,20 +487,60 @@ slot)."
   "Create the preview buffer of `ENTRY-NAME'.  If `ranger-show-literal'
 is set, show literally instead of actual buffer."
   (if ranger-show-literal
+      ;; show literal version of file
       (let ((temp-buffer (or (get-buffer "*literal*")
                              (generate-new-buffer "*literal*"))))
         (with-current-buffer temp-buffer
           (erase-buffer)
           (insert-file-contents entry-name)
           (current-buffer)))
-    (with-current-buffer
-        (let ((buffer-file-coding-system nil)
-              (locale-coding-system nil)
-              )
+    ;; show file
+    ;; (if (image-type-from-file-header entry-name)
+    (if (and (image-type-from-file-header entry-name)
+             (not (eq (image-type-from-file-header entry-name) 'gif))
+             ranger-image-fit-window)
+        (ranger-setup-image-preview entry-name)
+      (with-current-buffer
           (or
            (find-buffer-visiting entry-name)
-           (find-file-noselect entry-name nil ranger-show-literal)))
-      (current-buffer))))
+           (find-file-noselect entry-name nil ranger-show-literal))
+        (current-buffer)))))
+
+(defun ranger-setup-image-preview (entry-name)
+  "Setup and maybe resize image"
+  (let* ((new-file (expand-file-name image-dired-temp-image-file))
+         (file (expand-file-name entry-name))
+         ret success
+         (width (* ranger-width-preview ranger-image-scale-ratio (image-dired-display-window-width)))
+         (height (image-dired-display-window-height))
+         (image-type 'jpeg))
+    (if (and (not (eq (image-type-from-file-header entry-name) 'gif))
+             ranger-image-fit-window)
+        (progn
+          (setq command
+                (format-spec
+                 image-dired-cmd-create-temp-image-options
+                 (list
+                  (cons ?p image-dired-cmd-create-temp-image-program)
+                  (cons ?w width)
+                  (cons ?h height)
+                  (cons ?f file)
+                  (cons ?t new-file))))
+          (setq ret (call-process shell-file-name nil nil nil
+                                  shell-command-switch command))
+          (when (= 0 ret)
+            (setq success 1))))
+    (with-current-buffer (image-dired-create-display-image-buffer)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (clear-image-cache)
+        (image-dired-insert-image (if success
+                                      image-dired-temp-image-file
+                                    file)
+                                  image-type 0 0)
+        (goto-char (point-min))
+        (image-dired-update-property 'original-file-name file))
+      image-dired-display-image-buffer)))
 
 ;; preview window functions
 (defun ranger-setup-preview ()
