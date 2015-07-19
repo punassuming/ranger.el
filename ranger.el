@@ -122,8 +122,6 @@ Outputs a string that will show up on the header-line.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar ranger-mode nil)
-
 (defvar ranger-sorting-switches nil)
 
 (defvar ranger-history-ring (make-ring 30))
