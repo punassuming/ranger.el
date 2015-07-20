@@ -55,35 +55,36 @@ ranger screencast
 
 ## Key bindings
 
- | Keybindings | Description                                        |
- | ----------- | -------------------------------------------------- |
- | `C-p`       | toggle ranger in dired buffer                      |
- | `j`         | navigate down                                      |
- | `k`         | navigate up                                        |
- | `C-j`       | scroll preview window down                         |
- | `C-k`       | scroll preview window up                           |
- | `f`         | search for file names                              |
- | `i`         | show preview of current file                       |
- | `H`         | search through history                             |
- | `zi`        | toggle showing literal / full-text previews        |
- | `zh`        | toggle showing dotfiles                            |
- | `zf`        | toggle showing image full-size or fitted to window |
- | `o`         | sort options                                       |
- | `h`         | go up directory                                    |
- | `l` / `RET` | find file / enter directory                        |
- | `q`         | quit                                               |
- | `r`         | revert buffer                                      |
- | `z-`        | reduce number of parents                           |
- | `z+`        | increment number of parents                        |
- | `v`         | toggle all marks                                   |
- | `V`         | visually select lines                              |
- | `S`         | enter shell                                        |
- | `C-SPC`     | mark current file                                  |
+ Keybinding    | Description
+ ------------- | -----------
+ `C-p`         | toggle ranger in dired buffer
+ `j`           | navigate down
+ `k`           | navigate up
+ `C-j`         | scroll preview window down
+ `C-k`         | scroll preview window up
+ `f`           | search for file names
+ `i`           | show preview of current file
+ `H`           | search through history
+ `zi`          | toggle showing literal / full-text previews
+ `zh`          | toggle showing dotfiles
+ `zf`          | toggle showing image full-size or fitted to window
+ `o`           | sort options
+ `h`           | go up directory
+ `l`           | find file / enter directory
+ `RET`         | find file / enter directory
+ `q`           | quit
+ `r`           | revert buffer
+ `z-`          | reduce number of parents
+ `z+`          | increment number of parents
+ `v`           | toggle all marks
+ `V`           | visually select lines
+ `S`           | enter shell
+ `C-SPC`       | mark current file
 
 ## Configuration
 
 Most parameters can be toggled on and off and stay within the current emacs
-session. Any settings that are desired on startup should be set below. 
+session. Any settings that are desired on startup should be set below.
 
 ### Customizing
 
