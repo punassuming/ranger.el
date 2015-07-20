@@ -1,7 +1,7 @@
 ;;; ranger.el --- Make dired more like ranger
 
 ;; Copyright (C) 2015  Rich Alesi
-;; Copyright (C) 2014  Adam Sokolnicki
+;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Version: 0.9.1
@@ -35,7 +35,7 @@
 
 ;;; FEATURES
 
-;; Replaces dired buffer with features from Ranger 
+;; Replaces dired buffer with features from Ranger
 ;; - show window stack of parent directories
 ;; - show preview window of selected directory or file
 ;; - fast navigation using vi-like keybindings
@@ -421,7 +421,7 @@ currently selected file in ranger."
         )
     ;; clear out everything
     (delete-other-windows)
-    
+
     ;; insert directory in history
     (ring-insert ranger-history-ring current-name)
 
@@ -611,7 +611,7 @@ is set, show literally instead of actual buffer."
   (interactive)
   (scroll-other-window '-))
 
-;; utilities 
+;; utilities
 (defun ranger-parent-directory (entry)
   "Find the parent directory of `ENTRY'."
   (file-name-directory (directory-file-name entry)))
@@ -719,7 +719,7 @@ fraction of the total frame size"
               current-name
             (file-relative-name current-name parent-name)))
          (rhs
-          (concat 
+          (concat
            (format "%s | "
                    (if ranger-show-literal "literal" "actual"))
            (format "%s | "
