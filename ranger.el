@@ -196,7 +196,7 @@ Outputs a string that will show up on the header-line.")
 (when ranger-key
   (if (featurep 'evil)
       (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode)
-      (define-key dired-mode-map (kbd ranger-key) 'ranger-mode)))
+    (define-key dired-mode-map (kbd ranger-key) 'ranger-mode)))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
