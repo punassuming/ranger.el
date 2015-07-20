@@ -4,9 +4,12 @@
 ;; Copyright (C) 2014  Adam Sokolnicki
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Original peep-dired Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
+;; Version: 0.9.1
 ;; Keywords: files, convenience
 ;; Package-Requires: ((cl-lib "0.5"))
+
+;; Based on work from
+;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,8 +29,20 @@
 ;; This is a minor mode that runs within dired emulating many of the features of
 ;; ranger. This minor mode shows a stack of the parent directories and updates the
 ;; parent buffers while nvaigating the file system. The preview window takes some
-;; of the ideas from [Peep-Dired][https://github.com/asok/peep-dired] to display
+;; of the ideas from Peep-Dired <https://github.com/asok/peep-dired> to display
 ;; previews for selected files in the primary dired buffer.
+
+;;; FEATURES
+
+;; Replaces dired buffer with features from Ranger 
+;; - show window stack of parent directories
+;; - show preview window of selected directory or file
+;; - fast navigation using vi-like keybindings
+;; - move through navigation history
+
+;;; HISTORY
+
+;; version 0.9.1, 2015-07-19 changed package to ranger
 
 ;;; Code:
 
