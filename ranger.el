@@ -636,25 +636,21 @@ fraction of the total frame size"
 
     ;; (walk-window-tree
     ;;  (lambda (window)
-    ;;    (when (and
-    ;;           (not (eq current-window window))
-    ;;           (eq (window-parameter window 'window-slot) slot)
-    ;;      (setq reuse-window window)))
-    ;;  nil nil 'nomini))
-
-    ;; (walk-window-tree
-    ;;  (lambda (window)
-    ;;    (unless (window-left window)
-    ;;      (setq leftmost-window window)))
+    ;;    (progn
+    ;;      (when (not (eq current-window window))
+    ;;        (when (eq (window-parameter window 'window-slot) slot)
+    ;;          (setq reuse-window window))
+    ;;        (when (eq (window-parameter window 'window-slot) (+ slot 1))
+    ;;          (setq current-window window))
+    ;;        )))
     ;;  nil nil 'nomini)
-    ;; (message (format "%s : %s" slot reuse-window))
 
     (if reuse-window
         (progn
           (shrink-window (-  window-size (window-width reuse-window)) t)
           ;; (set-window-parameter reuse-window 'window-slot slot)
-          ;; (window--display-buffer
-          ;;  buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
+          (window--display-buffer
+           buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
           )
       (progn
         (setq new-window (split-window current-window window-size side))
