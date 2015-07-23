@@ -126,6 +126,11 @@
   :group 'ranger
   :type 'float)
 
+(defcustom ranger-key "C-p"
+  "`dired-mode' key used to toggle `ranger-mode'"
+  :group 'ranger
+  :type 'string)
+
 ;; header functions
 (defvar ranger-header-func 'ranger-header-line
   "Function used to output header of primary ranger window.
@@ -188,9 +193,10 @@ Outputs a string that will show up on the header-line.")
   )
 
 ;; mappings
-(if (featurep 'evil)
-    (evil-define-key 'normal dired-mode-map (kbd "C-p") 'ranger-mode)
-  (define-key dired-mode-map (kbd "C-p") 'ranger-mode))
+(when ranger-key
+  (if (featurep 'evil)
+      (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode)
+    (define-key dired-mode-map (kbd ranger-key) 'ranger-mode)))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
