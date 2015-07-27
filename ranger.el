@@ -155,6 +155,8 @@ Outputs a string that will show up on the header-line.")
 
 (defvar ranger-window nil)
 
+(defvar ranger-pre-hl-mode nil)
+
 (defvar ranger-preview-window nil)
 (defvar ranger-preview-buffers ()
   "List with buffers of previewed files.")
@@ -791,13 +793,14 @@ fraction of the total frame size"
     ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
     ;;       ranger-parent-windows)
     ;; (setq ranger-parent-windows ())
-    ;; (mapc 'kill-buffer-if-not-modified ranger-parent-buffers)
-    ;; (setq ranger-parent-buffers ())
     (setq ranger-preview-buffers ()
           ranger-parent-buffers ())
-    (goto-char current-point)
-    ;; revert dired buffer
+    ;; (goto-char current-point)
+    ;; revert hl-line-mode
+    (hl-line-mode ranger-pre-hl-mode)
+    ;; revert dired buffer header-line
     (setq header-line-format nil)
+
     (when (derived-mode-p 'dired-mode)
       (revert-buffer t))))
 
@@ -820,6 +823,10 @@ fraction of the total frame size"
         ;; (message (format "%s" (register-read-with-preview "Prompt")))
         (unless (get-register :ranger_dired_before)
           (window-configuration-to-register :ranger_dired_before))
+
+        ;; set hl-line-mode for ranger usage
+        (setq ranger-pre-hl-mode hl-line-mode)
+        (hl-line-mode t)
 
         (setq ranger-preview-window nil)
         (setq ranger-window (get-buffer-window (current-buffer)))
