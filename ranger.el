@@ -172,6 +172,8 @@ Outputs a string that will show up on the header-line.")
                                  hl-line-mode               ; ; show line at current file
                                  ranger-parent-window-setup))
 
+(defvar ranger-mode-map (make-sparse-keymap))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; parent window
@@ -533,7 +535,7 @@ is set, show literally instead of actual buffer."
          ret success
          (width (* ranger-width-preview ranger-image-scale-ratio (image-dired-display-window-width)))
          (height (image-dired-display-window-height))
-         (image-type 'jpeg))
+         (image-type 'jpeg) command)
     (if (and (not (eq (image-type-from-file-header entry-name) 'gif))
              ranger-image-fit-window)
         (progn
@@ -808,7 +810,7 @@ fraction of the total frame size"
   "A convienent way to look up file contents in other window while browsing directory in dired"
   :init-value nil
   :lighter " Ranger"
-  :keymap (make-sparse-keymap)
+  :keymap 'ranger-mode-map
   :group 'ranger
   ;; :after-hook 'ranger-mode-hook
 
