@@ -48,7 +48,6 @@
 ;;; Code:
 
 (require 'cl-macs)
-;; (require 'evil nil t)
 
 (declare-function dired-omit-mode "dired-x")
 
@@ -95,7 +94,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-show-literal t
+(defcustom ranger-show-literal nil
   "When non-nil it will show file literally."
   :group 'ranger
   :type 'boolean)
@@ -268,7 +267,6 @@ Outputs a string that will show up on the header-line.")
   (interactive)
   (ranger-setup)
   (scroll-right)
-  ;; (dired-do-redisplay)
   (dired-kill-tree dired-directory)
   (revert-buffer)
   (ranger-clear-dired-header)
@@ -380,8 +378,7 @@ currently selected file in ranger."
     (when find-name
       ;; (ranger-enable)
       (unless (file-directory-p find-name)
-        (ranger-revert)
-        )
+        (ranger-revert))
       (find-file find-name)
       (when (file-directory-p find-name)
         (ranger-enable)))))
@@ -394,7 +391,7 @@ currently selected file in ranger."
     (dired-next-line -1))
   (when ranger-preview-file
     (when ranger-cleanup-eagerly
-      (ranger-cleanup))
+      (ranger-preview-cleanup))
     (ranger-setup-preview)))
 
 (defun ranger-prev-file ()
@@ -404,7 +401,7 @@ currently selected file in ranger."
     (dired-previous-line 1))
   (when ranger-preview-file
     (when ranger-cleanup-eagerly
-      (ranger-cleanup))
+      (ranger-preview-cleanup))
     (ranger-setup-preview)))
 
 ;; parent window functions
@@ -425,8 +422,7 @@ currently selected file in ranger."
   (let ((parent-name (ranger-parent-directory default-directory))
         (current-name default-directory)
         (i 0)
-        (unused-windows ())
-        )
+        (unused-windows ()))
     ;; clear out everything
     (delete-other-windows)
 
@@ -666,7 +662,7 @@ fraction of the total frame size"
         (window--display-buffer
          buffer new-window 'window alist display-buffer-mark-dedicated)))))
 
-(defun ranger-cleanup ()
+(defun ranger-preview-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
   (mapc 'kill-buffer-if-not-modified ranger-preview-buffers)
   (setq ranger-preview-buffers ()))
@@ -830,21 +826,18 @@ fraction of the total frame size"
 
 
         (dired-hide-details-mode -1)
+
         ;; hide details line at top
         (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+
         ;; (delete-other-windows)
         (ranger-sort)
         (ranger-setup)
 
+
         (make-local-variable 'header-line-format)
         (setq header-line-format `(:eval (,ranger-header-func)))
-        (ranger-clear-dired-header)
-
-        ;; (add-hook 'window-size-change-functions #'(lambda (window) (when ranger-mode ranger-setup)))
-        ;; (setq window-size-change-functions '())
-
-        ;; (add-hook 'dired-mode-hook 'ranger-enable)
-        )
+        (ranger-clear-dired-header))
     (progn
       (ranger-revert)
       )))
