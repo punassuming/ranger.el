@@ -371,6 +371,19 @@ Outputs a string that will show up on the header-line.")
   (when history
     (ranger-find-file history)))
 
+(defun ranger-bookmarks (bookmark)
+  "Show bookmark prompt for recent directories"
+  (interactive
+   (list
+    (completing-read "Select from bookmarks"
+                     (delq nil (mapcar
+                                #'(lambda (bm) 
+                                    (when (file-directory-p (cdr (cadr bm)))
+                                      (cdr  (cadr bm))))
+                                bookmark-alist)))))
+  (when bookmark
+    (ranger-find-file bookmark)))
+
 (defun ranger-find-file (&optional entry)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
 currently selected file in ranger."
