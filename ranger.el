@@ -241,19 +241,18 @@ Outputs a string that will show up on the header-line.")
   (ranger-map (kbd "RET")   'ranger-find-file)
 
   (if (featurep 'evil)
-    (progn
-      ;; define keymaps
-      (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-      (evil-define-key 'normal ranger-mode-map
-        "V"            'evil-visual-line
-        "n"            'evil-search-next
-        "N"            'evil-search-previous
-        ;; (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)
-        )
       (progn
-        (define-key ranger-mode-map "/" 'isearch-forward)
-        (define-key ranger-mode-map "n" 'isearch-repeat-forward)
-        (define-key ranger-mode-map "N" 'isearch-repeat-backward)))))
+      ;; define keymaps
+        (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+        (evil-define-key 'normal ranger-mode-map
+          "V"            'evil-visual-line
+          "n"            'evil-search-next
+          "N"            'evil-search-previous)
+        (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
+    (progn
+      (define-key ranger-mode-map "/" 'isearch-forward)
+      (define-key ranger-mode-map "n" 'isearch-repeat-forward)
+      (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
 
 ;; interaction
 (defun ranger-refresh ()
