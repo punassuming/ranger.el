@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.1
+;; Version: 0.9.2
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((cl-lib "0.5"))
@@ -44,6 +44,7 @@
 ;;; HISTORY
 
 ;; version 0.9.1, 2015-07-19 changed package to ranger
+;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
 
 ;;; Code:
 
@@ -195,73 +196,64 @@ Outputs a string that will show up on the header-line.")
   ;; (setq header-line-format '(:eval (format "sl: %s" (window-parameter (get-buffer-window) 'window-slot))))
   )
 
+;; mapping macro
+(defmacro ranger-map (key func)
+  "Define macro to bind evil and emacs state for ranger"
+  `(progn
+     (when (featurep 'evil)
+       (evil-define-key 'normal ranger-mode-map ,key ,func))
+     (define-key ranger-mode-map ,key ,func)))
+
 ;; mappings
 (when ranger-key
-  (if (featurep 'evil)
-      (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode)
-    (define-key dired-mode-map (kbd ranger-key) 'ranger-mode)))
+  (ranger-map ranger-key 'ranger-mode))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
-  (when (featurep 'evil)
+  (ranger-map "gg"          'ranger-goto-top)
+  (ranger-map "G"           'ranger-goto-bottom)
+  (ranger-map "gh"          'ranger-go-home)
+  (ranger-map "B"           'ranger-bookmarks)
+  (ranger-map "H"           'ranger-history)
+  (ranger-map "I"           'dired-insert-subdir)
+  (ranger-map "S"           'eshell)
+  (ranger-map "f"           'ranger-search-files)
+  (ranger-map "h"           'ranger-up-directory)
+  (ranger-map "i"           'ranger-preview-toggle)
+  (ranger-map "j"           'ranger-next-file)
+  (ranger-map "k"           'ranger-prev-file)
+  (ranger-map "l"           'ranger-find-file)
+  (ranger-map "o"           'ranger-sort-criteria)
+  (ranger-map "q"           'ranger-disable)
+  (ranger-map "r"           'ranger-refresh)
+  (ranger-map "u"           'dired-unmark)
+  (ranger-map "v"           'dired-toggle-marks)
+  (ranger-map "z+"          'ranger-more-parents)
+  (ranger-map "z-"          'ranger-less-parents)
+  (ranger-map "zf"          'ranger-toggle-scale-images)
+  (ranger-map "zh"          'ranger-toggle-dotfiles)
+  (ranger-map "zi"          'ranger-toggle-literal)
+  (ranger-map "J"           'dired-next-subdir)
+  (ranger-map "K"           'dired-prev-subdir)
+  (ranger-map (kbd "C-SPC") 'dired-mark)
+  (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
+  (ranger-map (kbd "C-k")   'ranger-scroll-page-up)
+  (ranger-map (kbd "RET")   'ranger-find-file)
+
+  (if (featurep 'evil)
     (progn
       ;; define keymaps
       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
       (evil-define-key 'normal ranger-mode-map
-        "j"            'ranger-next-file
-        "k"            'ranger-prev-file
-        (kbd "C-j")    'ranger-scroll-page-down
-        (kbd "C-k")    'ranger-scroll-page-up
-        "f"            'ranger-search-files
-        "i"            'ranger-preview-toggle
-        "I"            'dired-insert-subdir
-        "zi"           'ranger-toggle-literal
-        "zh"           'ranger-toggle-dotfiles
-        "zf"           'ranger-toggle-scale-images
-        "o"            'ranger-sort-criteria
-        "H"            'ranger-history
-        "h"            'ranger-up-directory
-        "l"            'ranger-find-file
-        "q"            'ranger-disable
-        "r"            'ranger-refresh
-        (kbd "RET")    'ranger-find-file
-        "z-"           'ranger-less-parents
-        "z+"           'ranger-more-parents
-        "v"            'dired-toggle-marks
         "V"            'evil-visual-line
-        "S"            'eshell
         "n"            'evil-search-next
         "N"            'evil-search-previous
-        (kbd "C-SPC")  'dired-mark)
-      (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
-  ;; define keymaps
-  (let ((map ranger-mode-map))
-    (define-key map "u" 'dired-unmark)
-    (define-key map  "j"            'ranger-next-file)
-    (define-key map  "k"            'ranger-prev-file)
-    (define-key map  (kbd "C-j")    'ranger-scroll-page-down)
-    (define-key map  (kbd "C-k")    'ranger-scroll-page-up)
-    (define-key map  "f"            'ranger-search-files)
-    (define-key map  "i"            'ranger-preview-toggle)
-    (define-key map  "I"            'dired-insert-subdir)
-    (define-key map  "zi"           'ranger-toggle-literal)
-    (define-key map  "zh"           'ranger-toggle-dotfiles)
-    (define-key map  "zf"           'ranger-toggle-scale-images)
-    (define-key map  "o"            'ranger-sort-criteria)
-    (define-key map  "H"            'ranger-history)
-    (define-key map  "h"            'ranger-up-directory)
-    (define-key map  "l"            'ranger-find-file)
-    (define-key map  "q"            'ranger-disable)
-    (define-key map  "r"            'ranger-refresh)
-    (define-key map  (kbd "RET")    'ranger-find-file)
-    (define-key map  "z-"           'ranger-less-parents)
-    (define-key map  "z+"           'ranger-more-parents)
-    (define-key map  "v"            'dired-toggle-marks)
-    ;; (define-key map  "V"            'evil-visual-line)
-    (define-key map  "S"            'eshell)
-    ;; (define-key map  "n"            'evil-search-next)
-    ;; (define-key map  "N"            'evil-search-previous)
-    (define-key map  (kbd "C-SPC")  'dired-mark)))
+        ;; (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)
+        )
+      (progn
+        (define-key ranger-mode-map "/" 'isearch-forward)
+        (define-key ranger-mode-map "n" 'isearch-repeat-forward)
+        (define-key ranger-mode-map "N" 'isearch-repeat-backward)))))
 
 ;; interaction
 (defun ranger-refresh ()
