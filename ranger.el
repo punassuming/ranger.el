@@ -280,8 +280,12 @@ Outputs a string that will show up on the header-line.")
   (if (featurep 'helm)
       (call-interactively 'helm-find-files)
     (call-interactively 'ido-find-file))
-  (when (derived-mode-p 'dired-mode)
-    (ranger-enable)))
+  (if (derived-mode-p 'dired-mode)
+      (ranger-enable)
+    (progn
+      (let ((file buffer-file-name))
+        (ranger-revert)
+        (find-file file)))))
 
 (defun ranger-preview-toggle ()
   "Toggle preview of selected file."
@@ -445,10 +449,11 @@ currently selected file in ranger."
     (ring-insert ranger-history-ring current-name)
 
     (setq ranger-window (get-buffer-window (current-buffer)))
+    ;; delete all ranger parent buffers currently not showing
     (cl-loop for buffer in ranger-parent-buffers do
              (unless (eq (get-buffer-window buffer) ranger-window)
                (kill-buffer buffer)))
-    ;; (mapc 'kill-buffer ranger-parent-buffers)
+
     (setq ranger-parent-buffers ())
     (setq ranger-parent-windows ())
     (setq ranger-parent-dirs ())
@@ -771,10 +776,11 @@ fraction of the total frame size"
 (defun ranger ()
   "Launch dired in ranger-minor-mode."
   (interactive)
-  (delete-other-windows)
-  (unless (derived-mode-p 'dired-mode)
-    (dired-jump))
-  (ranger-mode t))
+  (let* ((file buffer-file-name)
+         (dir (if file (file-name-directory file) default-directory)))
+    (when file
+      (window-configuration-to-register :ranger_dired_before)
+      (ranger-find-file dir))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
@@ -801,8 +807,7 @@ fraction of the total frame size"
       (set-register :ranger_dired_before nil))
     (when ranger-cleanup-on-disable
       (mapc 'kill-buffer-if-not-modified ranger-preview-buffers))
-    (when ranger-cleanup-on-disable
-      (mapc 'kill-buffer ranger-parent-buffers))
+    (mapc 'kill-buffer ranger-parent-buffers)
     ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
     ;;       ranger-parent-windows)
     ;; (setq ranger-parent-windows ())
