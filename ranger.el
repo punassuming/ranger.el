@@ -402,6 +402,25 @@ currently selected file in ranger."
       (when (file-directory-p find-name)
         (ranger-enable)))))
 
+(defun ranger-goto-top ()
+  "Move to top of file list"
+  (interactive)
+  (beginning-of-buffer)
+  (ranger-next-file)
+  (ranger-prev-file))
+
+(defun ranger-goto-bottom ()
+  "Move to top of file list"
+  (interactive)
+  (end-of-buffer)
+  (ranger-next-file))
+
+(defun ranger-go-home ()
+  "Move to top of file list"
+  (interactive)
+  (end-of-buffer)
+  (ranger-find-file "~/"))
+
 (defun ranger-next-file ()
   "Move to next file in ranger."
   (interactive)
