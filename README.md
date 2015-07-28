@@ -145,7 +145,7 @@ You can set the size of the preview windows as a fraction of the frame size
 (setq ranger-width-preview 0.55)
 ```
 
-You probably don't want to open certain files like videos when using Peep Dired. To ignore certain files when moving over them you can customize the following to your liking:
+You probably don't want to open certain files like videos when previewing. To ignore certain files when moving over them you can customize the following to your liking:
 
 ```el
 (setq ranger-ignored-extensions '("mkv" "iso" "mp4"))

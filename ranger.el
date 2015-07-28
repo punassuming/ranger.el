@@ -157,6 +157,8 @@ Outputs a string that will show up on the header-line.")
 (defvar ranger-window nil)
 
 (defvar ranger-pre-hl-mode nil)
+(defvar ranger-pre-arev-mode nil)
+(defvar ranger-pre-omit-mode nil)
 
 (defvar ranger-preview-window nil)
 (defvar ranger-preview-buffers ()
@@ -206,14 +208,16 @@ Outputs a string that will show up on the header-line.")
 
 ;; mappings
 (when ranger-key
-  (ranger-map ranger-key 'ranger-mode))
+  (when (featurep 'evil)
+    (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
+  (define-key dired-mode-map (kbd ranger-key) 'ranger-mode))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
   (ranger-map "gg"          'ranger-goto-top)
   (ranger-map "G"           'ranger-goto-bottom)
   (ranger-map "gh"          'ranger-go-home)
-  (ranger-map "B"           'ranger-bookmarks)
+  (ranger-map "B"           'ranger-show-bookmarks)
   (ranger-map "H"           'ranger-history)
   (ranger-map "I"           'dired-insert-subdir)
   (ranger-map "S"           'eshell)
@@ -242,7 +246,7 @@ Outputs a string that will show up on the header-line.")
 
   (if (featurep 'evil)
       (progn
-      ;; define keymaps
+        ;; some evil specific bindings
         (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
         (evil-define-key 'normal ranger-mode-map
           "V"            'evil-visual-line
@@ -250,6 +254,7 @@ Outputs a string that will show up on the header-line.")
           "N"            'evil-search-previous)
         (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
     (progn
+      ;; and simulating search in standard emacs
       (define-key ranger-mode-map "/" 'isearch-forward)
       (define-key ranger-mode-map "n" 'isearch-repeat-forward)
       (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
@@ -258,12 +263,14 @@ Outputs a string that will show up on the header-line.")
 (defun ranger-refresh ()
   "Refresh evil ranger buffer."
   (interactive)
-  (ranger-setup)
+  ;; make sure cursor is visible on screen
   (scroll-right)
+  ;; reset dired trees
   (dired-kill-tree dired-directory)
+  ;; refresh for any changes
   (revert-buffer)
-  (ranger-clear-dired-header)
-  (run-hooks 'ranger-mode-hook))
+  ;; setup buffer
+  (ranger-setup))
 
 (defun ranger-search-files ()
   "Search for files / directories in folder."
@@ -271,12 +278,7 @@ Outputs a string that will show up on the header-line.")
   (if (featurep 'helm)
       (call-interactively 'helm-find-files)
     (call-interactively 'ido-find-file))
-  (if (derived-mode-p 'dired-mode)
-      (ranger-enable)
-    (progn
-      (let ((file buffer-file-name))
-        (ranger-revert)
-        (find-file file)))))
+  (ranger-exit-check))
 
 (defun ranger-preview-toggle ()
   "Toggle preview of selected file."
@@ -348,8 +350,7 @@ Outputs a string that will show up on the header-line.")
       (dired-sort-other
        (concat dired-listing-switches
                ranger-sorting-switches))
-      (ranger-refresh)
-      )))
+      (ranger-refresh))))
 
 (defun ranger-up-directory ()
   "Move to parent directory."
@@ -366,7 +367,7 @@ Outputs a string that will show up on the header-line.")
   (when history
     (ranger-find-file history)))
 
-(defun ranger-bookmarks (bookmark)
+(defun ranger-show-bookmarks (bookmark)
   "Show bookmark prompt for recent directories"
   (interactive
    (list
@@ -386,18 +387,13 @@ currently selected file in ranger."
   (let ((find-name (or entry
                        (dired-get-filename nil t))))
     (when find-name
-      ;; (ranger-enable)
-      (unless (file-directory-p find-name)
-        (ranger-revert))
       (find-file find-name)
-      (when (file-directory-p find-name)
-        (ranger-enable)))))
+      (ranger-exit-check))))
 
 (defun ranger-goto-top ()
   "Move to top of file list"
   (interactive)
   (beginning-of-buffer)
-  (ranger-next-file)
   (ranger-prev-file))
 
 (defun ranger-goto-bottom ()
@@ -419,18 +415,14 @@ currently selected file in ranger."
   (when (eobp)
     (dired-next-line -1))
   (when ranger-preview-file
-    (when ranger-cleanup-eagerly
-      (ranger-preview-cleanup))
     (ranger-setup-preview)))
 
 (defun ranger-prev-file ()
   "Move to previous file in ranger."
   (interactive)
-  (unless (bobp)
-    (dired-previous-line 1))
+  ;; (unless (bobp)
+  (dired-previous-line 1)
   (when ranger-preview-file
-    (when ranger-cleanup-eagerly
-      (ranger-preview-cleanup))
     (ranger-setup-preview)))
 
 ;; parent window functions
@@ -452,8 +444,6 @@ currently selected file in ranger."
         (current-name default-directory)
         (i 0)
         (unused-windows ()))
-    ;; clear out everything
-    (delete-other-windows)
 
     ;; insert directory in history
     (ring-insert ranger-history-ring current-name)
@@ -596,6 +586,8 @@ is set, show literally instead of actual buffer."
   (let* ((entry-name (dired-get-filename nil t))
          (fsize
           (nth 7 (file-attributes entry-name))))
+    (when ranger-cleanup-eagerly
+      (ranger-preview-cleanup))
     (when (and ranger-preview-window
                (window-live-p ranger-preview-window)
                ;; (window-at-side-p ranger-preview-window 'right)
@@ -619,8 +611,7 @@ is set, show literally instead of actual buffer."
                 (window-buffer preview-window)))
           (add-to-list 'ranger-preview-buffers preview-buffer)
           (setq ranger-preview-window preview-window)
-          (dired-hide-details-mode t)
-          )))))
+          (dired-hide-details-mode t))))))
 
 (defun ranger-toggle-literal ()
   "Toggle showing literal / actual preview of file."
@@ -784,7 +775,7 @@ fraction of the total frame size"
 
 ;;;###autoload
 (defun ranger ()
-  "Launch dired in ranger-minor-mode."
+  "Launch dired in ranger-mode."
   (interactive)
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
@@ -805,32 +796,93 @@ fraction of the total frame size"
 (defun ranger-setup ()
   "Setup all associated ranger windows."
   (interactive)
+
+  (unless (derived-mode-p 'dired-mode)
+    (error "Run it from dired buffer"))
+  ;; (when (derived-mode-p 'dired-mode)
+
+
+  (setq ranger-pre-hl-mode hl-line-mode)
+  (setq ranger-pre-arev-mode auto-revert-mode)
+  (setq ranger-pre-omit-mode dired-omit-mode)
+  (hl-line-mode t)
+
+  (unless (get-register :ranger_dired_before)
+    (window-configuration-to-register :ranger_dired_before))
+  
+  (ranger-hide-dotfiles)
+  (ranger-omit)
+  ;; (auto-revert-mode)
+
+  ;; set hl-line-mode for ranger usage
+  (setq ranger-preview-window nil)
+  (setq ranger-window (get-buffer-window (current-buffer)))
+
+  ;; truncate lines for primary window
+  (set-window-hscroll ranger-window 0)
+  (setq truncate-lines t)
+
+  (dired-hide-details-mode -1)
+
+  ;; hide details line at top
+  (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+
+  (ranger-sort)
+  
+  ;; clear out everything
+  (delete-other-windows)
+
+  ;; (add-hook 'find-file-hook 'ranger-exit-check)
+
   (ranger-setup-parents)
-  (ranger-setup-preview))
+  (ranger-setup-preview)
+
+  (make-local-variable 'header-line-format)
+  (setq header-line-format `(:eval (,ranger-header-func)))
+  (ranger-clear-dired-header))
 
 (defun ranger-revert ()
   "Revert ranger settings."
-  (let ((current-point (point)))
-    (when (get-register :ranger_dired_before)
-      (ignore-errors
-        (jump-to-register :ranger_dired_before))
-      (set-register :ranger_dired_before nil))
-    (when ranger-cleanup-on-disable
-      (mapc 'kill-buffer-if-not-modified ranger-preview-buffers))
-    (mapc 'kill-buffer ranger-parent-buffers)
-    ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
-    ;;       ranger-parent-windows)
-    ;; (setq ranger-parent-windows ())
-    (setq ranger-preview-buffers ()
-          ranger-parent-buffers ())
-    ;; (goto-char current-point)
-    ;; revert hl-line-mode
-    (hl-line-mode ranger-pre-hl-mode)
-    ;; revert dired buffer header-line
-    (setq header-line-format nil)
 
-    (when (derived-mode-p 'dired-mode)
-      (revert-buffer t))))
+  (when (get-register :ranger_dired_before)
+    (ignore-errors
+      (jump-to-register :ranger_dired_before))
+    (set-register :ranger_dired_before nil))
+
+  (when ranger-cleanup-on-disable
+    (mapc 'kill-buffer-if-not-modified ranger-preview-buffers))
+  (mapc 'kill-buffer ranger-parent-buffers)
+
+  ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
+  ;;       ranger-parent-windows)
+  ;; (setq ranger-parent-windows ())
+  (setq ranger-preview-buffers ()
+        ranger-parent-buffers ())
+
+  ;; revert buffer local modes used in ranger
+  (unless ranger-pre-hl-mode
+    (hl-line-mode -1))
+  (when (derived-mode-p 'dired-mode)
+    (unless ranger-pre-arev-mode
+      (auto-revert-mode -1))
+    (unless ranger-pre-omit-mode
+      (dired-omit-mode -1)))
+
+  ;; revert dired buffer header-line
+  (setq header-line-format nil)
+
+  (when (derived-mode-p 'dired-mode)
+    (revert-buffer t)))
+
+(defun ranger-exit-check ()
+  "Detect when exiting ranger window"
+  (if (derived-mode-p 'dired-mode)
+      (ranger-enable)
+    (progn
+      ;; (remove-hook 'find-file-hook 'ranger-exit-check)
+      (let ((buffer (buffer-file-name (current-buffer))))
+        (ranger-disable)
+        (find-file buffer)))))
 
 ;;;###autoload
 (define-minor-mode ranger-mode
@@ -841,46 +893,13 @@ fraction of the total frame size"
   :group 'ranger
   ;; :after-hook 'ranger-mode-hook
 
+  ;; define keymaps
+  (ranger-define-maps)
+
   ;; only run from dired-mode
   (if ranger-mode
-      (progn
-        (unless (derived-mode-p 'dired-mode)
-          (error "Run it from dired buffer"))
-
-        (ranger-define-maps)
-        ;; (message (format "%s" (register-read-with-preview "Prompt")))
-        (unless (get-register :ranger_dired_before)
-          (window-configuration-to-register :ranger_dired_before))
-
-        ;; set hl-line-mode for ranger usage
-        (setq ranger-pre-hl-mode hl-line-mode)
-        (hl-line-mode t)
-
-        (setq ranger-preview-window nil)
-        (setq ranger-window (get-buffer-window (current-buffer)))
-
-
-        (dired-hide-details-mode -1)
-
-        ;; hide details line at top
-        (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
-
-        ;; (delete-other-windows)
-        (ranger-sort)
-        (ranger-setup)
-
-
-        (make-local-variable 'header-line-format)
-        (setq header-line-format `(:eval (,ranger-header-func)))
-        (ranger-clear-dired-header))
-    (progn
-      (ranger-revert)
-      )))
-
-;; setup hooks
-(add-hook 'ranger-mode-hook 'ranger-hide-dotfiles)
-(add-hook 'ranger-mode-hook 'ranger-omit)
-(add-hook 'ranger-mode-hook 'auto-revert-mode)
+      (ranger-setup)
+    (ranger-revert)))
 
 (provide 'ranger)
 
