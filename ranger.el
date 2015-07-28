@@ -373,7 +373,7 @@ Outputs a string that will show up on the header-line.")
    (list
     (completing-read "Select from bookmarks"
                      (delq nil (mapcar
-                                #'(lambda (bm) 
+                                #'(lambda (bm)
                                     (when (file-directory-p (cdr (cadr bm)))
                                       (cdr  (cadr bm))))
                                 bookmark-alist)))))
@@ -780,6 +780,7 @@ fraction of the total frame size"
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
     (when file
+      (add-hook 'window-configuration-change-hook 'ranger-window-check)
       (window-configuration-to-register :ranger_dired_before)
       (ranger-find-file dir))))
 
@@ -801,6 +802,7 @@ fraction of the total frame size"
     (error "Run it from dired buffer"))
   ;; (when (derived-mode-p 'dired-mode)
 
+  (add-hook 'window-configuration-change-hook 'ranger-window-check)
 
   (setq ranger-pre-hl-mode hl-line-mode)
   (setq ranger-pre-arev-mode auto-revert-mode)
@@ -809,10 +811,10 @@ fraction of the total frame size"
 
   (unless (get-register :ranger_dired_before)
     (window-configuration-to-register :ranger_dired_before))
-  
+
   (ranger-hide-dotfiles)
   (ranger-omit)
-  ;; (auto-revert-mode)
+  (auto-revert-mode)
 
   ;; set hl-line-mode for ranger usage
   (setq ranger-preview-window nil)
@@ -828,7 +830,7 @@ fraction of the total frame size"
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
 
   (ranger-sort)
-  
+
   ;; clear out everything
   (delete-other-windows)
 
@@ -843,6 +845,8 @@ fraction of the total frame size"
 
 (defun ranger-revert ()
   "Revert ranger settings."
+
+  (remove-hook 'window-configuration-change-hook 'ranger-window-check)
 
   (when (get-register :ranger_dired_before)
     (ignore-errors
@@ -875,14 +879,24 @@ fraction of the total frame size"
     (revert-buffer t)))
 
 (defun ranger-exit-check ()
-  "Detect when exiting ranger window"
+  "Enable or disable ranger based on mode"
   (if (derived-mode-p 'dired-mode)
       (ranger-enable)
     (progn
       ;; (remove-hook 'find-file-hook 'ranger-exit-check)
       (let ((buffer (buffer-file-name (current-buffer))))
+        (message "Exiting ranger")
         (ranger-disable)
         (find-file buffer)))))
+
+(defun ranger-window-check ()
+  "Detect when ranger-window is no longer part of ranger-mode"
+  (when (and
+         (not ranger-mode)
+         (eq ranger-window (selected-window)))
+    (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+    (ranger-exit-check)))
+
 
 ;;;###autoload
 (define-minor-mode ranger-mode
