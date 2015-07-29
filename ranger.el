@@ -156,6 +156,8 @@ Outputs a string that will show up on the header-line.")
 
 (defvar ranger-window nil)
 
+(defvar ranger-minimal nil)
+
 (defvar ranger-pre-hl-mode nil)
 (defvar ranger-pre-arev-mode nil)
 (defvar ranger-pre-omit-mode nil)
@@ -233,6 +235,7 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
   (ranger-map "z+"          'ranger-more-parents)
+  (ranger-map "zp"          'ranger-minimal-toggle)
   (ranger-map "z-"          'ranger-less-parents)
   (ranger-map "zf"          'ranger-toggle-scale-images)
   (ranger-map "zh"          'ranger-toggle-dotfiles)
@@ -393,19 +396,19 @@ currently selected file in ranger."
 (defun ranger-goto-top ()
   "Move to top of file list"
   (interactive)
-  (beginning-of-buffer)
+  (goto-char (point-min))
   (ranger-prev-file))
 
 (defun ranger-goto-bottom ()
   "Move to top of file list"
   (interactive)
-  (end-of-buffer)
+  (goto-char (point-max))
   (ranger-next-file))
 
 (defun ranger-go-home ()
   "Move to top of file list"
   (interactive)
-  (end-of-buffer)
+  (goto-char (point-max))
   (ranger-find-file "~/"))
 
 (defun ranger-next-file ()
@@ -458,6 +461,7 @@ currently selected file in ranger."
     (setq ranger-parent-windows ())
     (setq ranger-parent-dirs ())
     (while (and parent-name
+                (not ranger-minimal)
                 (file-directory-p parent-name)
                 (< i ranger-parent-depth))
       (setq i (+ i 1))
@@ -485,10 +489,11 @@ currently selected file in ranger."
          ))
      nil nil 'nomini)
 
-    (cl-loop for unused-window in unused-windows do
-             (when (and unused-window
-                        (window-live-p unused-window))
-               (delete-window unused-window)))))
+    (unless ranger-minimal
+      (cl-loop for unused-window in unused-windows do
+               (when (and unused-window
+                          (window-live-p unused-window))
+                 (delete-window unused-window))))))
 
 (defun ranger-make-parent (parent)
   "Make parent window.  `PARENT' is a construct with ((current . parent) .
@@ -593,7 +598,8 @@ is set, show literally instead of actual buffer."
                ;; (window-at-side-p ranger-preview-window 'right)
                )
       (ignore-errors (delete-window ranger-preview-window)))
-    (when (and entry-name
+    (when (and (not ranger-minimal)
+               entry-name
                ranger-preview-file)
       (unless (or
                (> fsize (* 1024 1024 ranger-max-preview-size))
@@ -774,6 +780,21 @@ fraction of the total frame size"
         (kill-whole-line)))))
 
 ;;;###autoload
+(defun ranger-same-window ()
+  "Launch dired in ranger-mode."
+  (interactive)
+  (setq ranger-minimal t)
+  (ranger))
+
+(defun ranger-minimal-toggle ()
+  (interactive)
+  (let ((minimal ranger-minimal))
+    (ranger-revert)
+    (if minimal
+        (ranger)
+      (ranger-same-window))))
+
+;;;###autoload
 (defun ranger ()
   "Launch dired in ranger-mode."
   (interactive)
@@ -831,10 +852,9 @@ fraction of the total frame size"
 
   (ranger-sort)
 
-  ;; clear out everything
-  (delete-other-windows)
-
-  ;; (add-hook 'find-file-hook 'ranger-exit-check)
+  (unless ranger-minimal
+    ;; clear out everything
+    (delete-other-windows))
 
   (ranger-setup-parents)
   (ranger-setup-preview)
@@ -863,6 +883,7 @@ fraction of the total frame size"
   (setq ranger-preview-buffers ()
         ranger-parent-buffers ())
 
+  (setq ranger-minimal nil)
   ;; revert buffer local modes used in ranger
   (unless ranger-pre-hl-mode
     (hl-line-mode -1))
@@ -884,19 +905,24 @@ fraction of the total frame size"
       (ranger-enable)
     (progn
       ;; (remove-hook 'find-file-hook 'ranger-exit-check)
-      (let ((buffer (buffer-file-name (current-buffer))))
+      (let ((current (current-buffer))
+            (buffer (buffer-file-name (current-buffer))))
         (message "Exiting ranger")
         (ranger-disable)
-        (find-file buffer)))))
+        (if buffer
+          (find-file buffer))
+        (switch-to-buffer current)))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
+  (message (format "%s : %s"
+                   major-mode
+                   (current-buffer)))
   (when (and
          (not ranger-mode)
          (eq ranger-window (selected-window)))
     (remove-hook 'window-configuration-change-hook 'ranger-window-check)
     (ranger-exit-check)))
-
 
 ;;;###autoload
 (define-minor-mode ranger-mode
