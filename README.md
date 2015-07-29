@@ -1,6 +1,6 @@
 # Ranger
 [![MELPA](http://melpa.org/packages/ranger-badge.svg)](http://melpa.org/#/ranger)
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 **Table of Contents**
 
 - [Ranger](#ranger)
@@ -8,11 +8,13 @@
     - [Installation](#installation)
         - [Screenshot](#screenshot)
         - [Screencast](#screencast)
+    - [Features](#features)
     - [Todo](#todo)
     - [Key bindings](#key-bindings)
     - [Configuration](#configuration)
         - [Customizing](#customizing)
-        - [Ignoring Certain File Extensions During Preview](#ignoring-certain-file-extensions-during-preview)
+        - [Parent options](#parent-options)
+        - [Preview options](#preview-options)
 
 <!-- markdown-toc end -->
 
@@ -42,16 +44,29 @@ ranger mode with preview enabled
 ranger screencast
 ![Ranger Mode Screencast](screenshots/hello-ranger.gif)
 
+## Features
+
+* Preview of selected file / directory
+* Multi-column display of parent directories
+* History log and prompt to navigate through history
+* Toggle between literal file viewing and actual
+* Indirectly scroll through previewed files
+* Show images inline in preview window
+* Fit images to window when previewing (requires image-dired)
+* Quick and persistent sorting across folders
+* Quick access to shell
+* Mouse support
+* Emacs bookmarks support
 
 ## Todo
 
 * Create bindings to go up / down the next directory
-* DONE: Log ranger history and allow prompt to navigate back
-* DONE: Fit images to screen when previewing
 * Add ranger style copy and pasted
 * Improve headerline display
+* Preview PDFs
+* Better showing of archive files
 * Set up tabs and navigation between
-* DONE: Improve sorting
+* Work with flattened subdirs and tree
 
 ## Key bindings
 
