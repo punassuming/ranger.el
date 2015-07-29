@@ -73,7 +73,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-parent-depth 2
+(defcustom ranger-parent-depth 1
   "Number of directories up to traverse."
   :group 'ranger
   :type 'integer)
@@ -95,7 +95,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-show-literal nil
+(defcustom ranger-show-literal t
   "When non-nil it will show file literally."
   :group 'ranger
   :type 'boolean)
@@ -105,7 +105,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-preview-file nil
+(defcustom ranger-preview-file t
   "When t preview the selected file."
   :group 'ranger
   :type 'boolean)
