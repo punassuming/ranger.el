@@ -142,6 +142,8 @@ Outputs a string that will show up on the header-line.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar ranger-history-index 0)
+
 (defvar ranger-sorting-switches nil)
 
 (defvar ranger-history-ring (make-ring 30))
@@ -220,7 +222,9 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "G"           'ranger-goto-bottom)
   (ranger-map "gh"          'ranger-go-home)
   (ranger-map "B"           'ranger-show-bookmarks)
-  (ranger-map "H"           'ranger-history)
+  (ranger-map (kbd "C-h")   'ranger-history)
+  (ranger-map "H"           'ranger-prev-history)
+  (ranger-map "L"           'ranger-next-history)
   (ranger-map "I"           'dired-insert-subdir)
   (ranger-map "S"           'eshell)
   (ranger-map "f"           'ranger-search-files)
@@ -370,6 +374,28 @@ Outputs a string that will show up on the header-line.")
   (when history
     (ranger-find-file history)))
 
+(defun ranger-jump-history (jump)
+  "Move through history ring by increment `jump'"
+  (let* ((ring ranger-history-ring)
+         (curr-index ranger-history-index)
+         (goto-idx (min
+                    (max 0 (+ curr-index jump))
+                    (- (ring-length ring) 1)))
+         (jump-history (ring-ref ring goto-idx)))
+    (when jump-history
+      (setq ranger-history-index goto-idx)
+      (ranger-find-file jump-history t))))
+
+(defun ranger-next-history ()
+  "Move forward in history"
+  (interactive)
+  (ranger-jump-history -1))
+
+(defun ranger-prev-history ()
+  "Move backward in history"
+  (interactive)
+  (ranger-jump-history 1))
+
 (defun ranger-show-bookmarks (bookmark)
   "Show bookmark prompt for recent directories"
   (interactive
@@ -383,13 +409,23 @@ Outputs a string that will show up on the header-line.")
   (when bookmark
     (ranger-find-file bookmark)))
 
-(defun ranger-find-file (&optional entry)
+(defun ranger-find-file (&optional entry ignore-history)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
-currently selected file in ranger."
+currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t))))
     (when find-name
+      ;; insert directory in history
+      (unless ignore-history
+        ;; don't put the same directory twice
+        (when (and
+               (file-directory-p (file-name-directory find-name))
+               (or (ring-empty-p ranger-history-ring)
+                   (not (equal find-name (ring-ref ranger-history-ring 0)))))
+          (progn
+            (ring-insert ranger-history-ring find-name)
+            (setq ranger-history-index 0))))
       (find-file find-name)
       (ranger-exit-check))))
 
@@ -448,10 +484,8 @@ currently selected file in ranger."
         (i 0)
         (unused-windows ()))
 
-    ;; insert directory in history
-    (ring-insert ranger-history-ring current-name)
-
     (setq ranger-window (get-buffer-window (current-buffer)))
+
     ;; delete all ranger parent buffers currently not showing
     (cl-loop for buffer in ranger-parent-buffers do
              (unless (eq (get-buffer-window buffer) ranger-window)
@@ -902,7 +936,8 @@ fraction of the total frame size"
 (defun ranger-exit-check ()
   "Enable or disable ranger based on mode"
   (if (derived-mode-p 'dired-mode)
-      (ranger-enable)
+      (progn
+        (ranger-enable))
     (progn
       ;; (remove-hook 'find-file-hook 'ranger-exit-check)
       (let ((current (current-buffer))
@@ -910,14 +945,11 @@ fraction of the total frame size"
         (message "Exiting ranger")
         (ranger-disable)
         (if buffer
-          (find-file buffer))
+            (find-file buffer))
         (switch-to-buffer current)))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
-  (message (format "%s : %s"
-                   major-mode
-                   (current-buffer)))
   (when (and
          (not ranger-mode)
          (eq ranger-window (selected-window)))
