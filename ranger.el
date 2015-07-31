@@ -639,19 +639,20 @@ is set, show literally instead of actual buffer."
                (> fsize (* 1024 1024 ranger-max-preview-size))
                (member (file-name-extension entry-name)
                        ranger-excluded-extensions))
-        (let* ((preview-window (display-buffer
-                                (if (file-directory-p entry-name)
-                                    (ranger-dir-buffer entry-name)
-                                  (ranger-preview-buffer entry-name))
-                                `(ranger-display-buffer-at-side . ((side . right)
-                                                                   (slot . 1)
-                                                                   ;; (inhibit-same-window . t)
-                                                                   (window-width . ,ranger-width-preview)))))
-               (preview-buffer
-                (window-buffer preview-window)))
-          (add-to-list 'ranger-preview-buffers preview-buffer)
-          (setq ranger-preview-window preview-window)
-          (dired-hide-details-mode t))))))
+        (with-demoted-errors "%S"
+          (let* ((preview-window (display-buffer
+                                  (if (file-directory-p entry-name)
+                                      (ranger-dir-buffer entry-name)
+                                    (ranger-preview-buffer entry-name))
+                                  `(ranger-display-buffer-at-side . ((side . right)
+                                                                     (slot . 1)
+                                                                     ;; (inhibit-same-window . t)
+                                                                     (window-width . ,ranger-width-preview)))))
+                 (preview-buffer
+                  (window-buffer preview-window)))
+            (add-to-list 'ranger-preview-buffers preview-buffer)
+            (setq ranger-preview-window preview-window)
+            (dired-hide-details-mode t)))))))
 
 (defun ranger-toggle-literal ()
   "Toggle showing literal / actual preview of file."
