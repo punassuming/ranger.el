@@ -302,7 +302,8 @@ Outputs a string that will show up on the header-line.")
         (setq ranger-preview-file nil))
     (progn
       (setq ranger-preview-file t)
-      (dired-hide-details-mode t))
+      (dired-hide-details-mode t)
+      (setq dired-hide-details-hide-symlink-targets nil))
     (ranger-setup-preview)))
 
 (defun ranger-toggle-scale-images ()
@@ -627,10 +628,9 @@ is set, show literally instead of actual buffer."
           (nth 7 (file-attributes entry-name))))
     (when ranger-cleanup-eagerly
       (ranger-preview-cleanup))
+    ;; delete existing preview window
     (when (and ranger-preview-window
-               (window-live-p ranger-preview-window)
-               ;; (window-at-side-p ranger-preview-window 'right)
-               )
+               (window-live-p ranger-preview-window))
       (ignore-errors (delete-window ranger-preview-window)))
     (when (and (not ranger-minimal)
                entry-name
