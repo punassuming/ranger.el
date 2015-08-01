@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.2
+;; Version: 0.9.4
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((cl-lib "0.5"))
@@ -45,6 +45,7 @@
 
 ;; version 0.9.1, 2015-07-19 changed package to ranger
 ;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
+;; version 0.9.4, 2015-07-31 deer mode, history navigation
 
 ;;; Code:
 
@@ -880,7 +881,7 @@ fraction of the total frame size"
         (kill-whole-line)))))
 
 ;;;###autoload
-(defun ranger-same-window ()
+(defun deer ()
   "Launch dired in ranger-mode."
   (interactive)
   (setq ranger-minimal t)
@@ -892,7 +893,7 @@ fraction of the total frame size"
     (ranger-revert)
     (if minimal
         (ranger)
-      (ranger-same-window))))
+      (deer))))
 
 ;;;###autoload
 (defun ranger ()

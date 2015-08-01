@@ -1,5 +1,6 @@
 # Ranger
 [![MELPA](http://melpa.org/packages/ranger-badge.svg)](http://melpa.org/#/ranger)
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 **Table of Contents**
 
@@ -10,6 +11,7 @@
         - [Screencast](#screencast)
     - [Features](#features)
     - [Todo](#todo)
+    - [Minimal Ranger Mode (deer)](#minimal-ranger-mode-deer)
     - [Key bindings](#key-bindings)
     - [Configuration](#configuration)
         - [Customizing](#customizing)
@@ -57,10 +59,11 @@ ranger screencast
 * Quick access to shell
 * Mouse support
 * Emacs bookmarks support
+* Create bindings to go up / down the next directory
+* minimal ranger mode (deer-mode)
 
 ## Todo
 
-* Create bindings to go up / down the next directory
 * Add ranger style copy and pasted
 * Improve headerline display
 * Preview PDFs
@@ -68,18 +71,34 @@ ranger screencast
 * Set up tabs and navigation between
 * Work with flattened subdirs and tree
 
+## Minimal Ranger Mode (deer)
+
+Termed as `deer-mode`, based on the zsh module developed by Vifon, we can use
+ranger in a single window without preview or parent directories.  This allows
+all the functionality builtin to ranger without modifying any other buffer
+windows.  Toggle between `ranger` and `deer` with `zp`.
+
 ## Key bindings
 
  Keybinding    | Description
  ------------- | -----------
- `C-p`         | toggle ranger in dired buffer
+ `?`           | show ranger help
  `j`           | navigate down
  `k`           | navigate up
- `C-j`         | scroll preview window down
- `C-k`         | scroll preview window up
+ `J`           | next subdir
+ `K`           | previous subdir
+ `G`           | goto last file
+ `gg`          | goto first file
+ `gh`          | goto home directory
+ `B`           | show bookmark prompt
+ ````          | goto bookmark
+ `m`           | set bookmark
+ `[`           | previous parent directory
+ `]`           | next parent directory
  `f`           | search for file names
- `i`           | show preview of current file
- `H`           | search through history
+ `zz`          | search through history
+ `H`           | history back
+ `L`           | history next
  `zi`          | toggle showing literal / full-text previews
  `zh`          | toggle showing dotfiles
  `zf`          | toggle showing image full-size or fitted to window
@@ -88,13 +107,17 @@ ranger screencast
  `l`           | find file / enter directory
  `RET`         | find file / enter directory
  `q`           | quit
- `r`           | revert buffer
+ `^R`          | revert buffer
  `z-`          | reduce number of parents
  `z+`          | increment number of parents
  `v`           | toggle all marks
  `V`           | visually select lines
  `S`           | enter shell
  `C-SPC`       | mark current file
+ `i`           | show preview of current file
+ `C-j`         | scroll preview window down
+ `C-k`         | scroll preview window up
+ `zp`          | toggle between full ranger and deer-mode
 
 ## Configuration
 
