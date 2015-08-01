@@ -236,6 +236,8 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "o"           'ranger-sort-criteria)
   (ranger-map "q"           'ranger-disable)
   (ranger-map "r"           'ranger-refresh)
+  (ranger-map "]"           'ranger-next-parent)
+  (ranger-map "["           'ranger-prev-parent)
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
   (ranger-map "z+"          'ranger-more-parents)
@@ -390,6 +392,7 @@ Outputs a string that will show up on the header-line.")
                ranger-sorting-switches))
       (ranger-refresh))))
 
+;; navigation
 (defun ranger-up-directory ()
   "Move to parent directory."
   (interactive)
@@ -539,6 +542,20 @@ slot)."
     (setq ranger-child-name current-name)
     (add-to-list 'ranger-parent-buffers parent-buffer)
     (add-to-list 'ranger-parent-windows parent-window)))
+
+(defun ranger-next-parent ()
+  "Move up in parent directory"
+  (interactive)
+  (ranger-up-directory)
+  (ranger-next-file) 
+  (ranger-find-file))
+
+(defun ranger-prev-parent ()
+  "Move up in parent directory"
+  (interactive)
+  (ranger-up-directory)
+  (ranger-prev-file) 
+  (ranger-find-file))
 
 ;; find file subroutines
 (defun ranger-dir-buffer (entry)
