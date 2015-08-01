@@ -222,7 +222,7 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "G"           'ranger-goto-bottom)
   (ranger-map "gh"          'ranger-go-home)
   (ranger-map "B"           'ranger-show-bookmarks)
-  (ranger-map (kbd "C-h")   'ranger-history)
+  (ranger-map "zh"          'ranger-history)
   (ranger-map "H"           'ranger-prev-history)
   (ranger-map "L"           'ranger-next-history)
   (ranger-map "I"           'dired-insert-subdir)
@@ -265,6 +265,36 @@ Outputs a string that will show up on the header-line.")
       (define-key ranger-mode-map "/" 'isearch-forward)
       (define-key ranger-mode-map "n" 'isearch-repeat-forward)
       (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
+
+;; history utilities
+(defun ranger-history (history)
+  "Show history prompt for recent directories"
+  (interactive (list  (completing-read "Select from history" (ring-elements ranger-history-ring))))
+  (when history
+    (ranger-find-file history)))
+
+(defun ranger-jump-history (jump)
+  "Move through history ring by increment `jump'"
+  (let* ((ring ranger-history-ring)
+         (curr-index ranger-history-index)
+         (goto-idx (min
+                    (max 0 (+ curr-index jump))
+                    (- (ring-length ring) 1)))
+         (jump-history (ring-ref ring goto-idx)))
+    (message (format "ranger-history : %i/%i" (+ 1 goto-idx) (ring-length ranger-history-ring)))
+    (when jump-history
+      (setq ranger-history-index goto-idx)
+      (ranger-find-file jump-history t))))
+
+(defun ranger-next-history ()
+  "Move forward in history"
+  (interactive)
+  (ranger-jump-history -1))
+
+(defun ranger-prev-history ()
+  "Move backward in history"
+  (interactive)
+  (ranger-jump-history 1))
 
 ;; interaction
 (defun ranger-refresh ()
@@ -369,47 +399,6 @@ Outputs a string that will show up on the header-line.")
       (ranger-find-file parent)
       (dired-goto-file current))))
 
-(defun ranger-history (history)
-  "Show history prompt for recent directories"
-  (interactive (list  (completing-read "Select from history" (ring-elements ranger-history-ring))))
-  (when history
-    (ranger-find-file history)))
-
-(defun ranger-jump-history (jump)
-  "Move through history ring by increment `jump'"
-  (let* ((ring ranger-history-ring)
-         (curr-index ranger-history-index)
-         (goto-idx (min
-                    (max 0 (+ curr-index jump))
-                    (- (ring-length ring) 1)))
-         (jump-history (ring-ref ring goto-idx)))
-    (when jump-history
-      (setq ranger-history-index goto-idx)
-      (ranger-find-file jump-history t))))
-
-(defun ranger-next-history ()
-  "Move forward in history"
-  (interactive)
-  (ranger-jump-history -1))
-
-(defun ranger-prev-history ()
-  "Move backward in history"
-  (interactive)
-  (ranger-jump-history 1))
-
-(defun ranger-show-bookmarks (bookmark)
-  "Show bookmark prompt for recent directories"
-  (interactive
-   (list
-    (completing-read "Select from bookmarks"
-                     (delq nil (mapcar
-                                #'(lambda (bm)
-                                    (when (file-directory-p (cdr (cadr bm)))
-                                      (cdr  (cadr bm))))
-                                bookmark-alist)))))
-  (when bookmark
-    (ranger-find-file bookmark)))
-
 (defun ranger-find-file (&optional entry ignore-history)
   "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
@@ -421,7 +410,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
       (unless ignore-history
         ;; don't put the same directory twice
         (when (and
-               (file-directory-p (file-name-directory find-name))
+               (file-directory-p find-name)
                (or (ring-empty-p ranger-history-ring)
                    (not (equal find-name (ring-ref ranger-history-ring 0)))))
           (progn
