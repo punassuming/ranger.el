@@ -250,6 +250,9 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "K"           'dired-prev-subdir)
   (ranger-map "?"           'ranger-help)
   (ranger-map "m"           'ranger-create-mark)
+  (ranger-map "yy"          'dired-copy-file)
+  (ranger-map "R"           'dired-rename-file)
+  (ranger-map "D"           'dired-delete-file)
   (ranger-map (kbd "`")     'ranger-goto-mark)
   (ranger-map (kbd "C-SPC") 'dired-mark)
   (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
@@ -270,6 +273,18 @@ Outputs a string that will show up on the header-line.")
       (define-key ranger-mode-map "/" 'isearch-forward)
       (define-key ranger-mode-map "n" 'isearch-repeat-forward)
       (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
+
+;; copy / paste - wip
+(defun ranger-copy ()
+  (interactive))
+
+(defun ranger-cut ()
+  (interactive)
+  )
+
+(defun ranger-paste (&optional overwrite link)
+  (interactive)
+  )
 
 ;; marks
 (defun ranger-show-bookmarks (bookmark)
