@@ -235,7 +235,7 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "l"           'ranger-find-file)
   (ranger-map "o"           'ranger-sort-criteria)
   (ranger-map "q"           'ranger-disable)
-  (ranger-map "r"           'ranger-refresh)
+  (ranger-map (kbd  "C-r")  'ranger-refresh)
   (ranger-map "]"           'ranger-next-parent)
   (ranger-map "["           'ranger-prev-parent)
   (ranger-map "u"           'dired-unmark)
@@ -248,6 +248,9 @@ Outputs a string that will show up on the header-line.")
   (ranger-map "zi"          'ranger-toggle-literal)
   (ranger-map "J"           'dired-next-subdir)
   (ranger-map "K"           'dired-prev-subdir)
+  (ranger-map "?"           'ranger-help)
+  (ranger-map "m"           'ranger-create-mark)
+  (ranger-map (kbd "`")     'ranger-goto-mark)
   (ranger-map (kbd "C-SPC") 'dired-mark)
   (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
   (ranger-map (kbd "C-k")   'ranger-scroll-page-up)
@@ -267,6 +270,42 @@ Outputs a string that will show up on the header-line.")
       (define-key ranger-mode-map "/" 'isearch-forward)
       (define-key ranger-mode-map "n" 'isearch-repeat-forward)
       (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
+
+;; marks
+(defun ranger-show-bookmarks (bookmark)
+  "Show bookmark prompt"
+  (interactive
+   (list
+    (completing-read "Select from bookmarks"
+                     (delq nil (mapcar
+                                #'(lambda (bm)
+                                    (when (file-directory-p (cdr (cadr bm)))
+                                      (cdr  (cadr bm))))
+                                bookmark-alist)))))
+  (when bookmark
+    (ranger-find-file bookmark)))
+
+(defun ranger-create-mark (mark)
+  "Create new bookmark using internal bookmarks"
+  (interactive (list (read-key "m-")))
+  (let ((mark-letter (char-to-string mark)))
+    (bookmark-set (concat "ranger-" mark-letter))))
+
+(defun ranger-goto-mark (mark)
+  "Go to bookmark using internal bookmarks"
+  (interactive (list (read-key 
+                      (mapconcat
+                       #'(lambda (bm)
+                           (when (and
+                                  (string-match "ranger-" (car  bm))
+                                  (file-directory-p (cdr (cadr bm))))
+                             (replace-regexp-in-string "ranger-" "" (car bm))))
+                       bookmark-alist " "))))
+  (let* ((mark-letter (char-to-string mark))
+         (bookmark-name (concat "ranger-" mark-letter))
+         (bookmark-path (bookmark-location bookmark-name)))
+    (when (file-directory-p bookmark-path) 
+      (ranger-find-file bookmark-path))))
 
 ;; history utilities
 (defun ranger-history (history)
@@ -310,6 +349,11 @@ Outputs a string that will show up on the header-line.")
   (revert-buffer)
   ;; setup buffer
   (ranger-setup))
+
+(defun ranger-help ()
+  "Show help message for ranger basics."
+  (interactive)
+  (message "[h/l]-back/forward [j/k]-up/down [f]ind-file [i]nspect-file [^R]eload [S]hell [H/L]-history back/forward"))
 
 (defun ranger-search-files ()
   "Search for files / directories in folder."
