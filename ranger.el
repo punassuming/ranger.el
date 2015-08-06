@@ -7,7 +7,7 @@
 ;; Version: 0.9.4
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
-;; Package-Requires: ((cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
 
 ;; Based on work from
 ;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
@@ -50,6 +50,10 @@
 ;;; Code:
 
 (require 'cl-macs)
+(require 'dired-x)
+(require 'hl-line)
+(require 'autorevert)
+(require 'bookmark)
 
 (declare-function dired-omit-mode "dired-x")
 
@@ -290,9 +294,10 @@ Outputs a string that will show up on the header-line.")
 ;; marks
 (defun ranger-show-bookmarks (bookmark)
   "Show bookmark prompt"
+  (bookmark-maybe-load-default-file)
   (interactive
    (list
-    (completing-read "Select from bookmarks"
+    (completing-read "Select from bookmarks: "
                      (delq nil (mapcar
                                 #'(lambda (bm)
                                     (when (file-directory-p (cdr (cadr bm)))
@@ -309,6 +314,7 @@ Outputs a string that will show up on the header-line.")
 
 (defun ranger-goto-mark (mark)
   "Go to bookmark using internal bookmarks"
+  (bookmark-maybe-load-default-file)
   (interactive (list (read-key 
                       (mapconcat
                        #'(lambda (bm)
@@ -326,7 +332,7 @@ Outputs a string that will show up on the header-line.")
 ;; history utilities
 (defun ranger-history (history)
   "Show history prompt for recent directories"
-  (interactive (list  (completing-read "Select from history" (ring-elements ranger-history-ring))))
+  (interactive (list  (completing-read "Select from history: " (ring-elements ranger-history-ring))))
   (when history
     (ranger-find-file history)))
 
@@ -882,7 +888,7 @@ fraction of the total frame size"
 
 ;;;###autoload
 (defun deer ()
-  "Launch dired in ranger-mode."
+  "Launch dired in a minimal ranger window."
   (interactive)
   (setq ranger-minimal t)
   (ranger))
