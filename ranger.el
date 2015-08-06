@@ -901,7 +901,7 @@ fraction of the total frame size"
   (interactive)
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
-    (when file
+    (when dir
       (add-hook 'window-configuration-change-hook 'ranger-window-check)
       (window-configuration-to-register :ranger_dired_before)
       (ranger-find-file dir))))
