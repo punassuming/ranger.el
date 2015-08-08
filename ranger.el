@@ -650,15 +650,21 @@ slot)."
   "Move up in parent directory"
   (interactive)
   (ranger-up-directory)
-  (ranger-next-file) 
-  (ranger-find-file))
+  (ranger-next-file)
+  (let ((curfile (dired-get-filename nil t)))
+    (when
+        (file-directory-p curfile)
+      (ranger-find-file curfile))))
 
 (defun ranger-prev-parent ()
   "Move up in parent directory"
   (interactive)
   (ranger-up-directory)
-  (ranger-prev-file) 
-  (ranger-find-file))
+  (ranger-prev-file)
+  (let ((curfile (dired-get-filename nil t)))
+    (when
+        (file-directory-p curfile)
+      (ranger-find-file curfile))))
 
 
 ;; window creation subroutines
