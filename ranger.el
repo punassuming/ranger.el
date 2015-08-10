@@ -51,14 +51,18 @@
 
 ;;; Code:
 
+(declare-function dired-omit-mode "dired-x")
+
 (require 'cl-macs)
-(require 'dired-x)
+(require 'dired)
 (require 'hl-line)
 (require 'autorevert)
 (require 'bookmark)
 (require 'ring)
 
-(declare-function dired-omit-mode "dired-x")
+(add-hook 'dired-load-hook
+          (lambda ()
+            (load "dired-x")))
 
 (defgroup ranger ()
   "Modify dired to act like ranger."
