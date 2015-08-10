@@ -66,6 +66,7 @@
 
 (defgroup ranger ()
   "Modify dired to act like ranger."
+  :group 'ranger
   :prefix "ranger-"
   )
 
