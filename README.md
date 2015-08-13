@@ -175,7 +175,7 @@ frame size to prevent filling up entire frame with parents.
 
 You can choose to show previews literally, or through find-file, toggled by `zi`
 ```el
-(setq ranger-show-dotfiles t)
+(setq ranger-show-literal t)
 ```
 
 You can set the size of the preview windows as a fraction of the frame size
