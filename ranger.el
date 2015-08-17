@@ -128,7 +128,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-width-preview 0.50
+(defcustom ranger-width-preview 0.62
   "Fraction of frame width taken by preview window."
   :group 'ranger
   :type 'float)
