@@ -919,18 +919,11 @@ fraction of the total frame size"
          (relative
           (if (string-equal current-name parent-name)
               current-name
-            (file-relative-name current-name parent-name))))
+            (file-relative-name current-name parent-name)))
+         (header (format " %s" relative)))
     (if (eq (get-buffer-window (current-buffer)) ranger-preview-window)
-        (concat
-         (propertize
-          ;; if at base directory, show base
-          (concat " " relative)
-          'face '(:background "#000000" :foreground "#ffffff" :weight bold)))
-      (concat
-       (propertize
-        ;; if at base directory, show base
-        (concat " " relative)
-        'face '(:background "#ffffff" :foreground "#000000" :weight bold))))))
+        (propertize header 'face 'dired-directory-face)
+      (propertize header 'face 'dired-header-face))))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger buffer."
@@ -940,27 +933,19 @@ fraction of the total frame size"
           (if (string-equal current-name parent-name)
               current-name
             (file-relative-name current-name parent-name)))
-         (rhs
-          (concat
-           (format "%s | "
-                   (if ranger-show-literal "literal" "actual"))
-           (format "%s | "
-                   (if ranger-show-dotfiles "show" "hide"))
-           (format "parents: %s " ranger-parent-depth)))
-         (used-length (+ (length rhs) (length relative)))
+         (user (user-login-name))
+         (lhs (format "%s: %s"
+                      (propertize user 'face 'font-lock-keyword-face)
+                      (propertize relative 'face 'dired-header-face)))
+         (rhs (propertize (format "%s | %s | parents: %s"
+                                   (if ranger-show-literal "literal" "actual")
+                                   (if ranger-show-dotfiles "show" "hide")
+                                   ranger-parent-depth)
+                          'face 'font-lock-comment-face))
+         (used-length (+ (length rhs) (length lhs)))
          (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
     (concat
-     (propertize
-      ;; if at base directory, show base
-      (concat " "
-              relative)
-      'face
-      '(
-        :background "#ffffff"
-                    :foreground "#000000"
-                    :weight bold
-                    )
-      )
+     lhs
      filler
      rhs)))
 
