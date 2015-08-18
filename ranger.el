@@ -175,6 +175,7 @@ Outputs a string that will show up on the header-line.")
 (defvar ranger-image-fit-window t)
 
 (defvar ranger-window nil)
+(defvar ranger-buffer nil)
 
 (defvar ranger-minimal nil)
 
@@ -191,6 +192,7 @@ Outputs a string that will show up on the header-line.")
   "List with buffers of parent buffers.")
 (defvar ranger-parent-dirs nil)
 
+(defvar ranger-mode-load-hook nil)
 (defvar ranger-parent-dir-hook '(dired-hide-details-mode
                                  ranger-sort
                                  ranger-omit           ; ; hide extraneous stuf
@@ -279,12 +281,10 @@ Outputs a string that will show up on the header-line.")
   (interactive))
 
 (defun ranger-cut ()
-  (interactive)
-  )
+  (interactive))
 
 (defun ranger-paste (&optional overwrite link)
-  (interactive)
-  )
+  (interactive))
 
 
 ;; marks
@@ -585,6 +585,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (i 0)
         (unused-windows ()))
 
+    (setq ranger-buffer (current-buffer))
     (setq ranger-window (get-buffer-window (current-buffer)))
 
     ;; delete all ranger parent buffers currently not showing
@@ -885,12 +886,15 @@ fraction of the total frame size"
     (progn
       ;; (remove-hook 'find-file-hook 'ranger-exit-check)
       (let ((current (current-buffer))
-            (buffer (buffer-file-name (current-buffer))))
+            (buffer-fn (buffer-file-name (current-buffer))))
         (message "Exiting ranger")
         (ranger-disable)
-        (if buffer
-            (find-file buffer))
-        (switch-to-buffer current)))))
+        (if buffer-fn
+            (find-file buffer-fn))
+        (switch-to-buffer current)
+        ;; cleanup old ranger buffer
+        (kill-buffer ranger-buffer)
+        ))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
@@ -1003,6 +1007,8 @@ fraction of the total frame size"
     (error "Run it from dired buffer"))
   ;; (when (derived-mode-p 'dired-mode)
 
+  (run-hooks 'ranger-mode-load-hook)
+
   (add-hook 'window-configuration-change-hook 'ranger-window-check)
 
   (setq ranger-pre-hl-mode hl-line-mode)
@@ -1019,10 +1025,6 @@ fraction of the total frame size"
 
   ;; set hl-line-mode for ranger usage
   (setq ranger-preview-window nil)
-  (setq ranger-window (get-buffer-window (current-buffer)))
-
-  ;; truncate lines for primary window
-  (set-window-hscroll ranger-window 0)
   (setq truncate-lines t)
 
   (dired-hide-details-mode -1)
@@ -1038,6 +1040,9 @@ fraction of the total frame size"
 
   (ranger-setup-parents)
   (ranger-setup-preview)
+
+  ;; truncate lines for primary window
+  (set-window-hscroll ranger-window 0)
 
   (make-local-variable 'header-line-format)
   (setq header-line-format `(:eval (,ranger-header-func)))
