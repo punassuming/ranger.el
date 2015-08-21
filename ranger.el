@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.4
+;; Version: 0.9.5
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
@@ -48,6 +48,7 @@
 ;; version 0.9.1, 2015-07-19 changed package to ranger
 ;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
 ;; version 0.9.4, 2015-07-31 deer mode, history navigation
+;; version 0.9.5, 2015-08-20 fixed most bugs when reverting from ranger
 
 ;;; Code:
 
@@ -150,21 +151,25 @@
   :type 'string)
 
 ;; header functions
-(defvar ranger-header-func 'ranger-header-line
+(defcustom ranger-header-func 'ranger-header-line
   "Function used to output header of primary ranger window.
-Outputs a string that will show up on the header-line.")
+Outputs a string that will show up on the header-line."
+  :group 'ranger
+  :type 'function)
 
-(defvar ranger-parent-header-func 'ranger-parent-header-line
+(defcustom ranger-parent-header-func 'ranger-subwindow-header-line
   "Function used to output header of primary ranger window.
-Outputs a string that will show up on the header-line.")
+Outputs a string that will show up on the header-line."
+  :group 'ranger
+  :type 'function)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (defvar ranger-history-index 0)
 
 (defvar ranger-sorting-switches nil)
 
-(defvar ranger-history-ring (make-ring 30))
+(defvar ranger-history-ring (make-ring ranger-history-length))
 
 (defvar ranger-child-name nil)
 (make-variable-buffer-local 'ranger-child-name)
@@ -195,10 +200,10 @@ Outputs a string that will show up on the header-line.")
 (defvar ranger-mode-load-hook nil)
 (defvar ranger-parent-dir-hook '(dired-hide-details-mode
                                  ranger-sort
-                                 ranger-omit           ; ; hide extraneous stuf
+                                 ranger-omit
                                  auto-revert-mode
-                                 hl-line-mode               ; ; show line at current file
-                                 ranger-parent-window-setup))
+                                 ranger-sub-window-setup
+                                 ))
 
 (defvar ranger-mode-map (make-sparse-keymap))
 
@@ -290,7 +295,8 @@ Outputs a string that will show up on the header-line.")
 ;; marks
 (defun ranger-show-bookmarks (bookmark)
   "Show bookmark prompt"
-  (bookmark-maybe-load-default-file)
+  (or bookmark-alist
+      (bookmark-maybe-load-default-file))
   (interactive
    (list
     (completing-read "Select from bookmarks: "
@@ -310,7 +316,8 @@ Outputs a string that will show up on the header-line.")
 
 (defun ranger-goto-mark (mark)
   "Go to bookmark using internal bookmarks"
-  (bookmark-maybe-load-default-file)
+  (or bookmark-alist
+      (bookmark-maybe-load-default-file))
   (interactive (list (read-key 
                       (mapconcat
                        #'(lambda (bm)
@@ -399,7 +406,7 @@ Outputs a string that will show up on the header-line.")
   (interactive
    (list
     (read-char-choice
-     "criteria: (n/N)ame (e/E)xt (s/S)ize (t/T)ime" '(?q ?n ?N ?e ?E ?s ?S ?t ?T))))
+     "criteria: (n/N)ame (e/E)xt (s/S)ize (t/T)ime " '(?q ?n ?N ?e ?E ?s ?S ?t ?T))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
            (uppercasep (and (stringp c) (string-equal c (upcase c)) ))
@@ -418,6 +425,18 @@ Outputs a string that will show up on the header-line.")
        (concat dired-listing-switches
                ranger-sorting-switches))
       (ranger-refresh))))
+
+(defun ranger-omit ()
+  "Quietly omit files in dired."
+  (setq-local dired-omit-verbose nil)
+  (dired-omit-mode t))
+
+(defun ranger-sort ()
+  "Perform current sort on directory."
+  (when ranger-persistent-sort
+    (dired-sort-other
+     (concat dired-listing-switches
+             ranger-sorting-switches))))
 
 
 ;; preview windows functions
@@ -456,9 +475,6 @@ Outputs a string that will show up on the header-line.")
   (if ranger-show-literal
       (setq ranger-show-literal nil)
     (setq ranger-show-literal t))
-  ;; (ignore-errors
-  ;;   (mapc 'kill-buffer-if-not-modified ranger-preview-buffers)
-  ;;   (delete-window ranger-preview-window))
   (when ranger-preview-file
     (ranger-setup-preview))
   (message (format "Literal Preview: %s"  ranger-show-literal)))
@@ -481,7 +497,8 @@ Outputs a string that will show up on the header-line.")
   (if (featurep 'helm)
       (call-interactively 'helm-find-files)
     (call-interactively 'ido-find-file))
-  (ranger-exit-check))
+  ;; (ranger-exit-check)
+  )
 
 (defun ranger-up-directory ()
   "Move to parent directory."
@@ -493,24 +510,25 @@ Outputs a string that will show up on the header-line.")
       (dired-goto-file current))))
 
 (defun ranger-find-file (&optional entry ignore-history)
-  "Find file in ranger buffer.  `ENTRY' can be used as option, else will use
+  "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t))))
     (when find-name
-      ;; insert directory in history
-      (unless ignore-history
-        ;; don't put the same directory twice
-        (when (and
-               (file-directory-p find-name)
-               (or (ring-empty-p ranger-history-ring)
-                   (not (equal find-name (ring-ref ranger-history-ring 0)))))
-          (progn
-            (ring-insert ranger-history-ring find-name)
-            (setq ranger-history-index 0))))
+      (unless (and ignore-history
+                   (not (file-directory-p find-name)))
+        (ranger-update-history))
       (find-file find-name)
       (ranger-exit-check))))
+
+(defun ranger-update-history ()
+  "Update history ring and current index"
+  (when (or (ring-empty-p ranger-history-ring)
+            (not (eq find-name (ring-ref ranger-history-ring 0))))
+    (progn
+      (ring-insert ranger-history-ring find-name)
+      (setq ranger-history-index 0))))
 
 (defun ranger-goto-top ()
   "Move to top of file list"
@@ -549,22 +567,22 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 
 
 ;; parent window functions
-(defun ranger-parent-window-setup ()
+(defun ranger-sub-window-setup ()
   "Parent window options."
-  ;; select child
-  (when ranger-child-name
-    (dired-goto-file ranger-child-name))
-
   ;; allow mouse click to jump to that directory
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
+  (local-set-key "q" 'ranger-disable)
 
-  ;; (setq header-line-format nil)
+  ;; set header-line
   (setq header-line-format `(:eval (,ranger-parent-header-func)))
-  (ranger-clear-dired-header)
-  ;; (setq header-line-format '(:eval (format "sl: %s" (window-parameter (get-buffer-window) 'window-slot))))
-  )
+  (ranger-clear-dired-header))
+
+(defun ranger-parent-child-select ()
+    (when ranger-child-name
+      (dired-goto-file ranger-child-name)
+      (hl-line-mode t)))
 
 (defun ranger-less-parents ()
   "Reduce number of ranger parents."
@@ -613,18 +631,22 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
           (setq current-name (ranger-parent-directory current-name))
           (setq parent-name (ranger-parent-directory parent-name))))
       )
-    ;; (message (format "%s" ranger-parent-dirs))
     (mapc 'ranger-make-parent ranger-parent-dirs)
 
     (walk-window-tree
      (lambda (window)
-       (unless (or
-                (member window ranger-parent-windows)
-                (eq window ranger-window))
-         (add-to-list 'unused-windows window)
+       (progn
+         (unless (or
+                  (member window ranger-parent-windows)
+                  (eq window ranger-window))
+           (add-to-list 'unused-windows window))
+         (when (member window ranger-parent-windows)
+           (select-window window)
+           (ranger-parent-child-select))
          ))
      nil nil 'nomini)
 
+    (select-window ranger-window)
     (unless ranger-minimal
       (cl-loop for unused-window in unused-windows do
                (when (and unused-window
@@ -637,18 +659,20 @@ slot)."
   (let* ((parent-name (cdar parent))
          (current-name (caar parent))
          (slot (cdr parent))
+         (parent-buffer (ranger-dir-buffer parent-name))
          (parent-window
           (display-buffer
-           (ranger-dir-buffer parent-name)
+           parent-buffer
            `(ranger-display-buffer-at-side . ((side . left)
                                               (slot . ,(- 0 slot))
                                               (inhibit-same-window . t)
                                               (window-width . ,(min
                                                                 (/ ranger-max-parent-width
                                                                    (length ranger-parent-dirs))
-                                                                ranger-width-parents))))))
-         (parent-buffer (window-buffer parent-window)))
-    (setq ranger-child-name current-name)
+                                                                ranger-width-parents)))))))
+    (with-current-buffer parent-buffer
+      (setq ranger-child-name (directory-file-name current-name)))
+
     (add-to-list 'ranger-parent-buffers parent-buffer)
     (add-to-list 'ranger-parent-windows parent-window)))
 
@@ -771,6 +795,9 @@ is set, show literally instead of actual buffer."
                                                                      (window-width . ,ranger-width-preview)))))
                  (preview-buffer
                   (window-buffer preview-window)))
+            (with-current-buffer preview-buffer
+              (setq header-line-format `(:eval (,ranger-parent-header-func))))
+
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
             (dired-hide-details-mode t)))))))
@@ -823,46 +850,49 @@ fraction of the total frame size"
         (window--display-buffer
          buffer new-window 'window alist display-buffer-mark-dedicated)))))
 
-(defun ranger-omit ()
-  "Quietly omit files in dired."
-  (setq-local dired-omit-verbose nil)
-  (dired-omit-mode t))
-
-(defun ranger-sort ()
-  "Perform current sort on directory."
-  (when ranger-persistent-sort
-    (dired-sort-other
-     (concat dired-listing-switches
-             ranger-sorting-switches))))
-
 
 ;; cleanup and reversion
 (defun ranger-preview-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
-  (mapc 'kill-buffer-if-not-modified ranger-preview-buffers)
+  (mapc 'ranger-kill-buffers ranger-preview-buffers)
   (setq ranger-preview-buffers ()))
 
-(defun ranger-revert ()
+(defun ranger-kill-buffers (buffer)
+  "Delete unmodified buffers and any dired buffer"
+  (when (or
+         (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+         (not (buffer-modified-p buffer)))
+    (kill-buffer buffer)))
+
+(defun ranger-revert (&optional buffer)
   "Revert ranger settings."
 
   (remove-hook 'window-configuration-change-hook 'ranger-window-check)
 
+  ;; restore window configuration
   (when (get-register :ranger_dired_before)
     (ignore-errors
       (jump-to-register :ranger_dired_before))
     (set-register :ranger_dired_before nil))
 
+  ;; delete and cleanup buffers
   (when ranger-cleanup-on-disable
-    (mapc 'kill-buffer-if-not-modified ranger-preview-buffers))
-  (mapc 'kill-buffer ranger-parent-buffers)
+    (mapc 'ranger-kill-buffers ranger-preview-buffers)
+    (mapc 'ranger-kill-buffers ranger-parent-buffers)
+    )
 
-  ;; (mapc #'(lambda (window) (ignore-errors (delete-window window)))
-  ;;       ranger-parent-windows)
-  ;; (setq ranger-parent-windows ())
+  ;; revert appearance
+  (ranger-revert-appearance (or buffer (current-buffer)))
+  (ranger-revert-appearance ranger-buffer)
+
+  ;; clear variables
   (setq ranger-preview-buffers ()
         ranger-parent-buffers ())
+  (setq ranger-minimal nil))
 
-  (setq ranger-minimal nil)
+(defun ranger-revert-appearance (buffer)
+  "Revert the `BUFFER' to pre-ranger defaults"
+  (with-current-buffer buffer
   ;; revert buffer local modes used in ranger
   (unless ranger-pre-hl-mode
     (hl-line-mode -1))
@@ -871,12 +901,9 @@ fraction of the total frame size"
       (auto-revert-mode -1))
     (unless ranger-pre-omit-mode
       (dired-omit-mode -1)))
-
-  ;; revert dired buffer header-line
   (setq header-line-format nil)
-
   (when (derived-mode-p 'dired-mode)
-    (revert-buffer t)))
+      (revert-buffer t))))
 
 (defun ranger-exit-check ()
   "Enable or disable ranger based on mode"
@@ -884,7 +911,6 @@ fraction of the total frame size"
       (progn
         (ranger-enable))
     (progn
-      ;; (remove-hook 'find-file-hook 'ranger-exit-check)
       (let ((current (current-buffer))
             (buffer-fn (buffer-file-name (current-buffer))))
         (message "Exiting ranger")
@@ -916,7 +942,7 @@ fraction of the total frame size"
 
 
 ;; header-line functions
-(defun ranger-parent-header-line ()
+(defun ranger-subwindow-header-line ()
   "Setup header-line for ranger parent buffer."
   (let* ((current-name default-directory)
          (parent-name (ranger-parent-directory default-directory))
@@ -926,7 +952,7 @@ fraction of the total frame size"
             (file-relative-name current-name parent-name)))
          (header (format " %s" relative)))
     (if (eq (get-buffer-window (current-buffer)) ranger-preview-window)
-        (propertize header 'face 'dired-directory-face)
+        (propertize header 'face 'font-lock-function-name-face)
       (propertize header 'face 'dired-header-face))))
 
 (defun ranger-header-line ()
@@ -957,7 +983,7 @@ fraction of the total frame size"
   ;; (when (eq ranger-window (get-buffer-window (current-buffer)))
   (save-excursion
     ;; (dired-hide-subdir)
-    (goto-char 0)
+    (goto-char (point-min))
     (let ((buffer-read-only nil)
           (dired-header-match (point-at-eol)))
       (when (search-forward-regexp ":$" dired-header-match t)
@@ -985,7 +1011,7 @@ fraction of the total frame size"
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
     (when dir
-      (add-hook 'window-configuration-change-hook 'ranger-window-check)
+      ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
       (window-configuration-to-register :ranger_dired_before)
       (ranger-find-file dir))))
 
@@ -1005,7 +1031,6 @@ fraction of the total frame size"
 
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
-  ;; (when (derived-mode-p 'dired-mode)
 
   (run-hooks 'ranger-mode-load-hook)
 
@@ -1048,7 +1073,6 @@ fraction of the total frame size"
   (setq header-line-format `(:eval (,ranger-header-func)))
   (ranger-clear-dired-header))
 
-
 ;;;###autoload
 (define-minor-mode ranger-mode
   "A convienent way to look up file contents in other window while browsing directory in dired"
@@ -1061,7 +1085,6 @@ fraction of the total frame size"
   ;; define keymaps
   (ranger-define-maps)
 
-  ;; only run from dired-mode
   (if ranger-mode
       (ranger-setup)
     (ranger-revert)))
