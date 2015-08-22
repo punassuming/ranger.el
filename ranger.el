@@ -293,20 +293,19 @@ Outputs a string that will show up on the header-line."
 
 
 ;; marks
-(defun ranger-show-bookmarks (bookmark)
+(defun ranger-show-bookmarks ()
   "Show bookmark prompt"
-  (or bookmark-alist
-      (bookmark-maybe-load-default-file))
-  (interactive
-   (list
-    (completing-read "Select from bookmarks: "
-                     (delq nil (mapcar
-                                #'(lambda (bm)
-                                    (when (file-directory-p (cdr (cadr bm)))
-                                      (cdr  (cadr bm))))
-                                bookmark-alist)))))
-  (when bookmark
-    (ranger-find-file bookmark)))
+  (interactive)
+  (unless bookmark-alist
+    (bookmark-maybe-load-default-file))
+  (let ((bookmark (completing-read "Select from bookmarks: "
+                                   (delq nil (mapcar
+                                              #'(lambda (bm)
+                                                  (when (file-directory-p (cdr (cadr bm)))
+                                                    (cdr  (cadr bm))))
+                                              bookmark-alist)))))
+    (when bookmark
+      (ranger-find-file bookmark))))
 
 (defun ranger-create-mark (mark)
   "Create new bookmark using internal bookmarks"
@@ -314,19 +313,20 @@ Outputs a string that will show up on the header-line."
   (let ((mark-letter (char-to-string mark)))
     (bookmark-set (concat "ranger-" mark-letter))))
 
-(defun ranger-goto-mark (mark)
+(defun ranger-goto-mark ()
   "Go to bookmark using internal bookmarks"
-  (or bookmark-alist
-      (bookmark-maybe-load-default-file))
-  (interactive (list (read-key 
-                      (mapconcat
-                       #'(lambda (bm)
-                           (when (and
-                                  (string-match "ranger-" (car  bm))
-                                  (file-directory-p (cdr (cadr bm))))
-                             (replace-regexp-in-string "ranger-" "" (car bm))))
-                       bookmark-alist " "))))
-  (let* ((mark-letter (char-to-string mark))
+  (interactive)
+  (unless bookmark-alist
+    (bookmark-maybe-load-default-file))
+  (let* ((mark (read-key 
+                (mapconcat
+                 #'(lambda (bm)
+                     (when (and
+                            (string-match "ranger-" (car  bm))
+                            (file-directory-p (cdr (cadr bm))))
+                       (replace-regexp-in-string "ranger-" "" (car bm))))
+                 bookmark-alist " ")))
+         (mark-letter (char-to-string mark))
          (bookmark-name (concat "ranger-" mark-letter))
          (bookmark-path (bookmark-location bookmark-name)))
     (when (file-directory-p bookmark-path) 
