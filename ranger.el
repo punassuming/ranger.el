@@ -512,7 +512,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (let ((find-name (or entry
                        (dired-get-filename nil t))))
     (when find-name
-      (unless (and ignore-history
+      (unless (or ignore-history
                    (not (file-directory-p find-name)))
         (ranger-update-history))
       (find-file find-name)
