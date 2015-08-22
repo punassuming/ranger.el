@@ -61,10 +61,6 @@
 (require 'bookmark)
 (require 'ring)
 
-(add-hook 'dired-load-hook
-          (lambda ()
-            (load "dired-x")))
-
 (defgroup ranger ()
   "Modify dired to act like ranger."
   :group 'ranger
@@ -1031,6 +1027,8 @@ fraction of the total frame size"
 
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
+
+  (require 'dired-x)
 
   (run-hooks 'ranger-mode-load-hook)
 
