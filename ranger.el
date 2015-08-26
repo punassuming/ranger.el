@@ -530,13 +530,15 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Move to top of file list"
   (interactive)
   (goto-char (point-min))
-  (ranger-prev-file))
+  (ranger-prev-file)
+  (ranger-show-details))
 
 (defun ranger-goto-bottom ()
   "Move to top of file list"
   (interactive)
   (goto-char (point-max))
-  (ranger-next-file))
+  (ranger-next-file)
+  (ranger-show-details))
 
 (defun ranger-go-home ()
   "Move to top of file list"
@@ -550,6 +552,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (dired-next-line 1)
   (when (eobp)
     (dired-next-line -1))
+  (ranger-show-details)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
@@ -558,10 +561,25 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   ;; (unless (bobp)
   (dired-previous-line 1)
+  (ranger-show-details)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
+(defun ranger-show-details ()
+  "Echo file details"
+  (let* ((entry (dired-get-filename nil t))
+         (fattr (file-attributes entry))
+         (fwidth (frame-width)))
+    (message (format
+              (format "%%-%ds : %%s : %%s"
+                      (- fwidth 32))
+              entry
+              (format-time-string "%Y-%m-%d %H:%m"
+                                  (nth 5 fattr))
+              ;; (nth 7 fattr)
+              (nth 8 fattr)))))
 
+
 ;; parent window functions
 (defun ranger-sub-window-setup ()
   "Parent window options."
@@ -863,6 +881,8 @@ fraction of the total frame size"
 
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
+
+
   ;; restore window configuration
   (when (get-register :ranger_dired_before)
     (ignore-errors
