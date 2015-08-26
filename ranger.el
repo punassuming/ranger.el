@@ -250,7 +250,7 @@ Outputs a string that will show up on the header-line."
   (ranger-map "z+"          'ranger-more-parents)
   (ranger-map "z-"          'ranger-less-parents)
   (ranger-map "zf"          'ranger-toggle-scale-images)
-  (ranger-map "zz"          'ranger-history)
+  (ranger-map "zz"          'ranger-show-history)
   (ranger-map "zh"          'ranger-toggle-dotfiles)
   (ranger-map "zi"          'ranger-toggle-literal)
   (ranger-map "zp"          'ranger-minimal-toggle)
@@ -330,9 +330,9 @@ Outputs a string that will show up on the header-line."
 
 
 ;; history utilities
-(defun ranger-history (history)
+(defun ranger-show-history (history)
   "Show history prompt for recent directories"
-  (interactive (list  (completing-read "Select from history: " (ring-elements ranger-history-ring))))
+  (interactive (list  (completing-read "Select from history: " (delq nil (remove-duplicates (ring-elements ranger-history-ring))))))
   (when history
     (ranger-find-file history)))
 
@@ -513,17 +513,17 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                        (dired-get-filename nil t))))
     (when find-name
       (unless (or ignore-history
-                   (not (file-directory-p find-name)))
-        (ranger-update-history))
+                  (not (file-directory-p find-name)))
+        (ranger-update-history find-name))
       (find-file find-name)
       (ranger-exit-check))))
 
-(defun ranger-update-history ()
+(defun ranger-update-history (name)
   "Update history ring and current index"
   (when (or (ring-empty-p ranger-history-ring)
-            (not (eq find-name (ring-ref ranger-history-ring 0))))
+            (not (eq name (ring-ref ranger-history-ring 0))))
     (progn
-      (ring-insert ranger-history-ring find-name)
+      (ring-insert ranger-history-ring (directory-file-name name))
       (setq ranger-history-index 0))))
 
 (defun ranger-goto-top ()
