@@ -492,9 +492,7 @@ Outputs a string that will show up on the header-line."
   (interactive)
   (if (featurep 'helm)
       (call-interactively 'helm-find-files)
-    (call-interactively 'ido-find-file))
-  ;; (ranger-exit-check)
-  )
+    (call-interactively 'ido-find-file)))
 
 (defun ranger-up-directory ()
   "Move to parent directory."
@@ -515,8 +513,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
       (unless (or ignore-history
                   (not (file-directory-p find-name)))
         (ranger-update-history find-name))
-      (find-file find-name)
-      (ranger-exit-check))))
+      (display-buffer
+       (find-file find-name)
+       '(display-buffer-reuse-window . ((inhibit-same-window . t))))
+      (ranger-still-dired))))
 
 (defun ranger-update-history (name)
   "Update history ring and current index"
@@ -569,7 +569,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
-  (local-set-key "q" 'ranger-disable)
 
   ;; set header-line
   (setq header-line-format `(:eval (,ranger-parent-header-func)))
@@ -637,12 +636,13 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                   (eq window ranger-window))
            (add-to-list 'unused-windows window))
          (when (member window ranger-parent-windows)
+           ;; select-window needed for hl-line
            (select-window window)
-           (ranger-parent-child-select))
-         ))
+           (ranger-parent-child-select))))
      nil nil 'nomini)
 
     (select-window ranger-window)
+
     (unless ranger-minimal
       (cl-loop for unused-window in unused-windows do
                (when (and unused-window
@@ -791,6 +791,7 @@ is set, show literally instead of actual buffer."
                                                                      (window-width . ,ranger-width-preview)))))
                  (preview-buffer
                   (window-buffer preview-window)))
+
             (with-current-buffer preview-buffer
               (setq header-line-format `(:eval (,ranger-parent-header-func))))
 
@@ -862,9 +863,6 @@ fraction of the total frame size"
 
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
-
-  (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-
   ;; restore window configuration
   (when (get-register :ranger_dired_before)
     (ignore-errors
@@ -889,42 +887,49 @@ fraction of the total frame size"
 (defun ranger-revert-appearance (buffer)
   "Revert the `BUFFER' to pre-ranger defaults"
   (with-current-buffer buffer
-  ;; revert buffer local modes used in ranger
-  (unless ranger-pre-hl-mode
-    (hl-line-mode -1))
-  (when (derived-mode-p 'dired-mode)
-    (unless ranger-pre-arev-mode
-      (auto-revert-mode -1))
-    (unless ranger-pre-omit-mode
-      (dired-omit-mode -1)))
-  (setq header-line-format nil)
-  (when (derived-mode-p 'dired-mode)
+    ;; revert buffer local modes used in ranger
+    (unless ranger-pre-hl-mode
+      (hl-line-mode -1))
+    (when (derived-mode-p 'dired-mode)
+      (unless ranger-pre-arev-mode
+        (auto-revert-mode -1))
+      (unless ranger-pre-omit-mode
+        (dired-omit-mode -1)))
+    (setq header-line-format nil)
+    (when (derived-mode-p 'dired-mode)
       (revert-buffer t))))
 
-(defun ranger-exit-check ()
+(defun ranger-still-dired ()
   "Enable or disable ranger based on mode"
   (if (derived-mode-p 'dired-mode)
       (progn
-        (ranger-enable))
+        (ranger-enable)
+        (ranger-show-details))
     (progn
       (let ((current (current-buffer))
             (buffer-fn (buffer-file-name (current-buffer))))
-        (message "Exiting ranger")
-        (ranger-disable)
         (if buffer-fn
-            (find-file buffer-fn))
-        (switch-to-buffer current)
-        ;; cleanup old ranger buffer
-        (kill-buffer ranger-buffer)
-        ))))
+        (progn
+          (message "Exiting ranger")
+          (ranger-disable)
+          (find-file buffer-fn)
+          ;; cleanup old ranger buffer
+          (kill-buffer ranger-buffer))
+        (progn
+          (message "Redirecting window to new frame")
+          (set-window-buffer nil ranger-buffer)
+          (display-buffer-other-frame current)))))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
-  (when (and
-         (not ranger-mode)
-         (eq ranger-window (selected-window)))
-    (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-    (ranger-exit-check)))
+  (let ((windows (window-list)))
+    (unless
+        (and
+         (memq ranger-window windows)
+         ;; (window-live-p ranger-window)
+         (eq (window-buffer ranger-window) ranger-buffer))
+      (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+      (ranger-still-dired))))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -1007,7 +1012,6 @@ fraction of the total frame size"
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
     (when dir
-      ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
       (window-configuration-to-register :ranger_dired_before)
       (ranger-find-file dir))))
 
@@ -1032,13 +1036,19 @@ fraction of the total frame size"
 
   (run-hooks 'ranger-mode-load-hook)
 
-  (add-hook 'window-configuration-change-hook 'ranger-window-check)
+  (unless ranger-minimal
+    ;; clear out everything
+    (delete-other-windows))
+
+  (setq ranger-buffer (current-buffer))
+  (setq ranger-window (get-buffer-window (current-buffer)))
 
   (setq ranger-pre-hl-mode hl-line-mode)
   (setq ranger-pre-arev-mode auto-revert-mode)
   (setq ranger-pre-omit-mode dired-omit-mode)
   (hl-line-mode t)
 
+  ;; unless specified from running `ranger'
   (unless (get-register :ranger_dired_before)
     (window-configuration-to-register :ranger_dired_before))
 
@@ -1057,19 +1067,16 @@ fraction of the total frame size"
 
   (ranger-sort)
 
-  (unless ranger-minimal
-    ;; clear out everything
-    (delete-other-windows))
-
   (ranger-setup-parents)
   (ranger-setup-preview)
 
   ;; truncate lines for primary window
   (set-window-hscroll ranger-window 0)
 
-  (make-local-variable 'header-line-format)
+
   (setq header-line-format `(:eval (,ranger-header-func)))
-  (ranger-clear-dired-header))
+  (ranger-clear-dired-header)
+  )
 
 ;;;###autoload
 (define-minor-mode ranger-mode
@@ -1084,8 +1091,14 @@ fraction of the total frame size"
   (ranger-define-maps)
 
   (if ranger-mode
-      (ranger-setup)
-    (ranger-revert)))
+      (progn
+        (ranger-setup)
+        (add-hook 'window-configuration-change-hook 'ranger-window-check))
+    (progn
+      (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+      (ranger-revert)
+      )
+    ))
 
 (provide 'ranger)
 
