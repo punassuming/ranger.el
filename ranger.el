@@ -972,9 +972,10 @@ fraction of the total frame size"
               current-name
             (file-relative-name current-name parent-name)))
          (header (format " %s" relative)))
-    (if (eq (get-buffer-window (current-buffer)) ranger-preview-window)
-        (propertize header 'face 'font-lock-function-name-face)
-      (propertize header 'face 'dired-header-face))))
+    (if (equal (get-buffer-window (current-buffer)) ranger-preview-window)
+        (propertize (buffer-name (current-buffer))
+                    'face 'font-lock-function-name-face)
+        (propertize header 'face 'dired-header))))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger buffer."
@@ -987,10 +988,10 @@ fraction of the total frame size"
          (user (user-login-name))
          (lhs (format "%s: %s"
                       (propertize user 'face 'font-lock-keyword-face)
-                      (propertize relative 'face 'dired-header-face)))
-         (rhs (propertize (format "%s | %s | parents: %s"
-                                   (if ranger-show-literal "literal" "actual")
-                                   (if ranger-show-dotfiles "show" "hide")
+                      (propertize relative 'face 'dired-header)))
+         (rhs (propertize (format "%s / %s"
+                                   (if ranger-show-dotfiles ".." "")
+                                   ;; (if ranger-show-literal "raw" "act")
                                    ranger-parent-depth)
                           'face 'font-lock-comment-face))
          (used-length (+ (length rhs) (length lhs)))
