@@ -894,10 +894,10 @@ fraction of the total frame size"
 ;; cleanup and reversion
 (defun ranger-preview-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
-  (mapc 'ranger-kill-buffers ranger-preview-buffers)
+  (mapc 'ranger-kill-buffer ranger-preview-buffers)
   (setq ranger-preview-buffers ()))
 
-(defun ranger-kill-buffers (buffer)
+(defun ranger-kill-buffer (buffer)
   "Delete unmodified buffers and any dired buffer"
   (when (or
          (eq 'dired-mode (buffer-local-value 'major-mode buffer))
@@ -917,14 +917,21 @@ fraction of the total frame size"
   (ranger-revert-appearance ranger-buffer)
 
   ;; delete and cleanup buffers
-  (when ranger-cleanup-on-disable
-    (mapc 'ranger-kill-buffers ranger-preview-buffers)
-    (mapc 'ranger-kill-buffers ranger-parent-buffers))
+  (let ((all-ranger-buffers (append
+                              ranger-preview-buffers
+                              ranger-parent-buffers
+                              (list ranger-buffer)
+                              nil)))
+    (if ranger-cleanup-on-disable
+        (mapc 'ranger-kill-buffer all-ranger-buffers)
+      (mapc 'ranger-revert-appearance all-ranger-buffers)))
 
   ;; clear variables
   (setq ranger-preview-buffers ()
         ranger-parent-buffers ())
-  (setq ranger-minimal nil))
+  (setq ranger-minimal nil)
+  ;; clear ranger-show-details information
+  (message "%s" ""))
 
 (defun ranger-revert-appearance (buffer)
   "Revert the `BUFFER' to pre-ranger defaults"
@@ -933,13 +940,12 @@ fraction of the total frame size"
       ;; revert buffer local modes used in ranger
       (unless ranger-pre-hl-mode
         (hl-line-mode -1))
+      (setq header-line-format nil)
       (when (derived-mode-p 'dired-mode)
         (unless ranger-pre-arev-mode
           (auto-revert-mode -1))
         (unless ranger-pre-omit-mode
-          (dired-omit-mode -1)))
-      (setq header-line-format nil)
-      (when (derived-mode-p 'dired-mode)
+          (dired-omit-mode -1))
         (dired-hide-details-mode -1)
         ;; hide details line at top
         (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
@@ -958,10 +964,7 @@ fraction of the total frame size"
             (progn
               (message "Exiting ranger")
               (ranger-disable)
-              ;; cleanup old ranger buffer
-              (kill-buffer ranger-buffer)
-              (find-file buffer-fn)
-              )
+              (find-file buffer-fn))
           (progn
             (message "Redirecting window to new frame")
             (set-window-buffer nil ranger-buffer)
@@ -1107,6 +1110,9 @@ fraction of the total frame size"
   ;; set hl-line-mode for ranger usage
   (setq ranger-preview-window nil)
   (setq truncate-lines t)
+
+  (make-local-variable 'dired-hide-symlink-targets)
+  (setq dired-hide-details-hide-symlink-targets nil)
 
   (dired-hide-details-mode -1)
 
