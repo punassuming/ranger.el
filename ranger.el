@@ -179,6 +179,7 @@ Outputs a string that will show up on the header-line."
 
 (defvar ranger-minimal nil)
 
+(defvar ranger-pre-saved nil)
 (defvar ranger-pre-hl-mode nil)
 (defvar ranger-pre-arev-mode nil)
 (defvar ranger-pre-omit-mode nil)
@@ -191,6 +192,9 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-parent-buffers ()
   "List with buffers of parent buffers.")
 (defvar ranger-parent-dirs nil)
+
+(defvar ranger-visited-buffers ()
+  "List of buffers visited in ranger")
 
 (defvar ranger-mode-load-hook nil)
 (defvar ranger-parent-dir-hook '(dired-hide-details-mode
@@ -313,7 +317,7 @@ Outputs a string that will show up on the header-line."
   (interactive)
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
-  (let* ((mark (read-key 
+  (let* ((mark (read-key
                 (mapconcat
                  #'(lambda (bm)
                      (when (and
@@ -324,7 +328,7 @@ Outputs a string that will show up on the header-line."
          (mark-letter (char-to-string mark))
          (bookmark-name (concat "ranger-" mark-letter))
          (bookmark-path (bookmark-location bookmark-name)))
-    (when (file-directory-p bookmark-path) 
+    (when (file-directory-p bookmark-path)
       (ranger-find-file bookmark-path))))
 
 
@@ -589,7 +593,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                           space)
                   (propertize file-name 'face 'font-lock-function-name-face)
                   file-size
-                  (propertize 
+                  (propertize
                    file-date
                    'face 'font-lock-warning-face)
                   file-perm))))
@@ -644,10 +648,12 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-buffer (current-buffer))
     (setq ranger-window (get-buffer-window (current-buffer)))
 
-    ;; delete all ranger parent buffers currently not showing
-    (cl-loop for buffer in ranger-parent-buffers do
-             (unless (eq (get-buffer-window buffer) ranger-window)
-               (kill-buffer buffer)))
+    (setq ranger-visited-buffers (append ranger-parent-buffers ranger-visited-buffers))
+
+    ;; ;; delete all ranger parent buffers currently not showing
+    ;; (cl-loop for buffer in ranger-parent-buffers do
+    ;;          (unless (eq (get-buffer-window buffer) ranger-window)
+    ;;            (kill-buffer buffer)))
 
     (setq ranger-parent-buffers ())
     (setq ranger-parent-windows ())
@@ -899,9 +905,11 @@ fraction of the total frame size"
 
 (defun ranger-kill-buffer (buffer)
   "Delete unmodified buffers and any dired buffer"
-  (when (or
-         (eq 'dired-mode (buffer-local-value 'major-mode buffer))
-         (not (buffer-modified-p buffer)))
+  (when
+      (and
+       (buffer-live-p buffer)
+       (or (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+           (not (buffer-modified-p buffer))))
     (kill-buffer buffer)))
 
 (defun ranger-revert (&optional buffer)
@@ -917,17 +925,21 @@ fraction of the total frame size"
   (ranger-revert-appearance ranger-buffer)
 
   ;; delete and cleanup buffers
-  (let ((all-ranger-buffers (append
-                              ranger-preview-buffers
-                              ranger-parent-buffers
-                              (list ranger-buffer)
-                              nil)))
+  (let ((all-ranger-buffers
+         (cl-remove-duplicates
+         (append
+          ranger-preview-buffers
+          ranger-parent-buffers
+          ranger-visited-buffers
+          (list ranger-buffer)))))
+    ;; (message (format "all buffers : %s" all-ranger-buffers))
     (if ranger-cleanup-on-disable
         (mapc 'ranger-kill-buffer all-ranger-buffers)
       (mapc 'ranger-revert-appearance all-ranger-buffers)))
 
   ;; clear variables
   (setq ranger-preview-buffers ()
+        ranger-visited-buffers ()
         ranger-parent-buffers ())
   (setq ranger-minimal nil)
   ;; clear ranger-show-details information
@@ -938,15 +950,19 @@ fraction of the total frame size"
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       ;; revert buffer local modes used in ranger
+      ;; (message (format "reverting : %s" buffer))
+
       (unless ranger-pre-hl-mode
         (hl-line-mode -1))
+      (unless ranger-pre-arev-mode
+        (auto-revert-mode -1))
       (setq header-line-format nil)
       (when (derived-mode-p 'dired-mode)
-        (unless ranger-pre-arev-mode
-          (auto-revert-mode -1))
         (unless ranger-pre-omit-mode
           (dired-omit-mode -1))
         (dired-hide-details-mode -1)
+        ;; revert ranger-mode
+        (setq ranger-mode nil)
         ;; hide details line at top
         (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
         (revert-buffer t)))))
@@ -1087,16 +1103,22 @@ fraction of the total frame size"
 
   (run-hooks 'ranger-mode-load-hook)
 
+  (unless ranger-pre-saved
+    (setq ranger-pre-hl-mode hl-line-mode)
+    (setq ranger-pre-arev-mode auto-revert-mode)
+    (setq ranger-pre-omit-mode dired-omit-mode)
+    (setq ranger-pre-saved t))
+
   (unless ranger-minimal
     ;; clear out everything
     (delete-other-windows))
 
+
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
 
-  (setq ranger-pre-hl-mode hl-line-mode)
-  (setq ranger-pre-arev-mode auto-revert-mode)
-  (setq ranger-pre-omit-mode dired-omit-mode)
+  (add-to-list 'ranger-visited-buffers ranger-buffer)
+
   (hl-line-mode t)
 
   ;; unless specified from running `ranger'
