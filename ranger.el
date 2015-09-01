@@ -331,7 +331,7 @@ Outputs a string that will show up on the header-line."
 ;; history utilities
 (defun ranger-show-history (history)
   "Show history prompt for recent directories"
-  (interactive (list  (completing-read "Select from history: " (delq nil (remove-duplicates (ring-elements ranger-history-ring))))))
+  (interactive (list  (completing-read "Select from history: " (delq nil (cl-remove-duplicates (ring-elements ranger-history-ring))))))
   (when history
     (ranger-find-file history)))
 
@@ -566,15 +566,41 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Echo file details"
   (let* ((entry (dired-get-filename nil t))
          (fattr (file-attributes entry))
-         (fwidth (frame-width)))
+         (fwidth (frame-width))
+         (file-size (ranger-format-file-size (nth 7 fattr)))
+         (file-date
+          (format-time-string "%Y-%m-%d %H:%m"
+                              (nth 5 fattr)))
+         (file-perm
+          (nth 8 fattr))
+         (space (- fwidth 7
+                   (length file-size)
+                   (length file-date)
+                   (length file-perm)
+                   ))
+         (file-name (if (> (length entry) space)
+                        (concat ".." (substring entry (- (length entry) space -2)))
+                      entry)))
     (message (format
-              (format "%%-%ds : %%s : %%s"
-                      (- fwidth 32))
-              entry
-              (format-time-string "%Y-%m-%d %H:%m"
-                                  (nth 5 fattr))
-              ;; (nth 7 fattr)
-              (nth 8 fattr)))))
+              (format "%%-%ds %%s : %%s : %%s"
+                      space)
+              (propertize file-name 'face 'font-lock-function-name-face)
+              file-size
+              (propertize 
+               file-date
+               'face 'font-lock-warning-face)
+              file-perm
+              ))))
+
+(defun ranger-format-file-size (file-size)
+  "show file size in human readable form."
+  (if (< file-size 1024)
+      (format (if (floatp file-size) " %5.0f" " %5d") file-size)
+    (do ((file-size (/ file-size 1024.0) (/ file-size 1024.0))
+         ;; kilo, mega, giga, tera, peta, exa
+         (post-fixes (list "k" "M" "G" "T" "P" "E") (cdr post-fixes)))
+        ((< file-size 1024) (format " %4.0f%s"  file-size (car post-fixes))))))
+
 
 
 ;; parent window functions
