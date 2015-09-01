@@ -940,6 +940,9 @@ fraction of the total frame size"
           (dired-omit-mode -1)))
       (setq header-line-format nil)
       (when (derived-mode-p 'dired-mode)
+        (dired-hide-details-mode -1)
+        ;; hide details line at top
+        (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
         (revert-buffer t)))))
 
 (defun ranger-still-dired ()
