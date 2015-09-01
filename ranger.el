@@ -54,7 +54,7 @@
 
 (declare-function dired-omit-mode "dired-x")
 
-(require 'cl-macs)
+(require 'cl)
 (require 'dired)
 (require 'hl-line)
 (require 'autorevert)
@@ -573,30 +573,32 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                               (nth 5 fattr)))
          (file-perm
           (nth 8 fattr))
-         (space (- fwidth 7
+         (space (- fwidth 8
                    (length file-size)
                    (length file-date)
                    (length file-perm)
                    ))
-         (file-name (if (> (length entry) space)
+         (file-name (cl-substitute
+                     "%%"
+                     "%"
+                     (if (> (length entry) space)
                         (concat ".." (substring entry (- (length entry) space -2)))
-                      entry)))
-    (message (format
-              (format "%%-%ds %%s : %%s : %%s"
-                      space)
-              (propertize file-name 'face 'font-lock-function-name-face)
-              file-size
-              (propertize 
-               file-date
-               'face 'font-lock-warning-face)
-              file-perm
-              ))))
+                      entry))))
+        (message "%s" (format
+                  (format "%%-%ds %%s : %%s : %%s"
+                          space)
+                  (propertize file-name 'face 'font-lock-function-name-face)
+                  file-size
+                  (propertize 
+                   file-date
+                   'face 'font-lock-warning-face)
+                  file-perm))))
 
 (defun ranger-format-file-size (file-size)
   "show file size in human readable form."
   (if (< file-size 1024)
       (format (if (floatp file-size) " %5.0f" " %5d") file-size)
-    (do ((file-size (/ file-size 1024.0) (/ file-size 1024.0))
+    (cl-do ((file-size (/ file-size 1024.0) (/ file-size 1024.0))
          ;; kilo, mega, giga, tera, peta, exa
          (post-fixes (list "k" "M" "G" "T" "P" "E") (cdr post-fixes)))
         ((< file-size 1024) (format " %4.0f%s"  file-size (car post-fixes))))))
