@@ -64,8 +64,7 @@
 (defgroup ranger ()
   "Modify dired to act like ranger."
   :group 'ranger
-  :prefix "ranger-"
-  )
+  :prefix "ranger-")
 
 ;; directory options
 (defcustom ranger-cleanup-on-disable t
@@ -885,14 +884,14 @@ fraction of the total frame size"
       (jump-to-register :ranger_dired_before))
     (set-register :ranger_dired_before nil))
 
+  ;; revert appearance
+  (ranger-revert-appearance (or buffer (current-buffer)))
+  (ranger-revert-appearance ranger-buffer)
+
   ;; delete and cleanup buffers
   (when ranger-cleanup-on-disable
     (mapc 'ranger-kill-buffers ranger-preview-buffers)
     (mapc 'ranger-kill-buffers ranger-parent-buffers))
-
-  ;; revert appearance
-  (ranger-revert-appearance (or buffer (current-buffer)))
-  (ranger-revert-appearance ranger-buffer)
 
   ;; clear variables
   (setq ranger-preview-buffers ()
@@ -901,18 +900,19 @@ fraction of the total frame size"
 
 (defun ranger-revert-appearance (buffer)
   "Revert the `BUFFER' to pre-ranger defaults"
-  (with-current-buffer buffer
-    ;; revert buffer local modes used in ranger
-    (unless ranger-pre-hl-mode
-      (hl-line-mode -1))
-    (when (derived-mode-p 'dired-mode)
-      (unless ranger-pre-arev-mode
-        (auto-revert-mode -1))
-      (unless ranger-pre-omit-mode
-        (dired-omit-mode -1)))
-    (setq header-line-format nil)
-    (when (derived-mode-p 'dired-mode)
-      (revert-buffer t))))
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      ;; revert buffer local modes used in ranger
+      (unless ranger-pre-hl-mode
+        (hl-line-mode -1))
+      (when (derived-mode-p 'dired-mode)
+        (unless ranger-pre-arev-mode
+          (auto-revert-mode -1))
+        (unless ranger-pre-omit-mode
+          (dired-omit-mode -1)))
+      (setq header-line-format nil)
+      (when (derived-mode-p 'dired-mode)
+        (revert-buffer t)))))
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on mode"
@@ -926,11 +926,11 @@ fraction of the total frame size"
         (if buffer-fn
             (progn
               (message "Exiting ranger")
-              (save-current-buffer
-                (ranger-disable)
-                ;; (find-file buffer-fn)
-                ;; cleanup old ranger buffer
-                (kill-buffer ranger-buffer)))
+              (ranger-disable)
+              ;; cleanup old ranger buffer
+              (kill-buffer ranger-buffer)
+              (find-file buffer-fn)
+              )
           (progn
             (message "Redirecting window to new frame")
             (set-window-buffer nil ranger-buffer)
