@@ -53,8 +53,16 @@
 ;;; Code:
 
 (declare-function dired-omit-mode "dired-x")
+(declare-function dired-kill-tree "dired-aux")
+(declare-function image-dired-display-window-height "image-dired")
+(declare-function image-dired-display-window-width "image-dired")
+(declare-function image-dired-create-display-image-buffer "image-dired")
+(declare-function image-dired-insert-image "image-dired")
+(declare-function image-dired-update-property "image-dired")
+(declare-function evil-define-key "evil-core")
+(declare-function format-spec "format-spec")
 
-(require 'cl)
+(require 'cl-lib)
 (require 'dired)
 (require 'hl-line)
 (require 'autorevert)
@@ -159,6 +167,14 @@ Outputs a string that will show up on the header-line."
   :type 'function)
 
 
+
+(defvar ranger-mode)
+(defvar dired-omit-verbose)
+(defvar dired-omit-mode)
+(defvar image-dired-temp-image-file)
+(defvar image-dired-cmd-create-temp-image-program)
+(defvar image-dired-cmd-create-temp-image-options)
+(defvar image-dired-display-image-buffer)
 
 (defvar ranger-history-index 0)
 
