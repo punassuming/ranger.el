@@ -12,6 +12,8 @@
 ;; Based on work from
 ;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 
+;;; License:
+
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -59,7 +61,6 @@
 (declare-function image-dired-create-display-image-buffer "image-dired")
 (declare-function image-dired-insert-image "image-dired")
 (declare-function image-dired-update-property "image-dired")
-(declare-function evil-define-key "evil-core")
 (declare-function format-spec "format-spec")
 
 (require 'cl-lib)
@@ -227,15 +228,13 @@ Outputs a string that will show up on the header-line."
 (defmacro ranger-map (key func)
   "Define macro to bind evil and emacs state for ranger"
   `(progn
-     (when (featurep 'evil)
-       (evil-define-key 'normal ranger-mode-map ,key ,func))
+     (eval-after-load 'evil
+       '(evil-define-key 'normal ranger-mode-map ,key ,func))
      (define-key ranger-mode-map ,key ,func)))
 
 ;; mappings
 (when ranger-key
-  (when (featurep 'evil)
-    (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
-  (define-key dired-mode-map (kbd ranger-key) 'ranger-mode))
+  (ranger-map (kbd ranger-key) 'ranger-mode))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
@@ -280,20 +279,20 @@ Outputs a string that will show up on the header-line."
   (ranger-map (kbd "RET")   'ranger-find-file)
   (ranger-map (kbd "`")     'ranger-goto-mark)
 
-  (if (featurep 'evil)
-      (progn
-        ;; some evil specific bindings
-        (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-        (evil-define-key 'normal ranger-mode-map
-          "V"            'evil-visual-line
-          "n"            'evil-search-next
-          "N"            'evil-search-previous)
-        (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
-    (progn
-      ;; and simulating search in standard emacs
-      (define-key ranger-mode-map "/" 'isearch-forward)
-      (define-key ranger-mode-map "n" 'isearch-repeat-forward)
-      (define-key ranger-mode-map "N" 'isearch-repeat-backward))))
+  (eval-after-load 'evil
+    '(progn
+       ;; some evil specific bindings
+       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+       (evil-define-key 'normal ranger-mode-map
+         "V"            'evil-visual-line
+         "n"            'evil-search-next
+         "N"            'evil-search-previous)
+       (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
+
+  ;; and simulating search in standard emacs
+  (define-key ranger-mode-map "/" 'isearch-forward)
+  (define-key ranger-mode-map "n" 'isearch-repeat-forward)
+  (define-key ranger-mode-map "N" 'isearch-repeat-backward))
 
 
 ;; copy / paste - wip
