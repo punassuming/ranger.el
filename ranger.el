@@ -224,75 +224,72 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-mode-map (make-sparse-keymap))
 
 
-;; mapping macro
-(defmacro ranger-map (key func)
-  "Define macro to bind evil and emacs state for ranger"
-  `(progn
-     (eval-after-load 'evil
-       '(evil-define-key 'normal ranger-mode-map ,key ,func))
-     (define-key ranger-mode-map ,key ,func)))
 
 ;; mappings
 (when ranger-key
-  (ranger-map (kbd ranger-key) 'ranger-mode))
+  (eval-after-load 'evil
+    '(evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
+  (define-key ranger-mode-map (kbd ranger-key) 'ranger-mode))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
-  (ranger-map "?"           'ranger-help)
-  (ranger-map "B"           'ranger-show-bookmarks)
-  (ranger-map "D"           'dired-delete-file)
-  (ranger-map "G"           'ranger-goto-bottom)
-  (ranger-map "H"           'ranger-prev-history)
-  (ranger-map "I"           'dired-insert-subdir)
-  (ranger-map "J"           'dired-next-subdir)
-  (ranger-map "K"           'dired-prev-subdir)
-  (ranger-map "L"           'ranger-next-history)
-  (ranger-map "R"           'dired-rename-file)
-  (ranger-map "S"           'eshell)
-  (ranger-map "["           'ranger-prev-parent)
-  (ranger-map "]"           'ranger-next-parent)
-  (ranger-map "f"           'ranger-search-files)
-  (ranger-map "gg"          'ranger-goto-top)
-  (ranger-map "gh"          'ranger-go-home)
-  (ranger-map "h"           'ranger-up-directory)
-  (ranger-map "i"           'ranger-preview-toggle)
-  (ranger-map "j"           'ranger-next-file)
-  (ranger-map "k"           'ranger-prev-file)
-  (ranger-map "l"           'ranger-find-file)
-  (ranger-map "m"           'ranger-create-mark)
-  (ranger-map "o"           'ranger-sort-criteria)
-  (ranger-map "q"           'ranger-disable)
-  (ranger-map "u"           'dired-unmark)
-  (ranger-map "v"           'dired-toggle-marks)
-  (ranger-map "yy"          'dired-copy-file)
-  (ranger-map "z+"          'ranger-more-parents)
-  (ranger-map "z-"          'ranger-less-parents)
-  (ranger-map "zf"          'ranger-toggle-scale-images)
-  (ranger-map "zz"          'ranger-show-history)
-  (ranger-map "zh"          'ranger-toggle-dotfiles)
-  (ranger-map "zi"          'ranger-toggle-literal)
-  (ranger-map "zp"          'ranger-minimal-toggle)
-  (ranger-map (kbd  "C-r")  'ranger-refresh)
-  (ranger-map (kbd "C-SPC") 'dired-mark)
-  (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
-  (ranger-map (kbd "C-k")   'ranger-scroll-page-up)
-  (ranger-map (kbd "RET")   'ranger-find-file)
-  (ranger-map (kbd "`")     'ranger-goto-mark)
 
-  (eval-after-load 'evil
-    '(progn
-       ;; some evil specific bindings
-       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-       (evil-define-key 'normal ranger-mode-map
-         "V"            'evil-visual-line
-         "n"            'evil-search-next
-         "N"            'evil-search-previous)
-       (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
+  (let ((map ranger-mode-map))
+    (define-key map "?"           'ranger-help)
+    (define-key map "B"           'ranger-show-bookmarks)
+    (define-key map "D"           'dired-delete-file)
+    (define-key map "G"           'ranger-goto-bottom)
+    (define-key map "H"           'ranger-prev-history)
+    (define-key map "I"           'dired-insert-subdir)
+    (define-key map "L"           'ranger-next-history)
+    (define-key map "R"           'dired-rename-file)
+    (define-key map "S"           '(lambda() (make-frame) (eshell)))
+    (define-key map "["           'ranger-prev-parent)
+    (define-key map "]"           'ranger-next-parent)
+    (define-key map "f"           'ranger-search-files)
+    (define-key map "gg"          'ranger-goto-top)
+    (define-key map "gh"          'ranger-go-home)
+    (define-key map "h"           'ranger-up-directory)
+    (define-key map "i"           'ranger-preview-toggle)
+    (define-key map "j"           'ranger-next-file)
+    (define-key map "J"           'dired-goto-file)
+    (define-key map "k"           'ranger-prev-file)
+    (define-key map "l"           'ranger-find-file)
+    (define-key map "m"           'ranger-create-mark)
+    (define-key map "o"           'ranger-sort-criteria)
+    (define-key map "q"           'ranger-disable)
+    (define-key map "u"           'dired-unmark)
+    (define-key map "v"           'dired-toggle-marks)
+    (define-key map "yy"          'dired-copy-file)
+    (define-key map "z+"          'ranger-more-parents)
+    (define-key map "z-"          'ranger-less-parents)
+    (define-key map "zf"          'ranger-toggle-scale-images)
+    (define-key map "zz"          'ranger-show-history)
+    (define-key map "zh"          'ranger-toggle-dotfiles)
+    (define-key map "zi"          'ranger-toggle-literal)
+    (define-key map "zj"           'dired-next-subdir)
+    (define-key map "zk"           'dired-prev-subdir)
+    (define-key map "zp"          'ranger-minimal-toggle)
+    (define-key map (kbd "C-r")   'ranger-refresh)
+    (define-key map (kbd "C-SPC") 'dired-mark)
+    (define-key map (kbd "C-j")   'ranger-scroll-page-down)
+    (define-key map (kbd "C-k")   'ranger-scroll-page-up)
+    (define-key map (kbd "RET")   'ranger-find-file)
+    (define-key map (kbd "`")     'ranger-goto-mark)
+    (define-key map "V" 'transient-mark-mode)
+    ;; and simulating search in standard emacs
+    (define-key ranger-mode-map "/" 'isearch-forward)
+    (define-key ranger-mode-map "n" 'isearch-repeat-forward)
+    (define-key ranger-mode-map "N" 'isearch-repeat-backward)
+    )
 
-  ;; and simulating search in standard emacs
-  (define-key ranger-mode-map "/" 'isearch-forward)
-  (define-key ranger-mode-map "n" 'isearch-repeat-forward)
-  (define-key ranger-mode-map "N" 'isearch-repeat-backward))
+  ;; make sure isearch is cleared before we delete the buffer on exit
+  (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil)))
+
+  ;; make sure ranger starts in emacs-state
+  (when (featurep 'evil)
+    (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)
+    (add-hook 'ranger-mode-load-hook 'evil-emacs-state)))
 
 
 ;; copy / paste - wip
