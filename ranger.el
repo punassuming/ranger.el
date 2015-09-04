@@ -250,6 +250,7 @@ Outputs a string that will show up on the header-line."
     (define-key map "gg"          'ranger-goto-top)
     (define-key map "gh"          'ranger-go-home)
     (define-key map "h"           'ranger-up-directory)
+    (define-key map "-"           'ranger-up-directory)
     (define-key map "i"           'ranger-preview-toggle)
     (define-key map "j"           'ranger-next-file)
     (define-key map "J"           'dired-goto-file)
