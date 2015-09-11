@@ -133,7 +133,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-width-preview 0.62
+(defcustom ranger-width-preview 0.72
   "Fraction of frame width taken by preview window."
   :group 'ranger
   :type 'float)
@@ -144,7 +144,7 @@
   :group 'ranger
   :type 'float)
 
-(defcustom ranger-max-parent-width 0.36
+(defcustom ranger-max-parent-width 0.42
   "The max width allocated to showing parent windows."
   :group 'ranger
   :type 'float)
@@ -871,7 +871,12 @@ is set, show literally instead of actual buffer."
                                   `(ranger-display-buffer-at-side . ((side . right)
                                                                      (slot . 1)
                                                                      ;; (inhibit-same-window . t)
-                                                                     (window-width . ,ranger-width-preview)))))
+                                                                     (window-width . ,(- ranger-width-preview
+                                                                                         (min
+                                                                                          (- ranger-max-parent-width
+                                                                                            ranger-width-parents)
+                                                                                          (* (- ranger-parent-depth 1)
+                                                                                             ranger-width-parents))))))))
                  (preview-buffer
                   (window-buffer preview-window)))
 
