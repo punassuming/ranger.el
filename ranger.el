@@ -51,6 +51,7 @@
 ;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
 ;; version 0.9.4, 2015-07-31 deer mode, history navigation
 ;; version 0.9.5, 2015-08-20 fixed most bugs when reverting from ranger
+;; version 0.9.6, 2015-09-11 delete all accessed buffers, add details to echo 
 
 ;;; Code:
 
@@ -200,6 +201,7 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-pre-hl-mode nil)
 (defvar ranger-pre-arev-mode nil)
 (defvar ranger-pre-omit-mode nil)
+(defvar ranger-pre-dired-listing nil)
 
 (defvar ranger-preview-window nil)
 (defvar ranger-preview-buffers ()
@@ -424,7 +426,6 @@ Outputs a string that will show up on the header-line."
         (ranger-hide-dotfiles))
     (progn
       (revert-buffer) ; otherwise just revert to re-show
-      (ranger-clear-dired-header)
       (setq ranger-show-dotfiles t)))
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
 
@@ -652,8 +653,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
 
   ;; set header-line
-  (setq header-line-format `(:eval (,ranger-parent-header-func)))
-  (ranger-clear-dired-header))
+  (setq header-line-format `(:eval (,ranger-parent-header-func))))
 
 (defun ranger-parent-child-select ()
     (when ranger-child-name
@@ -683,11 +683,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-window (get-buffer-window (current-buffer)))
 
     (setq ranger-visited-buffers (append ranger-parent-buffers ranger-visited-buffers))
-
-    ;; ;; delete all ranger parent buffers currently not showing
-    ;; (cl-loop for buffer in ranger-parent-buffers do
-    ;;          (unless (eq (get-buffer-window buffer) ranger-window)
-    ;;            (kill-buffer buffer)))
 
     (setq ranger-parent-buffers ())
     (setq ranger-parent-windows ())
@@ -999,6 +994,7 @@ fraction of the total frame size"
       (when (derived-mode-p 'dired-mode)
         (unless ranger-pre-omit-mode
           (dired-omit-mode -1))
+        (setq dired-listing-switches ranger-pre-dired-listing)
         (dired-hide-details-mode -1)
         ;; revert ranger-mode
         (setq ranger-mode nil)
@@ -1086,15 +1082,13 @@ fraction of the total frame size"
      filler
      rhs)))
 
-(defun ranger-clear-dired-header ()
-  ;; (when (eq ranger-window (get-buffer-window (current-buffer)))
+(defun ranger-setup-dired-buffer ()
+  "Setup the dired buffer by removing the header and sorting folders directory first."
   (save-excursion
-    ;; (dired-hide-subdir)
-    (goto-char (point-min))
-    (let ((buffer-read-only nil)
-          (dired-header-match (point-at-eol)))
-      (when (search-forward-regexp ":$" dired-header-match t)
-        (kill-whole-line)))))
+      (let (buffer-read-only)
+        (kill-whole-line)
+        (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
+      (set-buffer-modified-p nil)))
 
 ;;;###autoload
 (defun deer ()
@@ -1146,7 +1140,13 @@ fraction of the total frame size"
     (setq ranger-pre-hl-mode hl-line-mode)
     (setq ranger-pre-arev-mode auto-revert-mode)
     (setq ranger-pre-omit-mode dired-omit-mode)
+    (setq ranger-pre-dired-listing dired-listing-switches)
     (setq ranger-pre-saved t))
+
+  ;; hide groups, show human readable file sizes
+  (setq dired-listing-switches "-alGh")
+
+  (dired-sort-other dired-listing-switches)
 
   (unless ranger-minimal
     ;; clear out everything
@@ -1189,7 +1189,7 @@ fraction of the total frame size"
   (set-window-hscroll ranger-window 0)
 
   (setq header-line-format `(:eval (,ranger-header-func)))
-  (ranger-clear-dired-header))
+  )
 
 ;;;###autoload
 (define-minor-mode ranger-mode
@@ -1205,9 +1205,11 @@ fraction of the total frame size"
 
   (if ranger-mode
       (progn
+        (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
         (ranger-setup)
         (add-hook 'window-configuration-change-hook 'ranger-window-check))
     (progn
+      (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
       (remove-hook 'window-configuration-change-hook 'ranger-window-check)
       (ranger-revert)
       )
