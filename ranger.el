@@ -329,7 +329,7 @@ Outputs a string that will show up on the header-line."
 
 ;; marks
 (defun ranger-show-bookmarks ()
-  "Show bookmark prompt"
+  "Show bookmark prompt for all bookmarked directories."
   (interactive)
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
@@ -343,13 +343,16 @@ Outputs a string that will show up on the header-line."
       (ranger-find-file bookmark))))
 
 (defun ranger-create-mark (mark)
-  "Create new bookmark using internal bookmarks"
-  (interactive (list (read-key "m-")))
+  "Create new bookmark using internal bookmarks, designating bookmark name as
+ranger-`CHAR'."
+  (interactive "cm-")
   (let ((mark-letter (char-to-string mark)))
-    (bookmark-set (concat "ranger-" mark-letter))))
+    (bookmark-set (concat "ranger-" mark-letter))
+    (message "Bookmarked directory %s as `ranger-%s'"
+             default-directory mark-letter)))
 
 (defun ranger-goto-mark ()
-  "Go to bookmark using internal bookmarks"
+  "Go to bookmarks specified from `ranger-create-mark'."
   (interactive)
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
