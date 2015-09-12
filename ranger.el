@@ -314,7 +314,7 @@ Outputs a string that will show up on the header-line."
   ;; make sure isearch is cleared before we delete the buffer on exit
   (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil)))
 
-)
+  )
 
 ;; copy / paste - wip
 (defun ranger-copy ()
@@ -410,7 +410,8 @@ Outputs a string that will show up on the header-line."
   ;; refresh for any changes
   (revert-buffer)
   ;; setup buffer
-  (ranger-setup))
+  (ranger-setup)
+  (ranger-show-details))
 
 (defun ranger-help ()
   "Show help message for ranger basics."
@@ -455,9 +456,7 @@ Outputs a string that will show up on the header-line."
       (setq ranger-sorting-switches
             (concat ranger-sort-flag
                     (when uppercasep "r")))
-      (dired-sort-other
-       (concat dired-listing-switches
-               ranger-sorting-switches))
+      (ranger-sort t)
       (ranger-refresh))))
 
 (defun ranger-omit ()
@@ -465,9 +464,11 @@ Outputs a string that will show up on the header-line."
   (setq-local dired-omit-verbose nil)
   (dired-omit-mode t))
 
-(defun ranger-sort ()
-  "Perform current sort on directory."
-  (when ranger-persistent-sort
+(defun ranger-sort (&optional force)
+  "Perform current sort on directory. Specify `FORCE' to sort even when
+`ranger-persistent-sort' is nil."
+  (when (or force
+            ranger-persistent-sort)
     (dired-sort-other
      (concat dired-listing-switches
              ranger-sorting-switches))))
@@ -566,15 +567,13 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Move to top of file list"
   (interactive)
   (goto-char (point-min))
-  (ranger-prev-file)
-  (ranger-show-details))
+  (ranger-prev-file))
 
 (defun ranger-goto-bottom ()
   "Move to top of file list"
   (interactive)
   (goto-char (point-max))
-  (ranger-next-file)
-  (ranger-show-details))
+  (ranger-next-file))
 
 (defun ranger-go-home ()
   "Move to top of file list"
@@ -607,39 +606,37 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
          (fattr (file-attributes entry))
          (fwidth (frame-width))
          (file-size (ranger-format-file-size (nth 7 fattr)))
-         (file-date
-          (format-time-string "%Y-%m-%d %H:%m"
-                              (nth 5 fattr)))
-         (file-perm
-          (nth 8 fattr))
+         (file-date (format-time-string "%Y-%m-%d %H:%m"
+                                        (nth 5 fattr)))
+         (file-perm (nth 8 fattr))
          (space (- fwidth 8
                    (length file-size)
                    (length file-date)
-                   (length file-perm)
-                   ))
+                   (length file-perm)))
          (file-name (cl-substitute
                      "%%"
                      "%"
                      (if (> (length entry) space)
-                        (concat ".." (substring entry (- (length entry) space -2)))
-                      entry))))
-        (message "%s" (format
-                  (format "%%-%ds %%s : %%s : %%s"
-                          space)
-                  (propertize file-name 'face 'font-lock-function-name-face)
-                  file-size
-                  (propertize
-                   file-date
-                   'face 'font-lock-warning-face)
-                  file-perm))))
+                         (concat ".." (substring entry (- (length entry) space -2)))
+                       entry))))
+    (when entry
+      (message "%s" (format
+                     (format "%%-%ds %%s : %%s : %%s"
+                             space)
+                     (propertize file-name 'face 'font-lock-function-name-face)
+                     file-size
+                     (propertize
+                      file-date
+                      'face 'font-lock-warning-face)
+                     file-perm)))))
 
 (defun ranger-format-file-size (file-size)
   "show file size in human readable form."
   (if (< file-size 1024)
       (format (if (floatp file-size) " %5.0f" " %5d") file-size)
     (cl-do ((file-size (/ file-size 1024.0) (/ file-size 1024.0))
-         ;; kilo, mega, giga, tera, peta, exa
-         (post-fixes (list "k" "M" "G" "T" "P" "E") (cdr post-fixes)))
+            ;; kilo, mega, giga, tera, peta, exa
+            (post-fixes (list "k" "M" "G" "T" "P" "E") (cdr post-fixes)))
         ((< file-size 1024) (format " %4.0f%s"  file-size (car post-fixes))))))
 
 
@@ -656,9 +653,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (setq header-line-format `(:eval (,ranger-parent-header-func))))
 
 (defun ranger-parent-child-select ()
-    (when ranger-child-name
-      (dired-goto-file ranger-child-name)
-      (hl-line-mode t)))
+  (when ranger-child-name
+    (dired-goto-file ranger-child-name)
+    (hl-line-mode t)))
 
 (defun ranger-less-parents ()
   "Reduce number of ranger parents."
@@ -869,7 +866,7 @@ is set, show literally instead of actual buffer."
                                                                      (window-width . ,(- ranger-width-preview
                                                                                          (min
                                                                                           (- ranger-max-parent-width
-                                                                                            ranger-width-parents)
+                                                                                             ranger-width-parents)
                                                                                           (* (- ranger-parent-depth 1)
                                                                                              ranger-width-parents))))))))
                  (preview-buffer
@@ -961,11 +958,11 @@ fraction of the total frame size"
   ;; delete and cleanup buffers
   (let ((all-ranger-buffers
          (cl-remove-duplicates
-         (append
-          ranger-preview-buffers
-          ranger-parent-buffers
-          ranger-visited-buffers
-          (list ranger-buffer)))))
+          (append
+           ranger-preview-buffers
+           ranger-parent-buffers
+           ranger-visited-buffers
+           (list ranger-buffer)))))
     ;; (message (format "all buffers : %s" all-ranger-buffers))
     (if ranger-cleanup-on-disable
         (mapc 'ranger-kill-buffer all-ranger-buffers)
@@ -1056,7 +1053,7 @@ fraction of the total frame size"
     (if (equal (get-buffer-window (current-buffer)) ranger-preview-window)
         (propertize (buffer-name (current-buffer))
                     'face 'font-lock-function-name-face)
-        (propertize header 'face 'dired-header))))
+      (propertize header 'face 'dired-header))))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger buffer."
@@ -1071,9 +1068,9 @@ fraction of the total frame size"
                       (propertize user 'face 'font-lock-keyword-face)
                       (propertize relative 'face 'dired-header)))
          (rhs (propertize (format "%s / %s"
-                                   (if ranger-show-dotfiles ".." "")
-                                   ;; (if ranger-show-literal "raw" "act")
-                                   ranger-parent-depth)
+                                  (if ranger-show-dotfiles ".." "")
+                                  ;; (if ranger-show-literal "raw" "act")
+                                  ranger-parent-depth)
                           'face 'font-lock-comment-face))
          (used-length (+ (length rhs) (length lhs)))
          (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
@@ -1085,10 +1082,17 @@ fraction of the total frame size"
 (defun ranger-setup-dired-buffer ()
   "Setup the dired buffer by removing the header and sorting folders directory first."
   (save-excursion
-      (let (buffer-read-only)
-        (kill-whole-line)
-        (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
-      (set-buffer-modified-p nil)))
+    (let ((switches (concat
+                     dired-listing-switches
+                     ranger-sorting-switches))
+          (buffer-read-only))
+      (kill-whole-line)
+      ;; check sorting mode
+      (when (not (string-match "[XStU]+" switches))
+        (if (string-match "r" switches)
+            (sort-regexp-fields nil "^.*$" "[ ]*." (point) (point-max))
+          (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max))))
+      (set-buffer-modified-p nil))))
 
 ;;;###autoload
 (defun deer ()
@@ -1180,7 +1184,7 @@ fraction of the total frame size"
   ;; hide details line at top
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
 
-  (ranger-sort)
+  (ranger-sort t)
 
   (ranger-setup-parents)
   (ranger-setup-preview)
@@ -1189,6 +1193,7 @@ fraction of the total frame size"
   (set-window-hscroll ranger-window 0)
 
   (setq header-line-format `(:eval (,ranger-header-func)))
+
   )
 
 ;;;###autoload
