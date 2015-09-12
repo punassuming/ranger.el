@@ -1079,6 +1079,28 @@ fraction of the total frame size"
      filler
      rhs)))
 
+(defun ranger-set-modeline ()
+  "This is a redefinition of the fn from `dired.el'. This one
+properly provides the modeline in dired mode. "
+  (when (eq major-mode 'dired-mode)
+    (setq mode-name
+          (let (case-fold-search)
+            (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
+                   "Ranger:time")
+                  ((string-match "^-[^X]*X[^X]*$" dired-actual-switches)
+                   "Ranger:ext")
+                  ((string-match "^-[^S]*S[^S]*$" dired-actual-switches)
+                   "Ranger:size")
+                  ((string-match "^-[^SXUt]*$" dired-actual-switches)
+                   "Ranger:name")
+                  (t
+                   (concat "Ranger " dired-actual-switches)))))
+    (diminish 'ranger-mode)
+    (diminish 'dired-omit-mode " O")
+    (diminish 'auto-revert-mode " R")
+    (force-mode-line-update)
+    ))
+
 (defun ranger-setup-dired-buffer ()
   "Setup the dired buffer by removing the header and sorting folders directory first."
   (save-excursion
@@ -1194,7 +1216,7 @@ fraction of the total frame size"
 
   (setq header-line-format `(:eval (,ranger-header-func)))
 
-  )
+  (ranger-set-modeline))
 
 ;;;###autoload
 (define-minor-mode ranger-mode
