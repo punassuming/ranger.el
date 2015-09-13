@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.5
+;; Version: 0.9.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
@@ -44,6 +44,7 @@
 ;; - show preview window of selected directory or file
 ;; - fast navigation using vi-like keybindings
 ;; - move through navigation history
+;; - copy and paste functionality utilizing a copy ring
 
 ;;; HISTORY
 
@@ -51,7 +52,8 @@
 ;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
 ;; version 0.9.4, 2015-07-31 deer mode, history navigation
 ;; version 0.9.5, 2015-08-20 fixed most bugs when reverting from ranger
-;; version 0.9.6, 2015-09-11 delete all accessed buffers, add details to echo 
+;; version 0.9.6, 2015-09-11 delete all accessed buffers, add details to echo
+;; version 0.9.7, 2015-09-13 copy and paste functionality added
 
 ;;; Code:
 
@@ -93,7 +95,12 @@
   :type 'boolean)
 
 (defcustom ranger-history-length 30
-  "When t it will show dotfiles in directory."
+  "Length of history ranger will track."
+  :group 'ranger
+  :type 'integer)
+
+(defcustom ranger-copy-ring-length 10
+  "How many sets of files stored for copy and paste."
   :group 'ranger
   :type 'integer)
 
@@ -134,7 +141,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-width-preview 0.72
+(defcustom ranger-width-preview 0.65
   "Fraction of frame width taken by preview window."
   :group 'ranger
   :type 'float)
@@ -183,6 +190,8 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-sorting-switches nil)
 
 (defvar ranger-history-ring (make-ring ranger-history-length))
+
+(defvar ranger-copy-ring (make-ring ranger-copy-ring-length))
 
 (defvar ranger-child-name nil)
 (make-variable-buffer-local 'ranger-child-name)
@@ -282,7 +291,10 @@ Outputs a string that will show up on the header-line."
   (ranger-map "q"           'ranger-disable)
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
-  (ranger-map "yy"          'dired-copy-file)
+  (ranger-map "yy"          'ranger-copy)
+  (ranger-map "dd"          'ranger-cut)
+  (ranger-map "pp"          'ranger-paste)
+  (ranger-map "po"          'ranger-paste-over)
   (ranger-map "z+"          'ranger-more-parents)
   (ranger-map "z-"          'ranger-less-parents)
   (ranger-map "zf"          'ranger-toggle-scale-images)
@@ -318,14 +330,102 @@ Outputs a string that will show up on the header-line."
   )
 
 ;; copy / paste - wip
-(defun ranger-copy ()
-  (interactive))
+(defun ranger-show-copy-ring (copy-index)
+  "Show copy ring in `ranger-copy-ring', selection inserts at top for use."
+  (interactive (list
+                (ido-completing-read "Select from copy ring: "
+                                 (ranger--ring-elements
+                                  ranger-copy-ring)))))
 
-(defun ranger-cut ()
-  (interactive))
+(defun ranger-show-copy-ring-helm ()
+  (interactive)
+  (helm :sources
+        `((name . "Ranger copy ring: ")
+          (candidates . ,(ranger--ring-index-elements ranger-copy-ring)))))
+
+(defun ranger-update-copy-ring (move append)
+  "Add marked files to `ranger-copy-ring'. When `MOVE' is non-nil, targets will
+be moved. `APPEND' will add files to current ring."
+  ;; ideas borrowed from Fuco1's `dired-ranger' package.
+  (let ((marked-files (dired-get-marked-files)))
+    (if (or (ring-empty-p ranger-copy-ring)
+            (not append))
+        (ring-insert ranger-copy-ring (cons move marked-files))
+      (let* ((current (ring-remove ranger-copy-ring 0))
+             (cur-files (cdr current)))
+        (ring-insert ranger-copy-ring
+                     (cons move
+                           (cl-remove-duplicates
+                            (append cur-files marked-files)
+                            :test (lambda (x y) (or (null y) (equal x y)))
+                            )))))
+    (ranger-show-flags)
+    (message (format "%s %d item(s) to %s ring [total:%d]"
+                     (if append "Added" "Copied")
+                     (length marked-files)
+                     (if move "cut" "copy")
+                     (length (cdr (ring-ref ranger-copy-ring 0)))))))
+
+(defun ranger-show-flags ()
+  "Show copy / paste flags in ranger buffer."
+  (when (not (ring-empty-p ranger-copy-ring))
+    (ranger-clear-flags ?P)
+    (ranger-clear-flags ?M)
+    ;; (dired-unmark-all-files ?\r)
+    (let* ((current (ring-ref ranger-copy-ring 0))
+           (fileset (cdr current))
+           (dired-marker-char (if (car current) ?M ?P)))
+      (save-excursion
+        (cl-loop for file in fileset do
+                 (when
+                     (dired-goto-file file)
+                   (dired-mark 1)))))))
+
+(defun ranger-clear-flags (mark)
+  "Remove a copy / paste flags from every file."
+  (save-excursion
+    (let* ((count 0)
+	   (inhibit-read-only t) case-fold-search
+	   (string (format "\n%c" mark)))
+      (goto-char (point-min))
+      (while
+          (search-forward string nil t)
+	(when (dired-get-filename t t)
+	     (subst-char-in-region (1- (point)) (point)
+					 (preceding-char) ?\s))))))
+
+(defun ranger-copy (&optional append)
+  (interactive "P")
+  (ranger-update-copy-ring nil append))
+
+(defun ranger-cut (&optional append)
+  (interactive "P")
+  (ranger-update-copy-ring t append))
 
 (defun ranger-paste (&optional overwrite link)
-  (interactive))
+  (interactive)
+  (let* ((current (ring-ref ranger-copy-ring 0))
+         (move (car current))
+         (fileset (cdr current))
+         (target (dired-current-directory))
+         (filenum 0))
+    (cl-loop for file in fileset do
+             (when (file-exists-p file)
+               (if move
+                   (rename-file file target overwrite)
+                   (if (file-directory-p file)
+                       (copy-directory file target)
+                     (copy-file file target overwrite)))
+               (setq filenum (+ filenum 1))))
+    (message (format "%s %d/%d item(s) from the copy ring."
+                     (if move "Moved" "Copied")
+                     filenum
+                     (length fileset)
+                     ))))
+
+(defun ranger-paste-over ()
+  (interactive)
+  (ranger-paste t))
 
 
 ;; marks
@@ -469,7 +569,7 @@ ranger-`CHAR'."
            (cc (downcase c))
            (ranger-sort-flag
             (cond
-             ((string-equal cc "n") "N")
+             ((string-equal cc "n") "")
              ((string-equal cc "e") "X")
              ((string-equal cc "t") "t")
              ((string-equal cc "s") "S")))
@@ -1230,6 +1330,7 @@ properly provides the modeline in dired mode. "
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
 
   (ranger-sort t)
+  (ranger-show-flags)
 
   (ranger-setup-parents)
   (ranger-setup-preview)
