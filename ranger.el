@@ -723,24 +723,24 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 
 (defun ranger-show-details ()
   "Echo file details"
-  (let* ((entry (dired-get-filename nil t))
-         (fattr (file-attributes entry))
-         (fwidth (frame-width))
-         (file-size (ranger-format-file-size (nth 7 fattr)))
-         (file-date (format-time-string "%Y-%m-%d %H:%m"
-                                        (nth 5 fattr)))
-         (file-perm (nth 8 fattr))
-         (space (- fwidth 8
-                   (length file-size)
-                   (length file-date)
-                   (length file-perm)))
-         (file-name (cl-substitute
-                     "%%"
-                     "%"
-                     (if (> (length entry) space)
-                         (concat ".." (substring entry (- (length entry) space -2)))
-                       entry))))
-    (when entry
+  (when (dired-get-filename nil t)
+    (let* ((entry (dired-get-filename nil t))
+           (fattr (file-attributes entry))
+           (fwidth (frame-width))
+           (file-size (ranger-format-file-size (nth 7 fattr)))
+           (file-date (format-time-string "%Y-%m-%d %H:%m"
+                                          (nth 5 fattr)))
+           (file-perm (nth 8 fattr))
+           (space (- fwidth 8
+                     (length file-size)
+                     (length file-date)
+                     (length file-perm)))
+           (file-name (cl-substitute
+                       "%%"
+                       "%"
+                       (if (> (length entry) space)
+                           (concat ".." (substring entry (- (length entry) space -2)))
+                         entry))))
       (message "%s" (format
                      (format "%%-%ds %%s : %%s : %%s"
                              space)
