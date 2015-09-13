@@ -61,11 +61,11 @@ ranger screencast
 * Emacs bookmarks support
 * Create bindings to go up / down the next directory
 * minimal ranger mode (deer-mode)
+* Copy / paste functionality
+* Persistent flags showing recently copied items
 
 ## Todo
 
-* Add ranger style copy and pasted
-* Improve headerline display
 * Preview PDFs
 * Better showing of archive files
 * Set up tabs and navigation between
@@ -78,11 +78,24 @@ ranger in a single window without preview or parent directories.  This allows
 all the functionality builtin to ranger without modifying any other buffer
 windows.  Toggle between `ranger` and `deer` with `zp`.
 
+## Copy / Paste
+
+Ranger utilizes a copy ring to save a persistent fileset that can then be
+either moved or copied to a target directory.  This is consistent with the
+way the ranger file manager manages file movement. `yy` specifies to copy the
+marked or currently hovered files.  Additionally a flag denoted as "P" will
+visually indicate what files are marked for movement. `dd` likewise specifies
+that the files will be moved instead of copied. 
+
+To paste the files most recently added to the copy ring, use `pp` or `po` to
+paste, the later binding will overwrite existing files.
+
 ## Key bindings
 
  Keybinding    | Description
  ------------- | -----------
  `?`           | show ranger help
+ `!`           | run shell command
  `j`           | navigate down
  `k`           | navigate up
  `J`           | next subdir
@@ -112,6 +125,10 @@ windows.  Toggle between `ranger` and `deer` with `zp`.
  `z+`          | increment number of parents
  `v`           | toggle all marks
  `V`           | visually select lines
+ `yy`          | mark files to copy
+ `dd`          | mark files to move
+ `pp`          | paste files in copy ring
+ `po`          | paste files in copy ring and overwrite existing
  `S`           | enter shell
  `C-SPC`       | mark current file
  `i`           | show preview of current file
