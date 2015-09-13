@@ -121,6 +121,11 @@
   :group 'ranger
   :type 'list)
 
+(defcustom ranger-modify-header t
+  "Modify the header to style like ranger."
+  :group 'ranger
+  :type 'boolean)
+
 (defcustom ranger-max-preview-size 10
   "File size in MB to prevent preview of files."
   :group 'ranger
@@ -170,6 +175,12 @@ Outputs a string that will show up on the header-line."
   :type 'function)
 
 (defcustom ranger-parent-header-func 'ranger-subwindow-header-line
+  "Function used to output header of primary ranger window.
+Outputs a string that will show up on the header-line."
+  :group 'ranger
+  :type 'function)
+
+(defcustom ranger-preview-header-func 'ranger-subwindow-header-line
   "Function used to output header of primary ranger window.
 Outputs a string that will show up on the header-line."
   :group 'ranger
@@ -715,8 +726,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-prev-file ()
   "Move to previous file in ranger."
   (interactive)
-  ;; (unless (bobp)
   (dired-previous-line 1)
+  (unless ranger-modify-header
+    (when (bobp)
+      (dired-next-line 1)))
   (ranger-show-details)
   (when ranger-preview-file
     (ranger-setup-preview)))
@@ -769,9 +782,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (make-local-variable 'mouse-1-click-follows-link)
   (setq mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
-
   ;; set header-line
-  (setq header-line-format `(:eval (,ranger-parent-header-func))))
+  (when ranger-modify-header
+    (setq header-line-format (funcall ranger-parent-header-func))))
 
 (defun ranger-parent-child-select ()
   (when ranger-child-name
@@ -994,7 +1007,8 @@ is set, show literally instead of actual buffer."
                   (window-buffer preview-window)))
 
             (with-current-buffer preview-buffer
-              (setq header-line-format `(:eval (,ranger-parent-header-func))))
+              (when ranger-modify-header
+                (setq header-line-format (funcall ranger-preview-header-func))))
 
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
@@ -1231,7 +1245,9 @@ properly provides the modeline in dired mode. "
                      dired-listing-switches
                      ranger-sorting-switches))
           (buffer-read-only))
-      (kill-whole-line)
+      (if ranger-modify-header
+          (kill-whole-line)
+        (next-line 1))
       ;; check sorting mode
       (when (not (string-match "[XStU]+" switches))
         (if (string-match "r" switches)
@@ -1338,7 +1354,8 @@ properly provides the modeline in dired mode. "
   ;; truncate lines for primary window
   (set-window-hscroll ranger-window 0)
 
-  (setq header-line-format `(:eval (,ranger-header-func)))
+  (when ranger-modify-header
+    (setq header-line-format (funcall ranger-header-func)))
 
   (ranger-set-modeline))
 
