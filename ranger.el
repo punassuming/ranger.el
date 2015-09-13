@@ -284,7 +284,7 @@ Outputs a string that will show up on the header-line."
   (ranger-map "J"           'dired-next-subdir)
   (ranger-map "K"           'dired-prev-subdir)
   (ranger-map "L"           'ranger-next-history)
-  (ranger-map "R"           'dired-rename-file)
+  (ranger-map "R"           'dired-do-rename)
   (ranger-map "S"           'eshell)
   (ranger-map "["           'ranger-prev-parent)
   (ranger-map "]"           'ranger-next-parent)
