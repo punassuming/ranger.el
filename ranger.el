@@ -255,8 +255,9 @@ Outputs a string that will show up on the header-line."
     (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
 
   (ranger-map "?"           'ranger-help)
+  (ranger-map "!"           'shell-command)
   (ranger-map "B"           'ranger-show-bookmarks)
-  (ranger-map "D"           'dired-delete-file)
+  (ranger-map "D"           'dired-do-delete)
   (ranger-map "G"           'ranger-goto-bottom)
   (ranger-map "H"           'ranger-prev-history)
   (ranger-map "I"           'dired-insert-subdir)
@@ -372,9 +373,26 @@ ranger-`CHAR'."
 
 
 ;; history utilities
+(defun ranger--ring-elements (ring)
+  "Return deduplicated elements of `ring'"
+  (delq nil
+        (cl-remove-duplicates
+         (ring-elements ring)
+         :test (lambda (x y) (or (null y) (equal x y)))
+         )))
+
+(defun ranger--ring-index-elements (ring)
+  "Return elements of `ring', along with its index in a (cons)."
+  (let (listing)
+    (dotimes (idx (ring-length ring) listing)
+      (setq listing (append (cons idx (ring-ref ring idx)) listing)))))
+
 (defun ranger-show-history (history)
   "Show history prompt for recent directories"
-  (interactive (list  (completing-read "Select from history: " (delq nil (cl-remove-duplicates (ring-elements ranger-history-ring))))))
+  (interactive
+   (list
+    (completing-read "Select from history: "
+                     (ranger--ring-elements ranger-history-ring))))
   (when history
     (ranger-find-file history)))
 
@@ -965,7 +983,9 @@ fraction of the total frame size"
            ranger-preview-buffers
            ranger-parent-buffers
            ranger-visited-buffers
-           (list ranger-buffer)))))
+           (list ranger-buffer))
+          :test (lambda (x y) (or (null y) (equal x y)))
+          )))
     ;; (message (format "all buffers : %s" all-ranger-buffers))
     (if ranger-cleanup-on-disable
         (mapc 'ranger-kill-buffer all-ranger-buffers)
