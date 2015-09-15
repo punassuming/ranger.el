@@ -1264,7 +1264,7 @@ fraction of the total frame size"
          (relative (if same-path
                        current-name
                      (file-relative-name current-name parent-name)))
-         (path (if ranger-preview-file "" (unless same-path parent-name)))
+         (path (if (and (not ranger-minimal) ranger-preview-file) "" (unless same-path parent-name)))
          (user (user-login-name))
          (lhs (format "%s%s"
                       path
@@ -1300,8 +1300,7 @@ properly provides the modeline in dired mode. "
     (diminish 'ranger-mode)
     (diminish 'dired-omit-mode " O")
     (diminish 'auto-revert-mode " R")
-    (force-mode-line-update)
-    ))
+    (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
   "Setup the dired buffer by removing the header and sorting folders directory first."
@@ -1408,7 +1407,8 @@ properly provides the modeline in dired mode. "
   (make-local-variable 'dired-hide-symlink-targets)
   (setq dired-hide-details-hide-symlink-targets nil)
 
-  (dired-hide-details-mode -1)
+  (unless ranger-minimal
+    (dired-hide-details-mode -1))
 
   ;; hide details line at top
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
