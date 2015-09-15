@@ -197,6 +197,7 @@ Outputs a string that will show up on the header-line."
 (defvar image-dired-display-image-buffer)
 
 (defvar ranger-history-index 0)
+(defvar ranger-subdir-p nil)
 
 (defvar ranger-sorting-switches nil)
 
@@ -280,9 +281,9 @@ Outputs a string that will show up on the header-line."
   (ranger-map "D"           'dired-do-delete)
   (ranger-map "G"           'ranger-goto-bottom)
   (ranger-map "H"           'ranger-prev-history)
-  (ranger-map "I"           'dired-insert-subdir)
-  (ranger-map "J"           'dired-next-subdir)
-  (ranger-map "K"           'dired-prev-subdir)
+  (ranger-map "I"           'ranger-insert-subdir)
+  (ranger-map "J"           'ranger-next-subdir)
+  (ranger-map "K"           'ranger-prev-subdir)
   (ranger-map "L"           'ranger-next-history)
   (ranger-map "R"           'dired-do-rename)
   (ranger-map "S"           'eshell)
@@ -686,6 +687,30 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (ranger-update-history find-name))
       (find-file find-name)
       (ranger-still-dired))))
+
+(defun ranger-insert-subdir ()
+  "Insert subdir from selected folder."
+  (interactive)
+  (let ((find-name (dired-get-filename nil t)))
+    (if (file-directory-p find-name)
+        (progn
+          (setq header-line-format nil)
+          (setq ranger-subdir-p t)
+          (dired-insert-subdir find-name)
+          (revert-buffer))
+      (message "Can only insert on a directory."))))
+
+(defun ranger-prev-subdir ()
+  "Go to previous subdir in ranger buffer."
+  (interactive)
+  (dired-prev-subdir 1 t)
+  (beginning-of-line))
+
+(defun ranger-next-subdir ()
+  "Go to next subdir in ranger buffer."
+  (interactive)
+  (dired-next-subdir 1 t)
+  (beginning-of-line))
 
 (defun ranger-update-history (name)
   "Update history ring and current index"
@@ -1245,7 +1270,8 @@ properly provides the modeline in dired mode. "
                      dired-listing-switches
                      ranger-sorting-switches))
           (buffer-read-only))
-      (if ranger-modify-header
+      (if (and (not ranger-subdir-p)
+               ranger-modify-header)
           (kill-whole-line)
         (forward-line 1))
       ;; check sorting mode
