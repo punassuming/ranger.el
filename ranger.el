@@ -345,8 +345,8 @@ Outputs a string that will show up on the header-line."
   "Show copy ring in `ranger-copy-ring', selection inserts at top for use."
   (interactive (list
                 (ido-completing-read "Select from copy ring: "
-                                 (ranger--ring-elements
-                                  ranger-copy-ring)))))
+                                     (ranger--ring-elements
+                                      ranger-copy-ring)))))
 
 (defun ranger-show-copy-ring-helm ()
   (interactive)
@@ -396,14 +396,14 @@ be moved. `APPEND' will add files to current ring."
   "Remove a copy / paste flags from every file."
   (save-excursion
     (let* ((count 0)
-	   (inhibit-read-only t) case-fold-search
-	   (string (format "\n%c" mark)))
+           (inhibit-read-only t) case-fold-search
+           (string (format "\n%c" mark)))
       (goto-char (point-min))
       (while
           (search-forward string nil t)
-	(when (dired-get-filename t t)
-	     (subst-char-in-region (1- (point)) (point)
-					 (preceding-char) ?\s))))))
+        (when (dired-get-filename t t)
+          (subst-char-in-region (1- (point)) (point)
+                                (preceding-char) ?\s))))))
 
 (defun ranger-copy (&optional append)
   (interactive "P")
@@ -424,9 +424,9 @@ be moved. `APPEND' will add files to current ring."
              (when (file-exists-p file)
                (if move
                    (rename-file file target overwrite)
-                   (if (file-directory-p file)
-                       (copy-directory file target)
-                     (copy-file file target overwrite)))
+                 (if (file-directory-p file)
+                     (copy-directory file target)
+                   (copy-file file target overwrite)))
                (setq filenum (+ filenum 1))))
     (message (format "%s %d/%d item(s) from the copy ring."
                      (if move "Moved" "Copied")
@@ -784,7 +784,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
   ;; set header-line
   (when ranger-modify-header
-    (setq header-line-format (funcall ranger-parent-header-func))))
+    (setq header-line-format `(:eval (,ranger-parent-header-func)))))
 
 (defun ranger-parent-child-select ()
   (when ranger-child-name
@@ -1008,7 +1008,7 @@ is set, show literally instead of actual buffer."
 
             (with-current-buffer preview-buffer
               (when ranger-modify-header
-                (setq header-line-format (funcall ranger-preview-header-func))))
+                (setq header-line-format `(:eval (,ranger-preview-header-func)))))
 
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
@@ -1247,7 +1247,7 @@ properly provides the modeline in dired mode. "
           (buffer-read-only))
       (if ranger-modify-header
           (kill-whole-line)
-        (next-line 1))
+        (forward-line 1))
       ;; check sorting mode
       (when (not (string-match "[XStU]+" switches))
         (if (string-match "r" switches)
@@ -1317,6 +1317,8 @@ properly provides the modeline in dired mode. "
     ;; clear out everything
     (delete-other-windows))
 
+  ;; reset subdir optiona
+  (setq ranger-subdir-p nil)
 
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
@@ -1355,7 +1357,7 @@ properly provides the modeline in dired mode. "
   (set-window-hscroll ranger-window 0)
 
   (when ranger-modify-header
-    (setq header-line-format (funcall ranger-header-func)))
+    (setq header-line-format `(:eval (,ranger-header-func))))
 
   (ranger-set-modeline))
 
