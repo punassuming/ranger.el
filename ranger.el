@@ -1221,14 +1221,15 @@ fraction of the total frame size"
   "Setup header-line for ranger buffer."
   (let* ((current-name default-directory)
          (parent-name (ranger-parent-directory default-directory))
-         (relative
-          (if (string-equal current-name parent-name)
-              current-name
-            (file-relative-name current-name parent-name)))
+         (same-path (string-equal current-name parent-name))
+         (relative (if same-path
+                       current-name
+                     (file-relative-name current-name parent-name)))
+         (path (if ranger-preview-file "" (unless same-path parent-name)))
          (user (user-login-name))
-         (lhs (format "%s: %s"
-                      (propertize user 'face 'font-lock-keyword-face)
-                      (propertize relative 'face 'dired-header)))
+         (lhs (format "%s%s"
+                      path
+                      (propertize relative 'face 'font-lock-constant-face)))
          (rhs (propertize (format "%s / %s"
                                   (if ranger-show-dotfiles ".." "")
                                   ;; (if ranger-show-literal "raw" "act")
