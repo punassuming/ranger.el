@@ -7,7 +7,7 @@
 ;; Version: 0.9.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
-;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.4")(cl-lib "0.5")(diminish "20091203.1012"))
 
 ;; Based on work from
 ;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
@@ -72,6 +72,15 @@
 (require 'autorevert)
 (require 'bookmark)
 (require 'ring)
+
+(require 'subr-x nil t)
+(require 'diminish nil t)
+
+;; include string-join
+(unless (featurep 'subr-x)
+  (defun string-join (strings &optional separator)
+    "Join all STRINGS using SEPARATOR."
+    (mapconcat 'identity strings separator)))
 
 (defgroup ranger ()
   "Modify dired to act like ranger."
@@ -252,13 +261,13 @@ Outputs a string that will show up on the header-line."
   "Define macro to bind evil and emacs state for ranger"
   `(progn
      (eval-after-load 'evil
-       '(evil-define-key 'normal ranger-mode-map ,key ,func))
+       #'(evil-define-key 'normal ranger-mode-map ,key ,func))
      (define-key ranger-mode-map ,key ,func)))
 
 ;; mappings
 (when ranger-key
   (eval-after-load 'evil
-    '(evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
+    #'(evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
   (define-key ranger-mode-map (kbd ranger-key) 'ranger-mode))
 
 (defun ranger-define-maps ()
@@ -274,6 +283,16 @@ Outputs a string that will show up on the header-line."
       (evil-normal-state))
     (evil-normalize-keymaps)
     (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
+
+  (eval-after-load 'evil
+    '(progn
+       ;; some evil specific bindings
+       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+       (evil-define-key 'normal ranger-mode-map
+         "V"            'evil-visual-line
+         "n"            'evil-search-next
+         "N"            'evil-search-previous)
+       ))
 
   (ranger-map "?"           'ranger-help)
   (ranger-map "!"           'shell-command)
@@ -326,15 +345,6 @@ Outputs a string that will show up on the header-line."
   (ranger-map (kbd "RET")   'ranger-find-file)
   (ranger-map (kbd "`")     'ranger-goto-mark)
 
-  (eval-after-load 'evil
-    '(progn
-       ;; some evil specific bindings
-       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-       (evil-define-key 'normal ranger-mode-map
-         "V"            'evil-visual-line
-         "n"            'evil-search-next
-         "N"            'evil-search-previous)
-       ))
 
   ;; and simulating search in standard emacs
   (define-key ranger-mode-map "/" 'isearch-forward)
@@ -353,12 +363,6 @@ Outputs a string that will show up on the header-line."
                 (ido-completing-read "Select from copy ring: "
                                      (ranger--ring-elements
                                       ranger-copy-ring)))))
-
-(defun ranger-show-copy-ring-helm ()
-  (interactive)
-  (helm :sources
-        `((name . "Ranger copy ring: ")
-          (candidates . ,(ranger--ring-index-elements ranger-copy-ring)))))
 
 (defun ranger-update-copy-ring (move append)
   "Add marked files to `ranger-copy-ring'. When `MOVE' is non-nil, targets will
@@ -421,10 +425,10 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
    ((and interactive (use-region-p))
     (save-excursion
       (let ((beg (region-beginning))
-	    (end (region-end)))
-	(dired-mark-files-in-region
-	 (progn (goto-char beg) (line-beginning-position))
-	 (progn (goto-char end) (line-beginning-position))))))
+            (end (region-end)))
+        (dired-mark-files-in-region
+         (progn (goto-char beg) (line-beginning-position))
+         (progn (goto-char end) (line-beginning-position))))))
    ;; Mark the current (or next ARG) files.
    (t
     (let ((inhibit-read-only t))
@@ -1334,9 +1338,11 @@ properly provides the modeline in dired mode. "
                    "Ranger:name")
                   (t
                    (concat "Ranger " dired-actual-switches)))))
-    (diminish 'ranger-mode)
-    (diminish 'dired-omit-mode " O")
-    (diminish 'auto-revert-mode " R")
+    (when (featurep 'diminish)
+      (progn
+        (diminish 'ranger-mode)
+        (diminish 'dired-omit-mode " O")
+        (diminish 'auto-revert-mode " R")))
     (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
