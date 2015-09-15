@@ -115,6 +115,9 @@ paste, the later binding will overwrite existing files.
  `zi`          | toggle showing literal / full-text previews
  `zh`          | toggle showing dotfiles
  `zf`          | toggle showing image full-size or fitted to window
+ `ws`          | exit ranger and open selected file in vertical split
+ `wv`          | exit ranger and open selected file in horizontal split
+ `wf`          | exit ranger and open selected file in new frame
  `o`           | sort options
  `h`           | go up directory
  `l`           | find file / enter directory

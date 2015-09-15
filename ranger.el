@@ -300,6 +300,9 @@ Outputs a string that will show up on the header-line."
   (ranger-map "l"           'ranger-find-file)
   (ranger-map "m"           'ranger-create-mark)
   (ranger-map "o"           'ranger-sort-criteria)
+  (ranger-map "ws"          'ranger-open-file-vertically)
+  (ranger-map "wv"          'ranger-open-file-horizontally)
+  (ranger-map "wf"          'ranger-open-file-frame)
   (ranger-map "q"           'ranger-disable)
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
@@ -726,6 +729,40 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (ranger-update-history find-name))
       (find-file find-name)
       (ranger-still-dired))))
+
+(defun ranger-open-file (&optional horizontal)
+  "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
+currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
+  (let ((find-name (dired-get-filename nil t)))
+    (when (and find-name
+               (not (file-directory-p find-name)))
+      (ranger-disable)
+      (cond
+       ((string-equal horizontal "frame")
+        (let ((goto-frame (make-frame)))
+          (select-frame-set-input-focus goto-frame)))
+       ((eq horizontal t)
+        (split-window-right)
+        (windmove-right))
+       ((eq horizontal nil)
+        (split-window-below)
+        (windmove-down)))
+      (find-file find-name))))
+
+(defun ranger-open-file-horizontally ()
+  "Open current file as a split with previously opened window"
+  (interactive)
+  (ranger-open-file t))
+
+(defun ranger-open-file-vertically ()
+  "Open current file as a split with previously opened window"
+  (interactive)
+  (ranger-open-file nil))
+
+(defun ranger-open-file-frame ()
+  "Open current file as a split with previously opened window"
+  (interactive)
+  (ranger-open-file "frame"))
 
 (defun ranger-insert-subdir ()
   "Insert subdir from selected folder."
