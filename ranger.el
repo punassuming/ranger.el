@@ -307,6 +307,7 @@ Outputs a string that will show up on the header-line."
   (ranger-map "dd"          'ranger-cut)
   (ranger-map "pp"          'ranger-paste)
   (ranger-map "po"          'ranger-paste-over)
+  (ranger-map "p?"          'ranger-show-copy-contents)
   (ranger-map "z+"          'ranger-more-parents)
   (ranger-map "z-"          'ranger-less-parents)
   (ranger-map "zf"          'ranger-toggle-scale-images)
@@ -314,8 +315,9 @@ Outputs a string that will show up on the header-line."
   (ranger-map "zh"          'ranger-toggle-dotfiles)
   (ranger-map "zi"          'ranger-toggle-literal)
   (ranger-map "zp"          'ranger-minimal-toggle)
-  (ranger-map (kbd  "C-r")  'ranger-refresh)
-  (ranger-map (kbd "C-SPC") 'dired-mark)
+  (ranger-map (kbd "C-r")   'ranger-refresh)
+  (ranger-map (kbd "C-SPC") 'ranger-mark)
+  (ranger-map (kbd "TAB")   'ranger-mark)
   (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
   (ranger-map (kbd "C-k")   'ranger-scroll-page-up)
   (ranger-map (kbd "RET")   'ranger-find-file)
@@ -391,7 +393,7 @@ be moved. `APPEND' will add files to current ring."
         (cl-loop for file in fileset do
                  (when
                      (dired-goto-file file)
-                   (dired-mark 1)))))))
+                   (ranger-mark 1)))))))
 
 (defun ranger-clear-flags (mark)
   "Remove a copy / paste flags from every file."
@@ -406,15 +408,41 @@ be moved. `APPEND' will add files to current ring."
           (subst-char-in-region (1- (point)) (point)
                                 (preceding-char) ?\s))))))
 
+(defun ranger-mark (arg &optional interactive)
+  "Mark the file at point in the Dired buffer.
+If the region is active, mark all files in the region.
+Otherwise, with a prefix arg, mark files on the next ARG lines."
+  (interactive (list current-prefix-arg t))
+  (cond
+   ;; Mark files in the active region.
+   ((and interactive (use-region-p))
+    (save-excursion
+      (let ((beg (region-beginning))
+	    (end (region-end)))
+	(dired-mark-files-in-region
+	 (progn (goto-char beg) (line-beginning-position))
+	 (progn (goto-char end) (line-beginning-position))))))
+   ;; Mark the current (or next ARG) files.
+   (t
+    (let ((inhibit-read-only t))
+      (dired-repeat-over-lines
+       (prefix-numeric-value arg)
+       (function (lambda () (delete-char 1) (insert dired-marker-char))))))))
+
 (defun ranger-copy (&optional append)
+  "Place selected files in the copy ring and mark to be copied.
+`universal-argument' can be used to append to current copy ring."
   (interactive "P")
   (ranger-update-copy-ring nil append))
 
 (defun ranger-cut (&optional append)
+  "Place selected files in the copy ring and mark to be moved.
+`universal-argument' can be used to append to current copy ring."
   (interactive "P")
   (ranger-update-copy-ring t append))
 
 (defun ranger-paste (&optional overwrite link)
+  "Paste copied files from topmost copy ring."
   (interactive)
   (let* ((current (ring-ref ranger-copy-ring 0))
          (move (car current))
@@ -436,8 +464,19 @@ be moved. `APPEND' will add files to current ring."
                      ))))
 
 (defun ranger-paste-over ()
+  "Paste and overwrite copied files when same file names exist."
   (interactive)
   (ranger-paste t))
+
+(defun ranger-show-copy-contents ()
+  "Show the current contents to be copied / moved"
+  (interactive)
+  (let* ((current (ring-ref ranger-copy-ring 0))
+         (move (if (car current) "Move" "Copy"))
+         (fileset (cdr current)))
+    (message (format "%s:\n%s"
+                     (propertize move 'face 'font-lock-builtin-face)
+                     (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)))))
 
 
 ;; marks
