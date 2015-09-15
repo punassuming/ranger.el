@@ -276,13 +276,14 @@ Outputs a string that will show up on the header-line."
   ;; make sure ranger normalizes current mappings
   (when (featurep 'evil)
     ;; turn off evilified buffers for evilify usage
-    (when (and (boundp 'evil-evilified-state-modes)
-               (memq 'dired-mode evil-evilified-state-modes))
-      (delq 'dired-mode evil-evilified-state-modes)
-      (evil-evilified-state -1)
-      (evil-normal-state))
-    (evil-normalize-keymaps)
-    (add-hook 'ranger-mode-hook 'evil-normalize-keymaps))
+    #'(progn
+        (when (and (boundp 'evil-evilified-state-modes)
+                   (memq 'dired-mode evil-evilified-state-modes))
+          (delq 'dired-mode evil-evilified-state-modes)
+          (evil-evilified-state -1)
+          (evil-normal-state))
+        (evil-normalize-keymaps)
+        (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
 
   (eval-after-load 'evil
     '(progn
