@@ -1439,7 +1439,6 @@ properly provides the modeline in dired mode. "
   (unless (get-register :ranger_dired_before)
     (window-configuration-to-register :ranger_dired_before))
 
-  (ranger-hide-dotfiles)
   (ranger-omit)
   (auto-revert-mode)
 
@@ -1458,6 +1457,7 @@ properly provides the modeline in dired mode. "
 
   (ranger-sort t)
   (ranger-show-flags)
+  (ranger-hide-dotfiles)
 
   (ranger-setup-parents)
   (ranger-setup-preview)
