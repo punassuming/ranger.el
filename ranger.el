@@ -246,12 +246,13 @@ Outputs a string that will show up on the header-line."
   "List of buffers visited in ranger")
 
 (defvar ranger-mode-load-hook nil)
-(defvar ranger-parent-dir-hook '(dired-hide-details-mode
+(defvar ranger-parent-dir-hook '(revert-buffer
+                                 dired-hide-details-mode
                                  ranger-sort
+                                 ranger-hide-dotfiles
                                  ranger-omit
                                  auto-revert-mode
-                                 ranger-sub-window-setup
-                                 ))
+                                 ranger-sub-window-setup))
 
 (defvar ranger-mode-map (make-sparse-keymap))
 
@@ -605,8 +606,10 @@ ranger-`CHAR'."
         (setq ranger-show-dotfiles nil)
         (ranger-hide-dotfiles))
     (progn
+      (setq ranger-show-dotfiles t)
       (revert-buffer) ; otherwise just revert to re-show
-      (setq ranger-show-dotfiles t)))
+      ))
+  (ranger-setup)
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
 
 (defun ranger-hide-dotfiles ()
