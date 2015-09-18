@@ -176,6 +176,11 @@
   :group 'ranger
   :type 'string)
 
+(defcustom ranger-max-tabs 9
+  "Maximum number of tabs to allow ranger to maintain."
+  :group 'ranger
+  :type 'integer)
+
 ;; header functions
 (defcustom ranger-header-func 'ranger-header-line
   "Function used to output header of primary ranger window.
@@ -189,7 +194,7 @@ Outputs a string that will show up on the header-line."
   :group 'ranger
   :type 'function)
 
-(defcustom ranger-preview-header-func 'ranger-subwindow-header-line
+(defcustom ranger-preview-header-func 'ranger-preview-header-line
   "Function used to output header of primary ranger window.
 Outputs a string that will show up on the header-line."
   :group 'ranger
@@ -204,6 +209,10 @@ Outputs a string that will show up on the header-line."
 (defvar image-dired-cmd-create-temp-image-program)
 (defvar image-dired-cmd-create-temp-image-options)
 (defvar image-dired-display-image-buffer)
+
+(defvar ranger-current-tab 1)
+(defvar ranger-tabs-alist ()
+  "List of tabs to keep track of in ranger.")
 
 (defvar ranger-history-index 0)
 (defvar ranger-subdir-p nil)
@@ -277,14 +286,14 @@ Outputs a string that will show up on the header-line."
   ;; make sure ranger normalizes current mappings
   (when (featurep 'evil)
     ;; turn off evilified buffers for evilify usage
-    #'(progn
-        (when (and (boundp 'evil-evilified-state-modes)
-                   (memq 'dired-mode evil-evilified-state-modes))
-          (delq 'dired-mode evil-evilified-state-modes)
-          (evil-evilified-state -1)
-          (evil-normal-state))
-        (evil-normalize-keymaps)
-        (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
+    (progn
+      (when (and
+             (fboundp 'evil-evilified-state-p)
+             (evil-evilified-state-p))
+        (evil-evilified-state -1))
+      (evil-normal-state)
+      (evil-normalize-keymaps)
+      (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
 
   (eval-after-load 'evil
     '(progn
@@ -327,18 +336,29 @@ Outputs a string that will show up on the header-line."
   (ranger-map "q"           'ranger-disable)
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
+  (ranger-map "zz"          'ranger-show-history)
+
+  ;; copy and paste
   (ranger-map "yy"          'ranger-copy)
   (ranger-map "dd"          'ranger-cut)
   (ranger-map "pp"          'ranger-paste)
   (ranger-map "po"          'ranger-paste-over)
   (ranger-map "p?"          'ranger-show-copy-contents)
+
+  ;; settings
   (ranger-map "z+"          'ranger-more-parents)
   (ranger-map "z-"          'ranger-less-parents)
-  (ranger-map "zf"          'ranger-toggle-scale-images)
-  (ranger-map "zz"          'ranger-show-history)
   (ranger-map "zh"          'ranger-toggle-dotfiles)
   (ranger-map "zi"          'ranger-toggle-literal)
   (ranger-map "zp"          'ranger-minimal-toggle)
+  (ranger-map "zf"          'ranger-toggle-scale-images)
+
+  ;; tabs
+  (ranger-map "gn"          'ranger-new-tab)
+  (ranger-map "gT"          'ranger-prev-tab)
+  (ranger-map "gt"          'ranger-next-tab)
+  (ranger-map "gc"          'ranger-close-tab)
+
   (ranger-map (kbd "C-r")   'ranger-refresh)
   (ranger-map (kbd "C-SPC") 'ranger-mark)
   (ranger-map (kbd "TAB")   'ranger-mark)
@@ -486,6 +506,96 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
     (message (format "%s:\n%s"
                      (propertize move 'face 'font-lock-builtin-face)
                      (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)))))
+
+
+;;tabs
+(defun ranger-new-tab (&optional index)
+  "Create new tab using optional `INDEX' with the current directory."
+  (interactive)
+  (let* ((tabs
+          (mapcar
+           'car ranger-tabs-alist))
+         (total-tabs
+          (number-sequence 1 ranger-max-tabs))
+         (available-tabs
+          (remove-if '(lambda (tab) (member tab tabs)) total-tabs))
+         (index (or index
+                    (and available-tabs
+                         (apply 'min available-tabs))))
+         )
+    ;; (message (format "%s" (apply 'min available-tabs)))
+    (when (and index (<= index ranger-max-tabs))
+      (setq ranger-current-tab index)
+      (ranger-update-tab index)
+      (ranger-setup-preview))))
+
+(defun ranger-list-tabs ()
+  (let* ((curr ranger-current-tab)
+         (tabs
+          (sort
+           (mapcar
+            'car ranger-tabs-alist) '<)))
+    (mapconcat
+     (lambda (tab)
+       (let* ((item (assoc tab ranger-tabs-alist))
+              (key (car-safe item))
+              (value (car-safe (cdr-safe item))))
+         (format "%d:%s"
+                 key
+                 (if (equal tab curr)
+                     (propertize value 'face 'font-lock-warning-face)
+                   (propertize value 'face 'font-lock-comment-face)))))
+     tabs " ")))
+
+(defun ranger-close-tab (&optional index)
+  (interactive)
+  (let ((index (or index
+                     ranger-current-tab)))
+    (when index
+      (setq ranger-tabs-alist (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
+      (ranger-prev-tab))))
+
+(defun ranger-other-tab (dir &optional index)
+  (interactive)
+  (let* ((tabs
+          (mapcar 'car ranger-tabs-alist))
+         (tab ranger-current-tab)
+         target)
+    (while (and
+            (> tab 0)
+            (<= tab ranger-max-tabs)
+            (not target))
+      (setq tab (+ tab dir))
+      (when (member tab tabs)
+        (setq target tab)))
+    (unless target
+      (if (eq dir 1)
+          (setq target (apply 'min tabs))
+        (setq target (apply 'max tabs))))
+    (ranger-goto-tab target)))
+
+(defun ranger-next-tab (&optional index)
+  (interactive "P")
+  (ranger-other-tab 1 index))
+
+(defun ranger-prev-tab (&optional index)
+  (interactive "P")
+  (ranger-other-tab -1 index))
+
+(defun ranger-update-tab (index)
+  (let ((entry dired-directory)
+        (relative (substring (ranger-relative-dir) 0 -1)))
+    (when entry
+      (setq ranger-tabs-alist (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
+      (add-to-list 'ranger-tabs-alist (cons index (cons relative entry)))
+      )))
+
+(defun ranger-goto-tab (index)
+  (interactive)
+  (let ((tab (assoc index ranger-tabs-alist)))
+    (when tab
+      (setq ranger-current-tab index)
+      (ranger-find-file (cdr (cdr tab))))))
 
 
 ;; marks
@@ -1163,18 +1273,20 @@ fraction of the total frame size"
     ;;        )))
     ;;  nil nil 'nomini)
 
-    (if reuse-window
-        (progn
-          (shrink-window (-  window-size (window-width reuse-window)) t)
-          ;; (set-window-parameter reuse-window 'window-slot slot)
-          (window--display-buffer
-           buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
-          )
-      (progn
-        (setq new-window (split-window current-window window-size side))
-        (set-window-parameter new-window 'window-slot slot)
-        (window--display-buffer
-         buffer new-window 'window alist display-buffer-mark-dedicated)))))
+    ;; (if reuse-window
+    ;;     (progn
+    ;;       (shrink-window (-  window-size (window-width reuse-window)) t)
+    ;;       ;; (set-window-parameter reuse-window 'window-slot slot)
+    ;;       (window--display-buffer
+    ;;        buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
+    ;;       )
+    (progn
+      (setq new-window (split-window current-window window-size side))
+      (set-window-parameter new-window 'window-slot slot)
+      (window--display-buffer
+       buffer new-window 'window alist display-buffer-mark-dedicated))
+    ;; )
+    ))
 
 
 ;; cleanup and reversion
@@ -1292,19 +1404,47 @@ fraction of the total frame size"
 
 
 ;; header-line functions
-(defun ranger-subwindow-header-line ()
-  "Setup header-line for ranger parent buffer."
+(defun ranger-relative-dir ()
+  "Return the topmost directory name in path"
   (let* ((current-name default-directory)
          (parent-name (ranger-parent-directory default-directory))
          (relative
           (if (string-equal current-name parent-name)
               current-name
-            (file-relative-name current-name parent-name)))
+            (file-relative-name current-name parent-name))))
+    relative))
+
+(defun ranger-subwindow-header-line ()
+  "Setup header-line for ranger parent buffer."
+  (let* ((relative (ranger-relative-dir))
          (header (format " %s" relative)))
     (if (equal (get-buffer-window (current-buffer)) ranger-preview-window)
         (propertize (buffer-name (current-buffer))
                     'face 'font-lock-function-name-face)
       (propertize header 'face 'dired-header))))
+
+(defun ranger-preview-header-line ()
+  "Setup header-line for ranger parent buffer."
+  (let* ((rhs (ranger-rhs-header))
+         (used-length (length rhs))
+         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
+    (concat
+     filler
+     rhs)
+    ))
+
+(defun ranger-rhs-header ()
+  (concat
+   (propertize
+    (format "%s / %s "
+            (if ranger-show-dotfiles ".." "")
+            ;; (if ranger-show-literal "raw" "act")
+            ranger-parent-depth
+            ranger-current-tab)
+    'face 'font-lock-comment-face)
+   (when (> (length ranger-tabs-alist) 1)
+     (format "| %s"
+             (ranger-list-tabs)))))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger buffer."
@@ -1314,16 +1454,15 @@ fraction of the total frame size"
          (relative (if same-path
                        current-name
                      (file-relative-name current-name parent-name)))
-         (path (if (and (not ranger-minimal) ranger-preview-file) "" (unless same-path parent-name)))
+         (small-header (and (not ranger-minimal) ranger-preview-file))
+         (path (if small-header "" (unless same-path parent-name)))
          (user (user-login-name))
          (lhs (format "%s%s"
                       path
                       (propertize relative 'face 'font-lock-constant-face)))
-         (rhs (propertize (format "%s / %s"
-                                  (if ranger-show-dotfiles ".." "")
-                                  ;; (if ranger-show-literal "raw" "act")
-                                  ranger-parent-depth)
-                          'face 'font-lock-comment-face))
+         (rhs (if (not small-header)
+                  (ranger-rhs-header)
+                ""))
          (used-length (+ (length rhs) (length lhs)))
          (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
     (concat
@@ -1467,6 +1606,8 @@ properly provides the modeline in dired mode. "
   (ranger-sort t)
   (ranger-show-flags)
   (ranger-hide-dotfiles)
+
+  (ranger-update-tab ranger-current-tab)
 
   (ranger-setup-parents)
   (ranger-setup-preview)
