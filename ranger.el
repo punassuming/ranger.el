@@ -200,6 +200,13 @@ Outputs a string that will show up on the header-line."
   :group 'ranger
   :type 'function)
 
+(defcustom ranger-tabs-style 'normal
+  "Specify style to display tabs in ranger."
+  :group 'ranger
+  :type '(radio (const :tag "Normal" :value normal)
+                (const :tag "Roman numerals" :value roman)
+                (const :tag "Numbers only" :value numbers)))
+
 
 
 (defvar ranger-mode)
@@ -508,17 +515,51 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
           (sort
            (mapcar
             'car ranger-tabs-alist) '<)))
-    (mapconcat
-     (lambda (tab)
-       (let* ((item (assoc tab ranger-tabs-alist))
-              (key (car-safe item))
-              (value (car-safe (cdr-safe item))))
-         (format "%d:%s"
-                 key
-                 (if (equal tab curr)
-                     (propertize value 'face 'font-lock-warning-face)
-                   (propertize value 'face 'font-lock-comment-face)))))
-     tabs " ")))
+    (cond
+     ((equal ranger-tabs-style 'normal)
+      (mapconcat
+       (lambda (tab)
+         (let* ((item (assoc tab ranger-tabs-alist))
+                (key (car-safe item))
+                (value (car-safe (cdr-safe item))))
+           (format "%d:%s"
+                   key
+                   (if (equal tab curr)
+                       (propertize value 'face 'default)
+                     value))))
+       tabs " "))
+     ((equal ranger-tabs-style 'roman)
+      (mapconcat
+       (lambda (tab)
+         (let* ((item (assoc tab ranger-tabs-alist))
+                (key (car-safe item))
+                (roman (mapconcat 'symbol-name (ar2ro key) "")))
+           (format "%s"
+                   (if (equal tab curr)
+                       (propertize roman 'face 'default)
+                     roman))))
+       tabs " "))
+     ((equal ranger-tabs-style 'number)
+      (mapconcat
+       (lambda (tab)
+         (let* ((item (assoc tab ranger-tabs-alist))
+                (key (number-to-string (car-safe item))))
+           (format "%s"
+                   (if (equal tab curr)
+                       (propertize key 'face 'default)
+                     key))))
+       tabs " "))
+     )))
+
+(defun ar2ro (AN)
+  "translate from arabic number AN to roman number,
+   ar2ro(1666) returns (M D C L X V I)"
+  (cond
+   ((>= AN 10) (cons 'X (ar2ro (- AN 10))))
+   ((>= AN 5) (cons 'V (ar2ro (- AN 5))))
+   ((>= AN 4) (cons 'I (cons 'V (ar2ro (- AN 4)))))
+   ((>= AN 1) (cons 'I (ar2ro (- AN 1))))
+   ((= AN 0) nil)))
 
 (defun ranger-close-tab (&optional index)
   (interactive)
