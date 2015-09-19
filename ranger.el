@@ -518,7 +518,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
          (total-tabs
           (number-sequence 1 ranger-max-tabs))
          (available-tabs
-          (remove-if '(lambda (tab) (member tab tabs)) total-tabs))
+          (cl-remove-if '(lambda (tab) (member tab tabs)) total-tabs))
          (index (or index
                     (and available-tabs
                          (apply 'min available-tabs))))
@@ -560,7 +560,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   (let* ((tabs
           (mapcar 'car ranger-tabs-alist))
          (tab ranger-current-tab)
-         target)
+         (target index))
     (while (and
             (> tab 0)
             (<= tab ranger-max-tabs)
@@ -1439,8 +1439,7 @@ fraction of the total frame size"
     (format "%s / %s "
             (if ranger-show-dotfiles ".." "")
             ;; (if ranger-show-literal "raw" "act")
-            ranger-parent-depth
-            ranger-current-tab)
+            ranger-parent-depth)
     'face 'font-lock-comment-face)
    (when (> (length ranger-tabs-alist) 1)
      (format "| %s"
