@@ -188,7 +188,7 @@ Outputs a string that will show up on the header-line."
   :group 'ranger
   :type 'function)
 
-(defcustom ranger-parent-header-func 'ranger-subwindow-header-line
+(defcustom ranger-parent-header-func 'ranger-parent-header-line
   "Function used to output header of primary ranger window.
 Outputs a string that will show up on the header-line."
   :group 'ranger
@@ -378,11 +378,12 @@ Outputs a string that will show up on the header-line."
 
   )
 
-;; copy / paste - wip
+
+;; copy / paste
 (defun ranger-show-copy-ring (copy-index)
   "Show copy ring in `ranger-copy-ring', selection inserts at top for use."
   (interactive (list
-                (ido-completing-read "Select from copy ring: "
+                (completing-read "Select from copy ring: "
                                      (ranger--ring-elements
                                       ranger-copy-ring)))))
 
@@ -408,34 +409,6 @@ be moved. `APPEND' will add files to current ring."
                      (length marked-files)
                      (if move "cut" "copy")
                      (length (cdr (ring-ref ranger-copy-ring 0)))))))
-
-(defun ranger-show-flags ()
-  "Show copy / paste flags in ranger buffer."
-  (when (not (ring-empty-p ranger-copy-ring))
-    (ranger-clear-flags ?P)
-    (ranger-clear-flags ?M)
-    ;; (dired-unmark-all-files ?\r)
-    (let* ((current (ring-ref ranger-copy-ring 0))
-           (fileset (cdr current))
-           (dired-marker-char (if (car current) ?M ?P)))
-      (save-excursion
-        (cl-loop for file in fileset do
-                 (when
-                     (dired-goto-file file)
-                   (ranger-mark 1)))))))
-
-(defun ranger-clear-flags (mark)
-  "Remove a copy / paste flags from every file."
-  (save-excursion
-    (let* ((count 0)
-           (inhibit-read-only t) case-fold-search
-           (string (format "\n%c" mark)))
-      (goto-char (point-min))
-      (while
-          (search-forward string nil t)
-        (when (dired-get-filename t t)
-          (subst-char-in-region (1- (point)) (point)
-                                (preceding-char) ?\s))))))
 
 (defun ranger-mark (arg &optional interactive)
   "Mark the file at point in the Dired buffer.
@@ -529,7 +502,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
       (ranger-update-tab index)
       (ranger-setup-preview))))
 
-(defun ranger-list-tabs ()
+(defun ranger--tabs-list ()
   (let* ((curr ranger-current-tab)
          (tabs
           (sort
@@ -584,7 +557,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
 
 (defun ranger-update-tab (index)
   (let ((entry dired-directory)
-        (relative (substring (ranger-relative-dir) 0 -1)))
+        (relative (substring (ranger--dir-relative) 0 -1)))
     (when entry
       (setq ranger-tabs-alist (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
       (add-to-list 'ranger-tabs-alist (cons index (cons relative entry)))
@@ -642,7 +615,7 @@ ranger-`CHAR'."
       (ranger-find-file bookmark-path))))
 
 
-;; history utilities
+;; ring utilities
 (defun ranger--ring-elements (ring)
   "Return deduplicated elements of `ring'"
   (delq nil
@@ -657,6 +630,8 @@ ranger-`CHAR'."
     (dotimes (idx (ring-length ring) listing)
       (setq listing (append (cons idx (ring-ref ring idx)) listing)))))
 
+
+;; history
 (defun ranger-show-history (history)
   "Show history prompt for recent directories"
   (interactive
@@ -1288,6 +1263,34 @@ fraction of the total frame size"
     ;; )
     ))
 
+(defun ranger-show-flags ()
+  "Show copy / paste flags in ranger buffer."
+  (when (not (ring-empty-p ranger-copy-ring))
+    (ranger-clear-flags ?P)
+    (ranger-clear-flags ?M)
+    ;; (dired-unmark-all-files ?\r)
+    (let* ((current (ring-ref ranger-copy-ring 0))
+           (fileset (cdr current))
+           (dired-marker-char (if (car current) ?M ?P)))
+      (save-excursion
+        (cl-loop for file in fileset do
+                 (when
+                     (dired-goto-file file)
+                   (ranger-mark 1)))))))
+
+(defun ranger-clear-flags (mark)
+  "Remove a copy / paste flags from every file."
+  (save-excursion
+    (let* ((count 0)
+           (inhibit-read-only t) case-fold-search
+           (string (format "\n%c" mark)))
+      (goto-char (point-min))
+      (while
+          (search-forward string nil t)
+        (when (dired-get-filename t t)
+          (subst-char-in-region (1- (point)) (point)
+                                (preceding-char) ?\s))))))
+
 
 ;; cleanup and reversion
 (defun ranger-preview-cleanup ()
@@ -1403,8 +1406,8 @@ fraction of the total frame size"
              (kill-buffer-if-not-modified buffer))))
 
 
-;; header-line functions
-(defun ranger-relative-dir ()
+;; header / mode line
+(defun ranger--dir-relative ()
   "Return the topmost directory name in path"
   (let* ((current-name default-directory)
          (parent-name (ranger-parent-directory default-directory))
@@ -1414,26 +1417,7 @@ fraction of the total frame size"
             (file-relative-name current-name parent-name))))
     relative))
 
-(defun ranger-subwindow-header-line ()
-  "Setup header-line for ranger parent buffer."
-  (let* ((relative (ranger-relative-dir))
-         (header (format " %s" relative)))
-    (if (equal (get-buffer-window (current-buffer)) ranger-preview-window)
-        (propertize (buffer-name (current-buffer))
-                    'face 'font-lock-function-name-face)
-      (propertize header 'face 'dired-header))))
-
-(defun ranger-preview-header-line ()
-  "Setup header-line for ranger parent buffer."
-  (let* ((rhs (ranger-rhs-header))
-         (used-length (length rhs))
-         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
-    (concat
-     filler
-     rhs)
-    ))
-
-(defun ranger-rhs-header ()
+(defun ranger--header-rhs ()
   (concat
    (propertize
     (format "%s / %s "
@@ -1443,7 +1427,22 @@ fraction of the total frame size"
     'face 'font-lock-comment-face)
    (when (> (length ranger-tabs-alist) 1)
      (format "| %s"
-             (ranger-list-tabs)))))
+             (ranger--tabs-list)))))
+
+(defun ranger-parent-header-line ()
+  "Setup header-line for ranger parent buffer."
+  (let* ((relative (ranger--dir-relative))
+         (header (format " %s" relative)))
+      (propertize header 'face 'dired-header)))
+
+(defun ranger-preview-header-line ()
+  "Setup header-line for ranger parent buffer."
+  (let* ((rhs (ranger--header-rhs))
+         (used-length (length rhs))
+         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
+    (concat
+     filler
+     rhs)))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger buffer."
@@ -1460,7 +1459,7 @@ fraction of the total frame size"
                       path
                       (propertize relative 'face 'font-lock-constant-face)))
          (rhs (if (not small-header)
-                  (ranger-rhs-header)
+                  (ranger--header-rhs)
                 ""))
          (used-length (+ (length rhs) (length lhs)))
          (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
