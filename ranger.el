@@ -533,7 +533,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
        (lambda (tab)
          (let* ((item (assoc tab ranger-tabs-alist))
                 (key (car-safe item))
-                (roman (mapconcat 'symbol-name (ar2ro key) "")))
+                (roman (string-join (ranger--ar2ro key))))
            (format "%s"
                    (if (equal tab curr)
                        (propertize roman 'face 'default)
@@ -551,14 +551,15 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
        tabs " "))
      )))
 
-(defun ar2ro (AN)
+(defun ranger--ar2ro (AN)
   "translate from arabic number AN to roman number,
-   ar2ro(1666) returns (M D C L X V I)"
+   ranger--ar2ro(1666) returns (M D C L X V I)"
   (cond
-   ((>= AN 10) (cons 'X (ar2ro (- AN 10))))
-   ((>= AN 5) (cons 'V (ar2ro (- AN 5))))
-   ((>= AN 4) (cons 'I (cons 'V (ar2ro (- AN 4)))))
-   ((>= AN 1) (cons 'I (ar2ro (- AN 1))))
+   ((>= AN 10) (cons "X" (ranger--ar2ro (- AN 10))))
+   ((>= AN 9) (cons "I" (cons "X" (ranger--ar2ro (- AN 9)))))
+   ((>= AN 5) (cons "V" (ranger--ar2ro (- AN 5))))
+   ((>= AN 4) (cons "I" (cons "V" (ranger--ar2ro (- AN 4)))))
+   ((>= AN 1) (cons "I" (ranger--ar2ro (- AN 1))))
    ((= AN 0) nil)))
 
 (defun ranger-close-tab (&optional index)
