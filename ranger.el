@@ -515,51 +515,34 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
           (sort
            (mapcar
             'car ranger-tabs-alist) '<)))
-    (cond
-     ((equal ranger-tabs-style 'normal)
-      (mapconcat
-       (lambda (tab)
-         (let* ((item (assoc tab ranger-tabs-alist))
-                (key (car-safe item))
-                (value (car-safe (cdr-safe item))))
-           (format "%d:%s"
-                   key
-                   (if (equal tab curr)
-                       (propertize value 'face 'default)
-                     value))))
-       tabs " "))
-     ((equal ranger-tabs-style 'roman)
-      (mapconcat
-       (lambda (tab)
-         (let* ((item (assoc tab ranger-tabs-alist))
-                (key (car-safe item))
-                (roman (string-join (ranger--ar2ro key))))
-           (format "%s"
-                   (if (equal tab curr)
-                       (propertize roman 'face 'default)
-                     roman))))
-       tabs " "))
-     ((equal ranger-tabs-style 'number)
-      (mapconcat
-       (lambda (tab)
-         (let* ((item (assoc tab ranger-tabs-alist))
-                (key (number-to-string (car-safe item))))
-           (format "%s"
-                   (if (equal tab curr)
-                       (propertize key 'face 'default)
-                     key))))
-       tabs " "))
-     )))
+    (mapconcat
+     (lambda (tab)
+       (let* ((item (assoc tab ranger-tabs-alist))
+              (key (car-safe item))
+              (roman (ranger--ar2ro key))
+              (value (car-safe (cdr-safe item)))
+              ret)
+         (setq ret (cond
+                    ((equal ranger-tabs-style 'normal)
+                     (format "%d:%s" key value))
+                    ((equal ranger-tabs-style 'roman)
+                     (format "%s" roman))
+                    ((equal ranger-tabs-style 'number)
+                     (format "%s" key))))
+         (if (equal tab curr)
+             (propertize ret 'face 'default)
+           ret)))
+     tabs " ")))
 
 (defun ranger--ar2ro (AN)
   "translate from arabic number AN to roman number,
-   ranger--ar2ro(1666) returns (M D C L X V I)"
+   ranger--ar2ro returns string of roman numerals."
   (cond
-   ((>= AN 10) (cons "X" (ranger--ar2ro (- AN 10))))
-   ((>= AN 9) (cons "I" (cons "X" (ranger--ar2ro (- AN 9)))))
-   ((>= AN 5) (cons "V" (ranger--ar2ro (- AN 5))))
-   ((>= AN 4) (cons "I" (cons "V" (ranger--ar2ro (- AN 4)))))
-   ((>= AN 1) (cons "I" (ranger--ar2ro (- AN 1))))
+   ((>= AN 10) (concat "X" (ranger--ar2ro (- AN 10))))
+   ((>= AN 9) (concat "I" (concat "X" (ranger--ar2ro (- AN 9)))))
+   ((>= AN 5) (concat "V" (ranger--ar2ro (- AN 5))))
+   ((>= AN 4) (concat "I" (concat "V" (ranger--ar2ro (- AN 4)))))
+   ((>= AN 1) (concat "I" (ranger--ar2ro (- AN 1))))
    ((= AN 0) nil)))
 
 (defun ranger-close-tab (&optional index)
