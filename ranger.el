@@ -240,6 +240,7 @@ Outputs a string that will show up on the header-line."
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
+(defvar ranger-frame nil)
 
 (defvar ranger-minimal nil)
 
@@ -845,7 +846,9 @@ ranger-`CHAR'."
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
   (interactive)
   (let ((find-name (or entry
-                       (dired-get-filename nil t))))
+                       (dired-get-filename nil t)))
+        (inhibit-redisplay t)
+        )
     (when find-name
       (unless (or ignore-history
                   (not (file-directory-p find-name)))
@@ -977,7 +980,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                        "%"
                        (if (> (length entry) space)
                            (concat ".." (substring entry (- (length entry) space -2)))
-                         entry))))
+                         entry)))
+           (message-log-max nil))
       (message "%s" (format
                      (format "%%-%ds %%s : %%s : %%s"
                              space)
@@ -1149,6 +1153,8 @@ slot)."
           (turn-on-font-lock)
           (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
           (goto-char (point-min))
+          ;; truncate lines in directory buffer
+          (setq truncate-lines t)
           ;; remove . and .. from directory listing
           (save-excursion
             (while (re-search-forward "total used in directory\\|\\.$" nil t)
@@ -1218,6 +1224,7 @@ is set, show literally instead of actual buffer."
 (defun ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
+         (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
     (when ranger-cleanup-eagerly
@@ -1439,13 +1446,12 @@ fraction of the total frame size"
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
   (let ((windows (window-list)))
-    (unless
-        (and
-         (memq ranger-window windows)
-         ;; (window-live-p ranger-window)
-         (eq (window-buffer ranger-window) ranger-buffer))
-      (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-      (ranger-still-dired))))
+    (when (frame-focus ranger-frame)
+      (unless (and
+               (memq ranger-window windows)
+               (eq (window-buffer ranger-window) ranger-buffer))
+        (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+        (ranger-still-dired)))))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -1628,6 +1634,7 @@ properly provides the modeline in dired mode. "
 
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
+  (setq ranger-frame (window-frame ranger-window))
 
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
