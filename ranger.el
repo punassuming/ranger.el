@@ -1153,15 +1153,35 @@ slot)."
     (run-hooks 'ranger-parent-dir-hook)
     (current-buffer)))
 
+(defun ranger-dir-contents (entry)
+  "Open `ENTRY' in dired buffer."
+  (let ((temp-buffer (or (get-buffer "*ranger-prev*")
+                         (generate-new-buffer "*ranger-prev*")))
+        )
+    (with-demoted-errors
+        (with-current-buffer temp-buffer
+          (make-local-variable 'font-lock-defaults)
+          (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
+          (erase-buffer)
+          (turn-on-font-lock)
+          (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
+          (goto-char (point-min))
+          ;; remove . and .. from directory listing
+          (save-excursion
+            (while (re-search-forward "total used in directory\\|\\.$" nil t)
+              (kill-whole-line)))
+          (current-buffer)))))
+
 (defun ranger-preview-buffer (entry-name)
   "Create the preview buffer of `ENTRY-NAME'.  If `ranger-show-literal'
 is set, show literally instead of actual buffer."
   (if ranger-show-literal
       ;; show literal version of file
-      (let ((temp-buffer (or (get-buffer "*literal*")
-                             (generate-new-buffer "*literal*"))))
+      (let ((temp-buffer (or (get-buffer "*ranger-prev*")
+                             (generate-new-buffer "*ranger-prev*"))))
         (with-current-buffer temp-buffer
           (erase-buffer)
+          (font-lock-mode -1)
           (insert-file-contents entry-name)
           (current-buffer)))
     ;; show file
@@ -1233,7 +1253,7 @@ is set, show literally instead of actual buffer."
         (with-demoted-errors "%S"
           (let* ((preview-window (display-buffer
                                   (if (file-directory-p entry-name)
-                                      (ranger-dir-buffer entry-name)
+                                      (ranger-dir-contents entry-name)
                                     (ranger-preview-buffer entry-name))
                                   `(ranger-display-buffer-at-side . ((side . right)
                                                                      (slot . 1)
@@ -1411,7 +1431,14 @@ fraction of the total frame size"
   "Enable or disable ranger based on mode"
   (if (derived-mode-p 'dired-mode)
       (progn
-        (ranger-enable)
+        (if (not ranger-mode)
+            (ranger-enable)
+          ;; (progn
+          ;;   (ranger-setup-parents)
+          ;;   (ranger-setup-preview)
+          ;;   )
+          (ranger-setup)
+          )
         (ranger-show-details))
     (progn
       (let ((current (current-buffer))
