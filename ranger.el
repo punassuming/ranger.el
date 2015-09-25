@@ -218,6 +218,8 @@ Outputs a string that will show up on the header-line."
 (defvar image-dired-display-image-buffer)
 
 (defvar ranger-current-tab 1)
+(defvar ranger-current-file nil)
+
 (defvar ranger-tabs-alist ()
   "List of tabs to keep track of in ranger.")
 
@@ -989,6 +991,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                            (concat ".." (substring entry (- (length entry) space -2)))
                          entry)))
            (message-log-max nil))
+      (setq ranger-current-file entry)
       (message "%s" (format
                      (format "%%-%ds %%s : %%s : %%s"
                              space)
@@ -1499,6 +1502,40 @@ fraction of the total frame size"
      (format "| %s"
              (ranger--tabs-list)))))
 
+(defun ranger--header-lhs ()
+  "Setup header-line for ranger buffer."
+  (let* ((current-name default-directory)
+         (parent-name (ranger-parent-directory default-directory))
+         (same-path (string-equal current-name parent-name))
+         (relative (if same-path
+                       current-name
+                     (file-relative-name current-name parent-name)))
+         (path (unless same-path parent-name))
+         (user (user-login-name))
+         (file-name (concat
+                     (file-name-nondirectory ranger-current-file)))
+         (lhs (format "%s%s"
+                      (concat 
+                       path relative)
+                      (propertize file-name 'face 'font-lock-constant-face))))
+     lhs))
+
+(defun ranger--header-string ()
+  "Compose header string"
+  (let* ((lhs (ranger--header-lhs))
+         (small-header (and (not ranger-minimal) ranger-preview-file))
+         (rhs (ranger--header-rhs))
+         (used-length (+ (length rhs) (length lhs)))
+         (total-window-width (+ (window-width ranger-window)
+                                (if ranger-preview-file
+                                    (+ (window-width ranger-preview-window) 2)
+                                  0)))
+         (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
+    (concat
+     lhs
+     filler
+     rhs)))
+
 (defun ranger-parent-header-line ()
   "Setup header-line for ranger parent buffer."
   (let* ((relative (ranger--dir-relative))
@@ -1507,36 +1544,13 @@ fraction of the total frame size"
 
 (defun ranger-preview-header-line ()
   "Setup header-line for ranger parent buffer."
-  (let* ((rhs (ranger--header-rhs))
-         (used-length (length rhs))
-         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
-    (concat
-     filler
-     rhs)))
+    (substring (ranger--header-string) (+ (window-width ranger-window) 2) ))
 
 (defun ranger-header-line ()
-  "Setup header-line for ranger buffer."
-  (let* ((current-name default-directory)
-         (parent-name (ranger-parent-directory default-directory))
-         (same-path (string-equal current-name parent-name))
-         (relative (if same-path
-                       current-name
-                     (file-relative-name current-name parent-name)))
-         (small-header (and (not ranger-minimal) ranger-preview-file))
-         (path (if small-header "" (unless same-path parent-name)))
-         (user (user-login-name))
-         (lhs (format "%s%s"
-                      path
-                      (propertize relative 'face 'font-lock-constant-face)))
-         (rhs (if (not small-header)
-                  (ranger--header-rhs)
-                ""))
-         (used-length (+ (length rhs) (length lhs)))
-         (filler (make-string (max 0 (- (window-width) used-length)) (string-to-char " "))))
-    (concat
-     lhs
-     filler
-     rhs)))
+  "Setup header-line for ranger parent buffer."
+  (substring (ranger--header-string) 0
+             (+ (window-width ranger-window)
+                (if ranger-preview-file 2 0))))
 
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
