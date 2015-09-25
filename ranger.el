@@ -795,7 +795,8 @@ ranger-`CHAR'."
       (setq ranger-preview-file t)
       (dired-hide-details-mode t)
       (setq dired-hide-details-hide-symlink-targets nil))
-    (ranger-setup-preview)))
+    (ranger-setup-preview))
+  (ranger-show-details))
 
 (defun ranger-toggle-scale-images ()
   "Show/hide dot-files."
@@ -976,40 +977,30 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (let* ((entry (dired-get-filename nil t))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
-           (file-size (ranger-format-file-size (nth 7 fattr)))
+           (file-size (file-size-human-readable (nth 7 fattr)))
            (file-date (format-time-string "%Y-%m-%d %H:%m"
                                           (nth 5 fattr)))
            (file-perm (nth 8 fattr))
-           (space (- fwidth 8
-                     (length file-size)
+           (cur-pos (line-number-at-pos (point)))
+           (final-pos (- (line-number-at-pos (point-max)) 1))
+           (position (format "%d/%d"
+                             cur-pos
+                             final-pos))
+           (space (- fwidth
+                     6
+                     (max 6 (length file-size))
+                     (length position)
                      (length file-date)
                      (length file-perm)))
-           (file-name (cl-substitute
-                       "%%"
-                       "%"
-                       (if (> (length entry) space)
-                           (concat ".." (substring entry (- (length entry) space -2)))
-                         entry)))
            (message-log-max nil))
       (setq ranger-current-file entry)
       (message "%s" (format
-                     (format "%%-%ds %%s : %%s : %%s"
-                             space)
-                     (propertize file-name 'face 'font-lock-function-name-face)
+                     (format  "%%s %%6s %%%ds   %%s" space)
+                     (propertize file-date 'face 'font-lock-warning-face)
                      file-size
-                     (propertize
-                      file-date
-                      'face 'font-lock-warning-face)
-                     file-perm)))))
-
-(defun ranger-format-file-size (file-size)
-  "show file size in human readable form."
-  (if (< file-size 1024)
-      (format (if (floatp file-size) " %5.0f" " %5d") file-size)
-    (cl-do ((file-size (/ file-size 1024.0) (/ file-size 1024.0))
-            ;; kilo, mega, giga, tera, peta, exa
-            (post-fixes (list "k" "M" "G" "T" "P" "E") (cdr post-fixes)))
-        ((< file-size 1024) (format " %4.0f%s"  file-size (car post-fixes))))))
+                     position
+                     file-perm
+                     )))))
 
 
 
