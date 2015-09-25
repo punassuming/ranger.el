@@ -467,6 +467,8 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                      (copy-directory file target)
                    (copy-file file target overwrite)))
                (setq filenum (+ filenum 1))))
+    ;; show immediate changes in buffer
+    (revert-buffer)
     (message (format "%s %d/%d item(s) from the copy ring."
                      (if move "Moved" "Copied")
                      filenum
@@ -725,7 +727,7 @@ ranger-`CHAR'."
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
 
 (defun ranger-hide-dotfiles ()
-  "Hide dotfiles in directory."
+  "Hide dotfiles in directory. TODO add variable for files to hide."
   (unless ranger-show-dotfiles
     (dired-mark-if
      (and (not (looking-at-p dired-re-dot))
@@ -847,14 +849,19 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (inhibit-redisplay t)
-        )
+        (inhibit-redisplay t))
     (when find-name
-      (unless (or ignore-history
-                  (not (file-directory-p find-name)))
-        (ranger-update-history find-name))
-      (find-file find-name)
-      (ranger-still-dired))))
+      (if (file-directory-p find-name)
+          (progn
+            (unless (get-register :ranger_dired_before)
+              (window-configuration-to-register :ranger_dired_before))
+            (unless ignore-history
+              (ranger-update-history find-name))
+            (find-file find-name)
+            (ranger-enable))
+        (progn
+          (ranger-disable)
+          (find-file find-name))))))
 
 (defun ranger-open-file (&optional horizontal)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
@@ -1353,10 +1360,9 @@ fraction of the total frame size"
 (defun ranger-kill-buffer (buffer)
   "Delete unmodified buffers and any dired buffer"
   (when
-      (and
-       (buffer-live-p buffer)
-       (or (eq 'dired-mode (buffer-local-value 'major-mode buffer))
-           (not (buffer-modified-p buffer))))
+      (and (buffer-live-p buffer)
+           (or (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+               (not (buffer-modified-p buffer))))
     (kill-buffer buffer)))
 
 (defun ranger-revert (&optional buffer)
@@ -1371,6 +1377,7 @@ fraction of the total frame size"
   (ranger-revert-appearance (or buffer (current-buffer)))
   (ranger-revert-appearance ranger-buffer)
 
+
   ;; delete and cleanup buffers
   (let ((all-ranger-buffers
          (cl-remove-duplicates
@@ -1378,19 +1385,26 @@ fraction of the total frame size"
            ranger-preview-buffers
            ranger-parent-buffers
            ranger-visited-buffers
-           (list ranger-buffer))
-          :test (lambda (x y) (or (null y) (equal x y)))
+           (list ranger-buffer)
+           )
+          :test (lambda (x y) (or (null y) (eq x y)))
           )))
     ;; (message (format "all buffers : %s" all-ranger-buffers))
+
     (if ranger-cleanup-on-disable
         (mapc 'ranger-kill-buffer all-ranger-buffers)
       (mapc 'ranger-revert-appearance all-ranger-buffers)))
+
+  ;; kill preview buffer
+  (when (get-buffer "*ranger-prev*")
+    (kill-buffer (get-buffer "*ranger-prev*")))
 
   ;; clear variables
   (setq ranger-preview-buffers ()
         ranger-visited-buffers ()
         ranger-parent-buffers ())
   (setq ranger-minimal nil)
+
   ;; clear ranger-show-details information
   (message "%s" ""))
 
@@ -1415,27 +1429,19 @@ fraction of the total frame size"
         (setq ranger-mode nil)
         ;; hide details line at top
         (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
-        (revert-buffer t)))))
+        (revert-buffer)))))
 
 (defun ranger-still-dired ()
-  "Enable or disable ranger based on mode"
+  "Enable or disable ranger based on current mode"
   (if (derived-mode-p 'dired-mode)
-      (progn
-        (if (not ranger-mode)
-            (ranger-enable)
-          ;; (progn
-          ;;   (ranger-setup-parents)
-          ;;   (ranger-setup-preview)
-          ;;   )
-          (ranger-setup)
-          )
-        (ranger-show-details))
+        (ranger-enable)
     (progn
+      ;; Try to manage new windows / frames created without killing ranger
       (let ((current (current-buffer))
             (buffer-fn (buffer-file-name (current-buffer))))
         (if buffer-fn
             (progn
-              (message "Exiting ranger")
+              (message "File opened, exiting ranger")
               (ranger-disable)
               (find-file buffer-fn))
           (progn
@@ -1446,12 +1452,18 @@ fraction of the total frame size"
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
   (let ((windows (window-list)))
-    (when (frame-focus ranger-frame)
-      (unless (and
-               (memq ranger-window windows)
-               (eq (window-buffer ranger-window) ranger-buffer))
-        (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-        (ranger-still-dired)))))
+    (if (not (frame-live-p ranger-frame))
+        (progn
+          (message "Ranger frame has been killed, reverting ranger settings and cleaning buffers.")
+          ;; don't revert window config now that ranger isn't found.
+          (set-register :ranger_dired_before nil)
+          (ranger-revert)
+          (remove-hook 'window-configuration-change-hook 'ranger-window-check))
+      (when (frame-focus ranger-frame)
+        (unless (and (memq ranger-window windows)
+                     (eq (window-buffer ranger-window) ranger-buffer))
+          (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+          (ranger-still-dired))))))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -1588,9 +1600,7 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
-    (when dir
-      (window-configuration-to-register :ranger_dired_before)
-      (ranger-find-file dir))))
+    (when dir (ranger-find-file dir))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
@@ -1613,6 +1623,7 @@ properly provides the modeline in dired mode. "
 
   (run-hooks 'ranger-mode-load-hook)
 
+  ;; store previous settings
   (unless ranger-pre-saved
     (setq ranger-pre-hl-mode hl-line-mode)
     (setq ranger-pre-arev-mode auto-revert-mode)
@@ -1620,45 +1631,48 @@ properly provides the modeline in dired mode. "
     (setq ranger-pre-dired-listing dired-listing-switches)
     (setq ranger-pre-saved t))
 
-  ;; hide groups, show human readable file sizes
-  (setq dired-listing-switches "-alGh")
-
-  (dired-sort-other dired-listing-switches)
-
-  (unless ranger-minimal
-    ;; clear out everything
-    (delete-other-windows))
-
   ;; reset subdir optiona
   (setq ranger-subdir-p nil)
 
+  ;; ranger specific objects
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
+  (setq ranger-preview-window nil)
+
+  ;; hide groups, show human readable file sizes
+  ;; TODO add as defcustom
+  (setq dired-listing-switches "-alGh")
+
+  ;; CHANGE - removed
+  ;; (dired-sort-other dired-listing-switches)
+
+  ;; clear out everything if not in deer mode
+  (unless ranger-minimal
+    (delete-other-windows))
 
   (add-to-list 'ranger-visited-buffers ranger-buffer)
-
-  (hl-line-mode t)
 
   ;; unless specified from running `ranger'
   (unless (get-register :ranger_dired_before)
     (window-configuration-to-register :ranger_dired_before))
 
   (ranger-omit)
+  ;; consider removing
   (auto-revert-mode)
 
   ;; set hl-line-mode for ranger usage
-  (setq ranger-preview-window nil)
+  (hl-line-mode t)
+  ;; truncate lines for primary window
   (setq truncate-lines t)
-
-  (make-local-variable 'dired-hide-symlink-targets)
-  (setq dired-hide-details-hide-symlink-targets nil)
 
   (unless ranger-minimal
     (dired-hide-details-mode -1))
 
-  ;; hide details line at top
+  ;; hide details line at top - show symlink targets
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+  (make-local-variable 'dired-hide-symlink-targets)
+  (setq dired-hide-details-hide-symlink-targets nil)
 
   (ranger-sort t)
   (ranger-show-flags)
@@ -1669,12 +1683,13 @@ properly provides the modeline in dired mode. "
   (ranger-setup-parents)
   (ranger-setup-preview)
 
-  ;; truncate lines for primary window
+  ;; scroll back to left in case new windows affected primary buffer
   (set-window-hscroll ranger-window 0)
 
   (when ranger-modify-header
     (setq header-line-format `(:eval (,ranger-header-func))))
 
+  (ranger-show-details)
   (ranger-set-modeline))
 
 ;;;###autoload
