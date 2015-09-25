@@ -7,7 +7,7 @@
 ;; Version: 0.9.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
-;; Package-Requires: ((emacs "24.4")(cl-lib "0.5")(diminish "20091203.1012"))
+;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
 
 ;; Based on work from
 ;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
@@ -1568,11 +1568,11 @@ properly provides the modeline in dired mode. "
                    "Ranger:name")
                   (t
                    (concat "Ranger " dired-actual-switches)))))
-    (when (featurep 'diminish)
-      (progn
-        (diminish 'ranger-mode)
-        (diminish 'dired-omit-mode " O")
-        (diminish 'auto-revert-mode " R")))
+      (eval-after-load "diminish"
+        '(progn
+          (diminish 'ranger-mode)
+          (diminish 'dired-omit-mode " O")
+          (diminish 'auto-revert-mode " R")))
     (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
