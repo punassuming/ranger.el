@@ -995,7 +995,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (message-log-max nil))
       (setq ranger-current-file entry)
       (message "%s" (format
-                     (format  "%%s %%6s %%%ds   %%s" space)
+                     (format  "%%s %%6s %%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
                      file-size
                      position
@@ -1495,21 +1495,13 @@ fraction of the total frame size"
 
 (defun ranger--header-lhs ()
   "Setup header-line for ranger buffer."
-  (let* ((current-name default-directory)
-         (parent-name (ranger-parent-directory default-directory))
-         (same-path (string-equal current-name parent-name))
-         (relative (if same-path
-                       current-name
-                     (file-relative-name current-name parent-name)))
-         (path (unless same-path parent-name))
-         (user (user-login-name))
-         (file-name (concat
-                     (file-name-nondirectory ranger-current-file)))
+  (let* ((user (user-login-name))
+         (file-path (file-name-directory ranger-current-file))
+         (file-name (file-name-nondirectory ranger-current-file))
          (lhs (format "%s%s"
-                      (concat 
-                       path relative)
+                      file-path
                       (propertize file-name 'face 'font-lock-constant-face))))
-     lhs))
+    lhs))
 
 (defun ranger--header-string ()
   "Compose header string"
