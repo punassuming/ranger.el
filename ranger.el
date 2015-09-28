@@ -527,13 +527,10 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
               (roman (ranger--ar2ro key))
               (value (car-safe (cdr-safe item)))
               ret)
-         (setq ret (cond
-                    ((equal ranger-tabs-style 'normal)
-                     (format "%d:%s" key value))
-                    ((equal ranger-tabs-style 'roman)
-                     (format "%s" roman))
-                    ((equal ranger-tabs-style 'number)
-                     (format "%s" key))))
+         (setq ret (cl-case ranger-tabs-style
+                     ('normal (format "%d:%s" key value))
+                     ('roman (format "%s" roman))
+                     ('number (format "%s" key))))
          (if (equal tab curr)
              (propertize ret 'face 'default)
            ret)))
