@@ -1113,22 +1113,22 @@ slot)."
 (defun ranger-next-parent ()
   "Move up in parent directory"
   (interactive)
-  (ranger-up-directory)
-  (ranger-next-file)
-  (let ((curfile (dired-get-filename nil t)))
-    (when
-        (file-directory-p curfile)
-      (ranger-find-file curfile))))
+  (with-current-buffer (car ranger-parent-buffers)
+    (dired-next-line 1)
+    (let ((curfile (dired-get-filename nil t)))
+      (if (file-directory-p curfile)
+          (ranger-find-file curfile)
+        (dired-next-line -1)))))
 
 (defun ranger-prev-parent ()
   "Move up in parent directory"
   (interactive)
-  (ranger-up-directory)
-  (ranger-prev-file)
-  (let ((curfile (dired-get-filename nil t)))
-    (when
-        (file-directory-p curfile)
-      (ranger-find-file curfile))))
+  (with-current-buffer (car ranger-parent-buffers)
+    (dired-next-line -1)
+    (let ((curfile (dired-get-filename nil t)))
+      (if (file-directory-p curfile)
+          (ranger-find-file curfile)
+        (dired-next-line 1)))))
 
 
 ;; window creation subroutines
