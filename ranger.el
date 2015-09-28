@@ -741,7 +741,7 @@ ranger-`CHAR'."
   (interactive
    (list
     (read-char-choice
-     "criteria: (n/N)ame (e/E)xt (s/S)ize (t/T)ime " '(?q ?n ?N ?e ?E ?s ?S ?t ?T))))
+     "criteria: (n/N)ame (e/E)xt (s/S)ize m(t/T)ime (c/C)time " '(?q ?n ?N ?e ?E ?s ?S ?t ?T ?c ?C))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
            (uppercasep (and (stringp c) (string-equal c (upcase c)) ))
@@ -749,6 +749,7 @@ ranger-`CHAR'."
            (ranger-sort-flag
             (cond
              ((string-equal cc "n") "")
+             ((string-equal cc "c") "c")
              ((string-equal cc "e") "X")
              ((string-equal cc "t") "t")
              ((string-equal cc "s") "S")))
