@@ -909,7 +909,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
           (setq header-line-format nil)
           (setq ranger-subdir-p t)
           (dired-insert-subdir find-name)
-          (revert-buffer))
+          (revert-buffer)
+          (ranger-setup))
       (message "Can only insert on a directory."))))
 
 (defun ranger-prev-subdir ()
@@ -971,6 +972,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (when ranger-preview-file
     (ranger-setup-preview)))
 
+(defun ranger--footer-spec ())
+
 (defun ranger-show-details ()
   "Echo file details"
   (when (dired-get-filename nil t)
@@ -983,9 +986,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (file-perm (nth 8 fattr))
            (cur-pos (line-number-at-pos (point)))
            (final-pos (- (line-number-at-pos (point-max)) 1))
-           (position (format "%d/%d"
+           (position (format "%3d/%-3d"
                              cur-pos
                              final-pos))
+           (footer-spec (ranger--footer-spec))
            (space (- fwidth
                      6
                      (max 6 (length file-size))
@@ -1047,6 +1051,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-parent-buffers ())
     (setq ranger-parent-windows ())
     (setq ranger-parent-dirs ())
+
     (while (and parent-name
                 (not ranger-minimal)
                 (file-directory-p parent-name)
@@ -1062,30 +1067,36 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (progn
           (add-to-list 'ranger-parent-dirs (cons (cons current-name parent-name) i))
           (setq current-name (ranger-parent-directory current-name))
-          (setq parent-name (ranger-parent-directory parent-name))))
-      )
+          (setq parent-name (ranger-parent-directory parent-name)))))
     (mapc 'ranger-make-parent ranger-parent-dirs)
 
-    (walk-window-tree
-     (lambda (window)
-       (progn
-         (unless (or
-                  (member window ranger-parent-windows)
-                  (eq window ranger-window))
-           (add-to-list 'unused-windows window))
-         (when (member window ranger-parent-windows)
-           ;; select-window needed for hl-line
-           (select-window window)
-           (ranger-parent-child-select))))
-     nil nil 'nomini)
+    ;; select child folder in each parent
+    (save-excursion
+      (walk-window-tree
+       (lambda (window)
+         (progn
+           ;; (unless (or
+           ;;          (member window ranger-parent-windows)
+           ;;          (eq window ranger-window))
+           ;;   (add-to-list 'unused-windows window))
+           (when (member window ranger-parent-windows)
+             ;; select-window needed for hl-line
+             (select-window window)
+             (ranger-parent-child-select))))
+       nil nil 'nomini))
 
     (select-window ranger-window)
 
-    (unless ranger-minimal
-      (cl-loop for unused-window in unused-windows do
-               (when (and unused-window
-                          (window-live-p unused-window))
-                 (delete-window unused-window))))))
+    ;; (unless ranger-minimal
+    ;;   (cl-loop for unused-window in unused-windows do
+    ;;            (when (and unused-window
+    ;;                       (window-live-p unused-window))
+    ;;              (message "deleting window")
+    ;;              (redisplay)
+    ;;              (sleep-for 3)
+    ;;              (delete-window unused-window))))
+
+    ))
 
 (defun ranger-make-parent (parent)
   "Make parent window.  `PARENT' is a construct with ((current . parent) .
@@ -1144,8 +1155,7 @@ slot)."
 (defun ranger-dir-contents (entry)
   "Open `ENTRY' in dired buffer."
   (let ((temp-buffer (or (get-buffer "*ranger-prev*")
-                         (generate-new-buffer "*ranger-prev*")))
-        )
+                         (generate-new-buffer "*ranger-prev*"))))
     (with-demoted-errors
         (with-current-buffer temp-buffer
           (make-local-variable 'font-lock-defaults)
@@ -1446,6 +1456,7 @@ fraction of the total frame size"
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
   (let ((windows (window-list)))
+    ;; if frame is killed, revert buffer settings
     (if (not (frame-live-p ranger-frame))
         (progn
           (message "Ranger frame has been killed, reverting ranger settings and cleaning buffers.")
@@ -1453,7 +1464,8 @@ fraction of the total frame size"
           (set-register :ranger_dired_before nil)
           (ranger-revert)
           (remove-hook 'window-configuration-change-hook 'ranger-window-check))
-      (when (frame-focus ranger-frame)
+      ;; when still in ranger's frame, make sure ranger's primary window and buffer are still here.
+      (when (eq (window-frame) ranger-frame)
         (unless (and (memq ranger-window windows)
                      (eq (window-buffer ranger-window) ranger-buffer))
           (remove-hook 'window-configuration-change-hook 'ranger-window-check)
@@ -1562,21 +1574,22 @@ properly provides the modeline in dired mode. "
 
 (defun ranger-setup-dired-buffer ()
   "Setup the dired buffer by removing the header and sorting folders directory first."
-  (save-excursion
-    (let ((switches (concat
-                     dired-listing-switches
-                     ranger-sorting-switches))
-          (buffer-read-only))
-      (if (and (not ranger-subdir-p)
-               ranger-modify-header)
-          (kill-whole-line)
-        (forward-line 1))
-      ;; check sorting mode
-      (when (not (string-match "[XStU]+" switches))
-        (if (string-match "r" switches)
-            (sort-regexp-fields nil "^.*$" "[ ]*." (point) (point-max))
-          (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max))))
-      (set-buffer-modified-p nil))))
+  (when (eq (window-frame) ranger-frame)
+    (save-excursion
+      (let ((switches (concat
+                       dired-listing-switches
+                       ranger-sorting-switches))
+            (buffer-read-only))
+        (if (and (not ranger-subdir-p)
+                 ranger-modify-header)
+            (kill-whole-line)
+          (forward-line 1))
+        ;; check sorting mode and sort with directories first
+        (when (not (string-match "[XStU]+" switches))
+          (if (string-match "r" switches)
+              (sort-regexp-fields nil "^.*$" "[ ]*." (point) (point-max))
+            (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max))))
+        (set-buffer-modified-p nil)))))
 
 ;;;###autoload
 (defun deer ()
