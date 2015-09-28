@@ -867,21 +867,23 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-open-file (&optional horizontal)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
-  (let ((find-name (dired-get-filename nil t)))
-    (when (and find-name
-               (not (file-directory-p find-name)))
-      (ranger-disable)
-      (cond
-       ((string-equal horizontal "frame")
-        (let ((goto-frame (make-frame)))
-          (select-frame-set-input-focus goto-frame)))
-       ((eq horizontal t)
-        (split-window-right)
-        (windmove-right))
-       ((eq horizontal nil)
-        (split-window-below)
-        (windmove-down)))
-      (find-file find-name))))
+  (let ((marked-files (dired-get-marked-files)))
+    (cl-loop for find-name in marked-files do
+             (when (and find-name
+                        (not (file-directory-p find-name)))
+               (cl-case horizontal
+                 ('frame
+                  (let ((goto-frame (make-frame)))
+                    (select-frame-set-input-focus goto-frame)))
+                 (t
+                  (ranger-disable)
+                  (split-window-right)
+                  (windmove-right))
+                 (nil
+                  (ranger-disable)
+                  (split-window-below)
+                  (windmove-down)))
+               (find-file find-name)))))
 
 (defun ranger-open-file-horizontally ()
   "Open current file as a split with previously opened window"
@@ -896,7 +898,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-open-file-frame ()
   "Open current file as a split with previously opened window"
   (interactive)
-  (ranger-open-file "frame"))
+  (ranger-open-file 'frame))
 
 (defun ranger-insert-subdir ()
   "Insert subdir from selected folder."
@@ -1540,7 +1542,9 @@ properly provides the modeline in dired mode. "
     (setq mode-name
           (let (case-fold-search)
             (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
-                   "Ranger:time")
+                   "Ranger:mtime")
+                  ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
+                   "Ranger:ctime")
                   ((string-match "^-[^X]*X[^X]*$" dired-actual-switches)
                    "Ranger:ext")
                   ((string-match "^-[^S]*S[^S]*$" dired-actual-switches)
