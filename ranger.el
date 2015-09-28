@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.7
+;; Version: 0.9.8
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
@@ -207,7 +207,10 @@ Outputs a string that will show up on the header-line."
                 (const :tag "Roman numerals" :value roman)
                 (const :tag "Numbers only" :value numbers)))
 
+(defcustom ranger-override-dired nil
+  "When non-nil, load `deer' whenever dired is loaded.")
 
+
 
 (defvar ranger-mode)
 (defvar dired-omit-verbose)
@@ -850,7 +853,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (inhibit-redisplay t))
+        (minimal ranger-minimal))
     (when find-name
       (if (file-directory-p find-name)
           (progn
@@ -859,6 +862,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
+            (setq ranger-minimal minimal)
             (ranger-enable))
         (progn
           (ranger-disable)
@@ -997,7 +1001,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                      (length file-date)
                      (length file-perm)))
            (message-log-max nil))
-      (setq ranger-current-file entry)
+      (set-frame-parameter nil 'ranger-current-file entry)
       (message "%s" (format
                      (format  "%%s %%6s %%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
@@ -1043,7 +1047,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (i 0)
         (unused-windows ()))
 
-    (setq ranger-buffer (current-buffer))
+    (set-frame-parameter nil 'ranger-buffer (current-buffer))
     (setq ranger-window (get-buffer-window (current-buffer)))
 
     (setq ranger-visited-buffers (append ranger-parent-buffers ranger-visited-buffers))
@@ -1075,27 +1079,13 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
       (walk-window-tree
        (lambda (window)
          (progn
-           ;; (unless (or
-           ;;          (member window ranger-parent-windows)
-           ;;          (eq window ranger-window))
-           ;;   (add-to-list 'unused-windows window))
            (when (member window ranger-parent-windows)
              ;; select-window needed for hl-line
              (select-window window)
              (ranger-parent-child-select))))
        nil nil 'nomini))
 
-    (select-window ranger-window)
-
-    ;; (unless ranger-minimal
-    ;;   (cl-loop for unused-window in unused-windows do
-    ;;            (when (and unused-window
-    ;;                       (window-live-p unused-window))
-    ;;              (message "deleting window")
-    ;;              (redisplay)
-    ;;              (sleep-for 3)
-    ;;              (delete-window unused-window))))
-
+    (select-window ranger-window) 
     ))
 
 (defun ranger-make-parent (parent)
@@ -1508,8 +1498,9 @@ fraction of the total frame size"
 (defun ranger--header-lhs ()
   "Setup header-line for ranger buffer."
   (let* ((user (user-login-name))
-         (file-path (file-name-directory ranger-current-file))
-         (file-name (file-name-nondirectory ranger-current-file))
+         (current-file (frame-parameter nil 'ranger-current-file))
+         (file-path (file-name-directory current-file))
+         (file-name (file-name-nondirectory current-file))
          (lhs (format "%s%s"
                       file-path
                       (propertize file-name 'face 'font-lock-constant-face))))
@@ -1565,11 +1556,13 @@ properly provides the modeline in dired mode. "
                    "Ranger:name")
                   (t
                    (concat "Ranger " dired-actual-switches)))))
-      (eval-after-load "diminish"
-        '(progn
-          (diminish 'ranger-mode)
-          (diminish 'dired-omit-mode " O")
-          (diminish 'auto-revert-mode " R")))
+    (eval-after-load "diminish"
+      '(progn
+         (diminish 'ranger-mode)
+         (eval-after-load "dired-omit-mode"
+           (diminish 'dired-omit-mode " O"))
+         (eval-after-load 'auto-revert-mode
+           (diminish 'auto-revert-mode " R"))))
     (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
@@ -1703,6 +1696,19 @@ properly provides the modeline in dired mode. "
 
   (ranger-show-details)
   (ranger-set-modeline))
+
+(when ranger-override-dired
+    (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
+
+;; issues :
+;; ranger-current-file needs to be ranger / preview specific
+
+;;;###autoload
+(defun ranger-override-dired-fn ()
+  (let ((frame-buf (frame-parameter nil 'ranger-buffer)))
+    (unless (and frame-buf
+                 (buffer-live-p frame-buf))
+      (deer))))
 
 ;;;###autoload
 (define-minor-mode ranger-mode
