@@ -246,6 +246,7 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
 (defvar ranger-frame nil)
+(defvar ranger-frame-list ())
 
 (defvar ranger-minimal nil)
 
@@ -853,7 +854,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (minimal ranger-minimal))
+        (minimal (frame-parameter nil 'ranger-minimal)))
     (when find-name
       (if (file-directory-p find-name)
           (progn
@@ -862,7 +863,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
-            (setq ranger-minimal minimal)
+            (set-frame-parameter nil 'ranger-minimal minimal)
             (ranger-enable))
         (progn
           (ranger-disable)
@@ -1057,7 +1058,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-parent-dirs ())
 
     (while (and parent-name
-                (not ranger-minimal)
+                (not (frame-parameter nil 'ranger-minimal))
                 (file-directory-p parent-name)
                 (< i ranger-parent-depth))
       (setq i (+ i 1))
@@ -1234,7 +1235,7 @@ is set, show literally instead of actual buffer."
     (when (and ranger-preview-window
                (window-live-p ranger-preview-window))
       (ignore-errors (delete-window ranger-preview-window)))
-    (when (and (not ranger-minimal)
+    (when (and (not (frame-parameter nil 'ranger-minimal))
                entry-name
                ranger-preview-file)
       (unless (or
@@ -1397,7 +1398,7 @@ fraction of the total frame size"
   (setq ranger-preview-buffers ()
         ranger-visited-buffers ()
         ranger-parent-buffers ())
-  (setq ranger-minimal nil)
+  (set-frame-parameter nil 'ranger-minimal nil)
 
   ;; clear ranger-show-details information
   (message "%s" ""))
@@ -1509,7 +1510,7 @@ fraction of the total frame size"
 (defun ranger--header-string ()
   "Compose header string"
   (let* ((lhs (ranger--header-lhs))
-         (small-header (and (not ranger-minimal) ranger-preview-file))
+         (small-header (and (not (frame-parameter nil 'ranger-minimal)) ranger-preview-file))
          (rhs (ranger--header-rhs))
          (used-length (+ (length rhs) (length lhs)))
          (total-window-width (+ (window-width ranger-window)
@@ -1588,12 +1589,12 @@ properly provides the modeline in dired mode. "
 (defun deer ()
   "Launch dired in a minimal ranger window."
   (interactive)
-  (setq ranger-minimal t)
+  (set-frame-parameter nil 'ranger-minimal t)
   (ranger))
 
 (defun ranger-minimal-toggle ()
   (interactive)
-  (let ((minimal ranger-minimal))
+  (let ((minimal (frame-parameter nil 'ranger-minimal)))
     (ranger-revert)
     (if minimal
         (ranger)
@@ -1643,6 +1644,7 @@ properly provides the modeline in dired mode. "
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
+  (add-to-list 'ranger-frame-list (window-frame ranger-window))
   (setq ranger-preview-window nil)
 
   ;; hide groups, show human readable file sizes
@@ -1653,7 +1655,7 @@ properly provides the modeline in dired mode. "
   ;; (dired-sort-other dired-listing-switches)
 
   ;; clear out everything if not in deer mode
-  (unless ranger-minimal
+  (unless (frame-parameter nil 'ranger-minimal)
     (delete-other-windows))
 
   (add-to-list 'ranger-visited-buffers ranger-buffer)
@@ -1671,7 +1673,7 @@ properly provides the modeline in dired mode. "
   ;; truncate lines for primary window
   (setq truncate-lines t)
 
-  (unless ranger-minimal
+  (unless (frame-parameter nil 'ranger-minimal)
     (dired-hide-details-mode -1))
 
   ;; hide details line at top - show symlink targets
@@ -1699,9 +1701,6 @@ properly provides the modeline in dired mode. "
 
 (when ranger-override-dired
     (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
-
-;; issues :
-;; ranger-current-file needs to be ranger / preview specific
 
 ;;;###autoload
 (defun ranger-override-dired-fn ()
