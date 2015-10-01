@@ -24,8 +24,8 @@
 
 This is a minor mode that runs within dired emulating many of the features of
 [ranger](http://ranger.nongnu.org/). This minor mode shows a stack of the parent
-directories and updates the parent buffers while nvaigating the file system. The 
-preview window takes some of the ideas from [Peep-Dired](https://github.com/asok/peep-dired) 
+directories and updates the parent buffers while navigating the file system. The
+preview window takes some of the ideas from [Peep-Dired](https://github.com/asok/peep-dired)
 to display previews for selected files in the primary dired buffer.
 
 ## Installation
@@ -60,7 +60,7 @@ ranger screencast
 * Mouse support
 * Emacs bookmarks support
 * Create bindings to go up / down the next directory
-* minimal ranger mode (deer-mode)
+* Minimal ranger mode (deer-mode)
 * Copy / paste functionality
 * Persistent flags showing recently copied items
 
@@ -85,10 +85,10 @@ either moved or copied to a target directory.  This is consistent with the
 way the ranger file manager manages file movement. `yy` specifies to copy the
 marked or currently hovered files.  Additionally a flag denoted as "P" will
 visually indicate what files are marked for movement. `dd` likewise specifies
-that the files will be moved instead of copied. 
+that the files will be moved instead of copied.
 
 To paste the files most recently added to the copy ring, use `pp` or `po` to
-paste, the later binding will overwrite existing files.
+paste.  The latter binding will overwrite existing files.
 
 ## Key bindings
 
@@ -156,7 +156,7 @@ Or you can choose to kill the buffer just after you move to another entry in the
 (setq ranger-cleanup-eagerly t)
 ```
 
-You can choose to show dotfiles at ranger startup, toggled by `zh`
+You can choose to show dotfiles at ranger startup, toggled by `zh`.
 ```el
 (setq ranger-show-dotfiles t)
 ```
@@ -175,12 +175,12 @@ return a string that is placed in the header-line.
 
 ### Parent options
 
-You can set the number of folders to nest to the left, adjusted by `z-` and `z+`
+You can set the number of folders to nest to the left, adjusted by `z-` and `z+`.
 ```el
 (setq ranger-parent-depth 2)
 ```
 
-You can set the size of the parent windows as a fraction of the frame size
+You can set the size of the parent windows as a fraction of the frame size.
 ```el
 (setq ranger-width-parents 0.12)
 ```
@@ -193,12 +193,12 @@ frame size to prevent filling up entire frame with parents.
 
 ### Preview options
 
-You can choose to show previews literally, or through find-file, toggled by `zi`
+You can choose to show previews literally, or through find-file, toggled by `zi`.
 ```el
 (setq ranger-show-literal t)
 ```
 
-You can set the size of the preview windows as a fraction of the frame size
+You can set the size of the preview windows as a fraction of the frame size.
 ```el
 (setq ranger-width-preview 0.55)
 ```
