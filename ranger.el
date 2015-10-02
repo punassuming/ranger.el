@@ -544,10 +544,10 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
 (defun ranger-close-tab (&optional index)
   (interactive)
   (let ((index (or index
-                     ranger-current-tab)))
+                   ranger-current-tab)))
     (when index
       (setq ranger-tabs-alist
-            (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
+            (ranger--aremove ranger-tabs-alist index))
       (ranger-prev-tab))))
 
 (defun ranger-other-tab (dir &optional index)
@@ -582,30 +582,29 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
         (relative (substring (ranger--dir-relative) 0 -1)))
     (when entry
       (setq ranger-tabs-alist
-            (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
-      (add-to-list 'ranger-tabs-alist
-                   (cons index (cons relative entry))))))
+            (ranger--aput ranger-tabs-alist
+                          index
+                          (cons relative entry))))))
 
 (defun ranger-goto-tab (index)
   (interactive)
-  (let ((tab (assoc index ranger-tabs-alist)))
+  (let ((tab (ranger--aget ranger-tabs-alist index)))
     (when tab
       (setq ranger-current-tab index)
-      (ranger-find-file (cdr (cdr tab))))))
+      (ranger-find-file (cdr tab)))))
 
 
 ;; marks
 (defun ranger-show-bookmarks ()
   "Show bookmark prompt for all bookmarked directories."
   (interactive)
-  (unless bookmark-alist
-    (bookmark-maybe-load-default-file))
-  (let ((bookmark (completing-read "Select from bookmarks: "
-                                   (delq nil (mapcar
-                                              #'(lambda (bm)
-                                                  (when (file-directory-p (cdr (cadr bm)))
-                                                    (cdr  (cadr bm))))
-                                              bookmark-alist)))))
+  (let ((bookmark
+         (completing-read "Select from bookmarks: "
+                          (delq nil (mapcar
+                                     #'(lambda (bm)
+                                         (when (file-directory-p (cdr (cadr bm)))
+                                           (cdr  (cadr bm))))
+                                     bookmark-alist)))))
     (when bookmark (ranger-find-file bookmark))))
 
 (defun ranger-create-mark (mark)
@@ -620,16 +619,15 @@ ranger-`CHAR'."
 (defun ranger-goto-mark ()
   "Go to bookmarks specified from `ranger-create-mark'."
   (interactive)
-  (unless bookmark-alist
-    (bookmark-maybe-load-default-file))
-  (let* ((mark (read-key
-                (mapconcat
-                 #'(lambda (bm)
-                     (when (and
-                            (string-match "ranger-" (car  bm))
-                            (file-directory-p (cdr (cadr bm))))
-                       (replace-regexp-in-string "ranger-" "" (car bm))))
-                 bookmark-alist " ")))
+  (let* ((mark
+          (read-key
+           (mapconcat
+            #'(lambda (bm)
+                (when (and
+                       (string-match "ranger-" (car  bm))
+                       (file-directory-p (cdr (cadr bm))))
+                  (replace-regexp-in-string "ranger-" "" (car bm))))
+            bookmark-alist " ")))
          (mark-letter (char-to-string mark))
          (bookmark-name (concat "ranger-" mark-letter))
          (bookmark-path (bookmark-location bookmark-name)))
@@ -1079,7 +1077,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              (ranger-parent-child-select))))
        nil nil 'nomini))
 
-    (select-window ranger-window) 
+    (select-window ranger-window)
     ))
 
 (defun ranger-make-parent (parent)
@@ -1353,25 +1351,54 @@ fraction of the total frame size"
                (not (buffer-modified-p buffer))))
     (kill-buffer buffer)))
 
+
+;;; alists
+
+(defun ranger--aget (alist key)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (cdr-safe (assoc key alist)))
+
+(defun ranger--aput (alist key value)
+  "Remove key from alist and set key with value."
+  (let* ((found nil)
+        (existing
+         (mapcar
+          (lambda (n)
+            (if (equal (car n) key)
+                (progn
+                  (setq found t)
+                  (cons key value))
+              n))
+          alist)))
+    (if found
+        existing
+      (cons (cons key value) existing))))
+
+(defun ranger--aremove (alist key)
+  "`remove' KEY's key-value-pair from ALIST."
+  (remove (assoc key alist) alist))
+
+
+
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
   ;; restore window configuration
 
   (let* ((minimal (frame-parameter nil 'ranger-minimal))
-         (ranger-frame (assoc (window-frame) ranger-frames-alist))
-         (config (cdr ranger-frame)))
-    
-    (when ranger-frame
+         (win-config
+          (ranger--aget ranger-frames-alist (window-frame))))
+
+    (message "%s" win-config)
+    (when (and  win-config
+                (window-configuration-p win-config))
       (message "Reverting current frame")
+      (set-window-configuration win-config)
+
       (setq ranger-frames-alist
-            (delq
-             (assoc (window-frame) ranger-frames-alist)
-             ranger-frames-alist))
-      (set-window-configuration config)
+            (ranger--aremove ranger-frames-alist (window-frame)))
       (setq ranger-tabs-alist
-            (delq
-             (assoc ranger-current-tab ranger-tabs-alist)
-             ranger-tabs-alist))
+            (ranger--aremove ranger-tabs-alist ranger-current-tab))
 
       ;; revert appearance
       (ranger-revert-appearance (or buffer (current-buffer)))
@@ -1472,7 +1499,6 @@ fraction of the total frame size"
       ;; when still in ranger's frame, make sure ranger's primary window and buffer are still here.
       ;; need to check if ranger-window is still open
       (when (assoc (window-frame) ranger-frames-alist)
-        (message "Window frame still in use")
         (unless (and (memq ranger-window windows)
                      (eq (window-buffer ranger-window) ranger-buffer))
           (remove-hook 'window-configuration-change-hook 'ranger-window-check)
@@ -1670,7 +1696,9 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
-    (when dir (ranger-find-file dir))))
+    (when dir
+      (set-frame-parameter nil 'ranger-minimal t)
+      (ranger-find-file dir))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
@@ -1688,6 +1716,10 @@ properly provides the modeline in dired mode. "
 
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
+
+  ;; load bookmarks
+  (unless bookmark-alist
+    (bookmark-maybe-load-default-file))
 
   (require 'dired-x)
 
@@ -1716,6 +1748,10 @@ properly provides the modeline in dired mode. "
   ;; TODO add as defcustom
   (setq dired-listing-switches "-alGh")
 
+  (unless (frame-parameter nil 'ranger-minimal)
+    (dired-hide-details-mode -1)
+    (delete-other-windows))
+
   ;; CHANGE - removed
   ;; (dired-sort-other dired-listing-switches)
 
@@ -1729,9 +1765,6 @@ properly provides the modeline in dired mode. "
   (setq truncate-lines t)
 
   ;; clear out everything if not in deer mode
-  (unless (frame-parameter nil 'ranger-minimal)
-    (dired-hide-details-mode -1)
-    (delete-other-windows))
 
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
