@@ -1015,11 +1015,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                      (length file-perm)))
            (message-log-max nil))
 
-      ;; (let ((entry default-directory))
       (r--fset ranger-current-file entry nil t)
-      ;; (message "%s" (r--fget ranger-current-file))
-      ;; )
-
       (message "%s" (format
                      (format  "%%s %%6s %%6s %%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
@@ -1415,9 +1411,9 @@ fraction of the total frame size"
   "Return the value of `VAR', looks for buffer local version first."
   (let ((parameter (intern (format "%s" var))))
     `(or
-      (when (member ,parameter (buffer-local-variables))
-        (buffer-local-value ,parameter (current-buffer)))
-      (frame-parameter ,frame (intern (format "%s" ,var)))
+      (when (local-variable-if-set-p (quote ,parameter))
+        (buffer-local-value (quote ,parameter) (current-buffer)))
+      (frame-parameter ,frame (quote ,parameter))
       ,var)))
 
 (defmacro r--fset (var val &optional frame buffer-local)
@@ -1425,22 +1421,19 @@ fraction of the total frame size"
 non-nil, set buffer local variable as well."
   (let ((parameter (intern (format "%s" var))))
     `(progn
-       (when (and
-              ,buffer-local
-              (member ,parameter (buffer-local-variables)))
-         (set (make-local-variable ,parameter) ,val))
-       (modify-frame-parameters ,frame (list (cons ,parameter ,val)))
+       (when ,buffer-local
+         (set (make-local-variable (quote ,parameter)) ,val))
+       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
        ;; (message "%s" (frame-parameter nil ,parameter))
        )))
 
 (defmacro r--fclear (parameter)
   `(r--fset ,parameter nil))
 
-;; (r--fset ranger-minimal t)
-;; (r--fset ranger-minimal nil)
-;; (message "%s:%s:%s:%s" 
+;; (message "%s:%s:%s:%s:%s" 
 ;;          (r--fget ranger-minimal)
-;;          (frame-parameter nil ranger-minimal)
+;;          (r--fget ranger-current-file)
+;;          (frame-parameter nil 'ranger-minimal)
 ;;          (buffer-local-value ranger-minimal (current-buffer))
 ;;          ranger-minimal)
 
