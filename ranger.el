@@ -1627,11 +1627,12 @@ properly provides the modeline in dired mode. "
                    "Ranger:name")
                   (t
                    (concat "Ranger " dired-actual-switches)))))
-      (eval-after-load "diminish"
-        '(progn
-          (diminish 'ranger-mode)
-          (diminish 'dired-omit-mode " O")
-          (diminish 'auto-revert-mode " R")))
+    (with-eval-after-load "diminish"
+      (diminish 'ranger-mode)
+      (with-eval-after-load "dired-omit-mode"
+        (diminish 'dired-omit-mode " O"))
+      (with-eval-after-load 'auto-revert-mode
+        (diminish 'auto-revert-mode " R")))
     (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
