@@ -215,8 +215,11 @@ Outputs a string that will show up on the header-line."
                 (const :tag "Roman numerals" :value roman)
                 (const :tag "Numbers only" :value numbers)))
 
+(defcustom ranger-override-dired nil
+  "When non-nil, load `deer' whenever dired is loaded.")
 
 
+;; declare used variables
 (defvar ranger-mode)
 (defvar dired-omit-verbose)
 (defvar dired-omit-mode)
@@ -1919,6 +1922,18 @@ properly provides the modeline in dired mode. "
 
   (ranger-show-details)
   (ranger-set-modeline))
+
+;;;###autoload
+(when ranger-override-dired
+  (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
+
+;;;###autoload
+(defun ranger-override-dired-fn ()
+  "Open dired as deer unless already in ranger-mode"
+  (let ((ranger-windows (r--akeys ranger-windows-alist)))
+    (unless (memq (selected-window) ranger-windows)
+      ;; (message "Override attempted")
+      (deer))))
 
 ;;;###autoload
 (define-minor-mode ranger-mode
