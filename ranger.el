@@ -287,6 +287,7 @@ Outputs a string that will show up on the header-line."
                                  auto-revert-mode
                                  ranger-sub-window-setup))
 
+;; maps
 (defvar ranger-mode-map (make-sparse-keymap))
 
 
@@ -300,8 +301,8 @@ Outputs a string that will show up on the header-line."
 
 ;; mappings
 (when ranger-key
-  (eval-after-load 'evil
-    #'(evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
+  (with-eval-after-load "evil"
+    (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
   (define-key ranger-mode-map (kbd ranger-key) 'ranger-mode))
 
 (defun ranger-define-maps ()
@@ -311,23 +312,20 @@ Outputs a string that will show up on the header-line."
   (when (featurep 'evil)
     ;; turn off evilified buffers for evilify usage
     (progn
-      (when (and
-             (fboundp 'evil-evilified-state-p)
-             (evil-evilified-state-p))
+      (when (and (fboundp 'evil-evilified-state-p)
+                 (evil-evilified-state-p))
         (evil-evilified-state -1))
       (evil-normal-state)
       (evil-normalize-keymaps)
       (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
 
-  (eval-after-load 'evil
-    '(progn
-       ;; some evil specific bindings
-       (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-       (evil-define-key 'normal ranger-mode-map
-         "V"            'evil-visual-line
-         "n"            'evil-search-next
-         "N"            'evil-search-previous)
-       ))
+  (with-eval-after-load "evil"
+    ;; some evil specific bindings
+    (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+    (evil-define-key 'normal ranger-mode-map
+      "V"            'evil-visual-line
+      "n"            'evil-search-next
+      "N"            'evil-search-previous))
 
   (ranger-map "?"           'ranger-help)
   (ranger-map "!"           'shell-command)
