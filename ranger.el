@@ -356,6 +356,7 @@ Outputs a string that will show up on the header-line."
   (ranger-map "ws"          'ranger-open-file-vertically)
   (ranger-map "wv"          'ranger-open-file-horizontally)
   (ranger-map "wf"          'ranger-open-file-frame)
+  (ranger-map "we"          'ranger-open-in-external-app)
   (ranger-map "q"           'ranger-disable)
   (ranger-map "u"           'dired-unmark)
   (ranger-map "v"           'dired-toggle-marks)
@@ -897,6 +898,25 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                   (split-window-below)
                   (windmove-down)))
                (find-file find-name)))))
+
+;; idea taken from http://ergoemacs.org/emacs/emacs_dired_open_file_in_ext_apps.html
+(defun ranger-open-in-external-app ()
+  "Open the current file or dired marked files in external app."
+  (interactive)
+  (let ((marked-files (dired-get-marked-files)))
+    (cond ((string-equal system-type "windows-nt")
+           (mapc
+            (lambda (f) (w32-shell-execute "open" (replace-regexp-in-string "/" "\\" f t t)) )
+            marked-files) )
+          ((string-equal system-type "darwin")
+           (mapc
+            (lambda (f) (shell-command (format "open \"%s\"" f)))
+            marked-files))
+          ((string-equal system-type "gnu/linux")
+           (mapc
+            (lambda (f) (let ((process-connection-type nil)) (start-process "" nil "xdg-open" f)))
+            marked-files))
+          (t (message "System type not supported.")))))
 
 (defun ranger-open-file-horizontally ()
   "Open current file as a split with previously opened window"
