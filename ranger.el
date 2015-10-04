@@ -328,6 +328,7 @@ Outputs a string that will show up on the header-line."
       "N"            'evil-search-previous))
 
   (ranger-map "?"           'ranger-help)
+  (ranger-map "'"           'ranger-show-size)
   (ranger-map "!"           'shell-command)
   (ranger-map "B"           'ranger-show-bookmarks)
   (ranger-map "D"           'dired-do-delete)
@@ -500,9 +501,11 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   (let* ((current (ring-ref ranger-copy-ring 0))
          (move (if (car current) "Move" "Copy"))
          (fileset (cdr current)))
-    (message (format "%s:\n%s"
+    (message (format "%s - total size: %s\n%s"
                      (propertize move 'face 'font-lock-builtin-face)
-                     (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)))))
+                     (ranger--get-file-sizes fileset)
+                     (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
+                     ))))
 
 
 ;;tabs
@@ -775,6 +778,7 @@ ranger-`CHAR'."
 (defun ranger-omit ()
   "Quietly omit files in dired."
   (setq-local dired-omit-verbose nil)
+  ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$\\|^\\.")
   (dired-omit-mode t))
 
 (defun ranger-sort (&optional force)
@@ -986,13 +990,24 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 
 (defun ranger--footer-spec ())
 
-(defun ranger-show-details ()
+(defun ranger-show-size ()
+  "Show directory size."
+  (interactive)
+  (ranger-show-details t))
+
+(defun ranger-show-details (&optional sizes)
   "Echo file details"
   (when (dired-get-filename nil t)
     (let* ((entry (dired-get-filename nil t))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
            (file-size (file-size-human-readable (nth 7 fattr)))
+           (dir-size (if sizes (ranger--get-file-sizes
+                                (list dired-directory))
+                       ""))
+           (filedir-size (if sizes (ranger--get-file-sizes
+                                (ranger--get-file-listing dired-directory))
+                       ""))
            (file-date (format-time-string "%Y-%m-%d %H:%m"
                                           (nth 5 fattr)))
            (file-perm (nth 8 fattr))
@@ -1003,17 +1018,22 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                              final-pos))
            (footer-spec (ranger--footer-spec))
            (space (- fwidth
-                     6
-                     (max 6 (length file-size))
+                     7
+                     (max 08 (length file-size))
+                     (max 08 (length filedir-size))
+                     (max 08 (length dir-size))
                      (length position)
                      (length file-date)
                      (length file-perm)))
            (message-log-max nil))
+
       (setq ranger-current-file entry)
       (message "%s" (format
-                     (format  "%%s %%6s %%%ds %%s" space)
+                     (format  "%%s     f:%%08s d:%%08s t:%%08s%%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
                      file-size
+                     filedir-size
+                     dir-size
                      position
                      file-perm
                      )))))
@@ -1294,10 +1314,38 @@ is set, show literally instead of actual buffer."
   "Find the parent directory of `ENTRY'."
   (file-name-directory (directory-file-name entry)))
 
-(defun ranger-fix-width (window)
-  "Fix the width of `WINDOW'."
-  (with-selected-window window
-    (setq-local window-size-fixed 'width)))
+;; (defun ranger-fix-width (window)
+;;   "Fix the width of `WINDOW'."
+;;   (with-selected-window window
+;;     (setq-local window-size-fixed 'width)))
+
+(defun ranger--get-file-sizes (fileset)
+  "Determine file size of provided list of files in `FILESET'."
+  (if (and
+       fileset
+       (executable-find "du"))
+      (with-temp-buffer
+        (apply 'call-process "du" nil t nil "-sch" fileset)
+        (format "%s"
+                (progn
+                  (re-search-backward "\\(^[0-9.,]+[A-Za-z]+\\).*total$")
+                  (match-string 1)))) ""))
+
+(defun ranger--get-file-listing (dir)
+  "Return listing of files in dired directory."
+  (save-excursion
+    (let ((fileset ())
+          file buffer-read-only)
+      (goto-char (point-min))
+      (while (not (eobp))
+        (save-excursion
+          (and (not (looking-at-p dired-re-dir))
+               (not (eolp))
+               (setq file (dired-get-filename nil t)) ; nil on non-file
+               (progn (end-of-line)
+                      (push file fileset))))
+        (forward-line 1))
+      fileset)))
 
 (defun ranger-display-buffer-at-side (buffer alist)
   "Try displaying `BUFFER' at one side of the selected frame. This splits the
@@ -1380,6 +1428,8 @@ fraction of the total frame size"
            (or (eq 'dired-mode (buffer-local-value 'major-mode buffer))
                (not (buffer-modified-p buffer))))
     (kill-buffer buffer)))
+
+
 
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
