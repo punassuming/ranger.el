@@ -234,6 +234,9 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-buffer nil)
 (defvar ranger-frame nil)
 
+(defvar ranger-windows-alist ()
+  "List of windows using ranger")
+
 (defvar ranger-frames-alist ()
   "List of frames using ranger")
 
@@ -514,6 +517,124 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                      ))))
 
 
+;;; frame parameter helpers
+
+(defmacro r--fget (var &optional frame)
+  "Return the value of `VAR', looks for buffer local version first."
+  (let ((parameter (intern (format "%s" var))))
+    `(or
+      (when (local-variable-if-set-p (quote ,parameter))
+        (buffer-local-value (quote ,parameter) (current-buffer)))
+      (frame-parameter ,frame (quote ,parameter))
+      ,var)))
+
+(defmacro r--fset (var val &optional frame buffer-local)
+  "Set the value of `VAR' in local buffer and on frame. When `BUFFER-LOCAL' is
+non-nil, set buffer local variable as well."
+  (let ((parameter (intern (format "%s" var))))
+    `(progn
+       (when ,buffer-local
+         (set (make-local-variable (quote ,parameter)) ,val))
+       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
+       ;; (message "%s" (frame-parameter nil ,parameter))
+       )))
+
+(defmacro r--fclear (parameter)
+  `(r--fset ,parameter nil))
+
+;; (message "%s:%s:%s:%s:%s" 
+;;          (r--fget ranger-minimal)
+;;          (r--fget ranger-current-file)
+;;          (frame-parameter nil 'ranger-minimal)
+;;          (buffer-local-value ranger-minimal (current-buffer))
+;;          ranger-minimal)
+
+;;; alist helpers
+
+(defun r--aget (alist key)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (cdr-safe (assoc key alist)))
+
+;; (defun r--aiget (alist key int)
+;;   "Return the value of KEY in ALIST. Uses `assoc'.
+;; If PARAM is not found, return nil."
+;;   (cdr-safe (assoc int (r--aget alist key))))
+
+(defun r--akeys (alist)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (mapcar 'car alist))
+
+(defmacro r--aput (alist key value &optional no-overwrite)
+  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
+to not replace existing value."
+  `(let ((sublist (assoc ,key ,alist)))
+     (if sublist
+         (unless ,no-overwrite
+           (setcdr sublist ,value))
+       (push (cons ,key ,value) ,alist))))
+
+;; (defmacro r--aipush (alist parent key value)
+;;   "Add value to key from subalist. Set `NO-OVERWRITE' to non-nil
+;; to not replace existing value."
+;;   `(let* ((sublist (assoc ,parent ,alist))
+;;          (window-list (assoc ,key sublist))
+;;          )
+;;      (unless window-list
+;;        (push)
+;;        (setcdr sublist (cons ,value)))
+;;      (message "%s" sublist)
+;;      (sleep-for 3)
+;;      (message "%s" window-list)
+;;      (sleep-for 3)
+;;      (when sublist
+;;        (push ,value sublist))))
+
+;; (defmacro r--airemove (alist parent key value)
+;;   "Add value to key from subalist. Set `NO-OVERWRITE' to non-nil
+;; to not replace existing value."
+;;   `(let ((sublist (assoc ,key (assoc ,parent ,alist))))
+;;      (when sublist
+;;        (push ,value sublist))))
+
+(defmacro r--aremove (alist key)
+  "Remove KEY's key-value-pair from ALIST."
+  `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
+
+;; (message "%s"
+;;          (let* ((sublist (assoc (window-frame) ranger-frames-alist))
+;;                 (window-list (assoc 'windows sublist)))
+;;            ;; (if window-list
+;;            (setcdr window-list (list "hello"))
+;;            (append "h2" (cdr window-list))
+;;            window-list
+;;            ))
+
+;; (r--aipush ranger-frames-alist
+;;            (window-frame)
+;;            'windows
+;;            (get-buffer-window (current-buffer)))
+
+;; (setq ranger-frames-alist ())
+
+
+;; (r--aiget ranger-frames-alist
+;;           (window-frame)
+;;           'windows
+;;           )
+
+;; (r--aput ranger-frames-alist
+;;          (window-frame)
+;;          (list
+;;           (cons 'config (current-window-configuration))
+;;           (cons 'windows ())
+;;           )
+;;          )
+
+
+
+
 ;;tabs
 
 (defun ranger--available-tabs ()
@@ -528,7 +649,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   "Create new tab using optional `INDEX' with the current directory."
   (interactive)
   (let* ((tabs
-          (mapcar 'car ranger-tabs-alist))
+          (r--akeys ranger-tabs-alist))
          (available-tabs (ranger--available-tabs))
          (index (or index
                     (and available-tabs
@@ -552,7 +673,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
 (defun ranger-other-tab (dir &optional index)
   (interactive)
   (let* ((tabs
-          (mapcar 'car ranger-tabs-alist))
+          (r--akeys ranger-tabs-alist))
          (tab ranger-current-tab)
          (target index))
     (while (and
@@ -841,19 +962,26 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (frame (window-frame)))
+        (frame (window-frame))
+        (minimal (r--fget ranger-minimal)))
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (r--aput ranger-frames-alist
-                     frame
-                     (cons
-                      (cons 'config (current-window-configuration))
-                      (cons 'windows ()))
+            (unless minimal
+              (r--aput ranger-frames-alist
+                       frame
+                       (current-window-configuration)
+                       t))
+            (r--aput ranger-windows-alist
+                     (selected-window)
+                     (current-buffer)
                      t)
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
+            (if minimal
+                (r--fset ranger-minimal t)
+              (r--fset ranger-minimal nil))
             (ranger-enable))
         (progn
           (ranger-disable)
@@ -995,8 +1123,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (fattr (file-attributes entry))
            (fwidth (frame-width))
            (file-size (file-size-human-readable (nth 7 fattr)))
-           (dir-size (ranger--get-file-sizes
-                      (ranger--get-file-listing dired-directory)))
+           ;; (dir-size (ranger--get-file-sizes
+           ;;            (ranger--get-file-listing dired-directory)))
            (file-date (format-time-string "%Y-%m-%d %H:%m"
                                           (nth 5 fattr)))
            (file-perm (nth 8 fattr))
@@ -1009,7 +1137,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (space (- fwidth
                      6
                      (max 6 (length file-size))
-                     (max 6 (length dir-size))
+                     ;; (max 6 (length dir-size))
                      (length position)
                      (length file-date)
                      (length file-perm)))
@@ -1017,10 +1145,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 
       (r--fset ranger-current-file entry nil t)
       (message "%s" (format
-                     (format  "%%s %%6s %%6s %%%ds %%s" space)
+                     (format  "%%s %%6s %%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
                      file-size
-                     dir-size
+                     ;; dir-size
                      position
                      file-perm
                      )))))
@@ -1405,109 +1533,50 @@ fraction of the total frame size"
     (kill-buffer buffer)))
 
 
-;;; frame parameter helpers
-
-(defmacro r--fget (var &optional frame)
-  "Return the value of `VAR', looks for buffer local version first."
-  (let ((parameter (intern (format "%s" var))))
-    `(or
-      (when (local-variable-if-set-p (quote ,parameter))
-        (buffer-local-value (quote ,parameter) (current-buffer)))
-      (frame-parameter ,frame (quote ,parameter))
-      ,var)))
-
-(defmacro r--fset (var val &optional frame buffer-local)
-  "Set the value of `VAR' in local buffer and on frame. When `BUFFER-LOCAL' is
-non-nil, set buffer local variable as well."
-  (let ((parameter (intern (format "%s" var))))
-    `(progn
-       (when ,buffer-local
-         (set (make-local-variable (quote ,parameter)) ,val))
-       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
-       ;; (message "%s" (frame-parameter nil ,parameter))
-       )))
-
-(defmacro r--fclear (parameter)
-  `(r--fset ,parameter nil))
-
-;; (message "%s:%s:%s:%s:%s" 
-;;          (r--fget ranger-minimal)
-;;          (r--fget ranger-current-file)
-;;          (frame-parameter nil 'ranger-minimal)
-;;          (buffer-local-value ranger-minimal (current-buffer))
-;;          ranger-minimal)
-
-;;; alist helpers
-
-(defun r--aget (alist key)
-  "Return the value of KEY in ALIST. Uses `assoc'.
-If PARAM is not found, return nil."
-  (cdr-safe (assoc key alist)))
-
-(defun r--avalue (alist key int)
-  "Return the value of KEY in ALIST. Uses `assoc'.
-If PARAM is not found, return nil."
-  (cdr-safe (assoc int (r--aget alist key))))
-
-(defun r--akeys (alist)
-  "Return the value of KEY in ALIST. Uses `assoc'.
-If PARAM is not found, return nil."
-  (mapcar 'car alist))
-
-(defmacro r--aput (alist key value &optional no-overwrite)
-  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
-to not replace existing value."
-  `(let ((sublist (assoc ,key ,alist)))
-     (if sublist
-         (unless ,no-overwrite
-           (setcdr sublist ,value))
-       (push (cons ,key ,value) ,alist))))
-
-(defmacro r--aiput (alist key value &optional no-overwrite)
-  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
-to not replace existing value."
-  `(let ((sublist (assoc ,key ,alist)))
-     (if sublist
-         (unless ,no-overwrite
-           (setcdr sublist ,value))
-       (push (cons ,key ,value) ,alist))))
-
-(defmacro r--aremove (alist key)
-  "Remove KEY's key-value-pair from ALIST."
-  `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
-
-
 
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
   ;; restore window configuration
 
   (let* ((minimal (r--fget ranger-minimal))
+         (prev-buffer
+          (r--aget ranger-windows-alist
+                    (selected-window)))
          (win-config
-          (r--avalue
-           ranger-frames-alist
-           (window-frame)
-           'config)))
+          (r--aget ranger-frames-alist
+                   (window-frame))))
 
-    (when (and  win-config
-                (window-configuration-p win-config))
-      (message "Reverting current frame")
-      (set-window-configuration win-config)
+    (when (or win-config
+              prev-buffer)
 
-      (r--aremove ranger-frames-alist (window-frame))
-      (r--aremove ranger-tabs-alist ranger-current-tab)
+      (r--aremove ranger-windows-alist (selected-window))
 
-      (r--fset ranger-minimal nil)
+      (when (and minimal
+                 prev-buffer
+                 (buffer-live-p prev-buffer))
+        (switch-to-buffer prev-buffer))
 
-      ;; revert appearance
-      (ranger-revert-appearance (or buffer (current-buffer)))
-      (ranger-revert-appearance ranger-buffer)
+      (when (and (not minimal)
+                 win-config
+                 (window-configuration-p win-config))
+        (set-window-configuration win-config)
+        (r--aremove ranger-frames-alist (window-frame)))
 
-      (unless (ranger-frame-exists-p)
+      ;; (r--aremove ranger-tabs-alist ranger-current-tab)
+
+      (when (not (or (ranger-windows-exists-p)
+                     (ranger-frame-exists-p)))
+
         (message "Reverting all buffers")
         ;; remove all hooks and advices
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+
+        (r--fset ranger-minimal nil)
+
+        ;; revert appearance
+        (ranger-revert-appearance (or buffer (current-buffer)))
+        (ranger-revert-appearance ranger-buffer)
 
         ;; delete and cleanup buffers
         (let ((all-ranger-buffers
@@ -1520,7 +1589,6 @@ to not replace existing value."
                 :test (lambda (x y) (or (null y) (eq x y)))
                 )))
           ;; (message (format "all buffers : %s" all-ranger-buffers))
-          ;; (sleep-for 2)
 
           (if ranger-cleanup-on-disable
               (mapc 'ranger-kill-buffer all-ranger-buffers)
@@ -1531,6 +1599,7 @@ to not replace existing value."
           (kill-buffer (get-buffer "*ranger-prev*")))
 
         (setq ranger-frames-alist ())
+        (setq ranger-windows-alist ())
 
         ;; clear variables
         (setq ranger-preview-buffers ()
@@ -1579,27 +1648,34 @@ to not replace existing value."
           (progn
             (message "Redirecting window to new frame")
             (set-window-buffer nil ranger-buffer)
-            (display-buffer-other-frame current)))))))
+            (when current
+              (display-buffer-other-frame current))))))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
   (let* ((windows (window-list))
+         (ranger-windows (r--akeys ranger-windows-alist))
          (ranger-frames (r--akeys ranger-frames-alist)))
-    ;; if frame is killed, revert buffer settings
-    (if (not (ranger-frame-exists-p))
+    ;; if all frames and windows are killed, revert buffer settings
+    (if (not  (or (ranger-windows-exists-p)
+                  (ranger-frame-exists-p)))
         (progn
           (message "All ranger frames have been killed, reverting ranger settings and cleaning buffers.")
-          ;; don't revert window config now that ranger isn't found.
-          ;; (set-register :ranger_dired_before nil)
-          (ranger-revert)
-          (remove-hook 'window-configuration-change-hook 'ranger-window-check))
-      ;; when still in ranger's frame, make sure ranger's primary window and buffer are still here.
-      ;; need to check if ranger-window is still open
-      (when (assoc (window-frame) ranger-frames-alist)
+          (ranger-revert))
+      ;; when still in ranger's window, make sure ranger's primary window and buffer are still here.
+      (when (memq (selected-window) ranger-windows)
         (unless (and (memq ranger-window windows)
                      (eq (window-buffer ranger-window) ranger-buffer))
           (remove-hook 'window-configuration-change-hook 'ranger-window-check)
           (ranger-still-dired))))))
+
+(defun ranger-windows-exists-p ()
+  "Test if any ranger-windows are live."
+  (if (delq nil
+            (mapcar 'window-live-p
+                    (r--akeys ranger-windows-alist)))
+      t
+    nil))
 
 (defun ranger-frame-exists-p ()
   "Test if any ranger-frames are live."
@@ -1825,6 +1901,17 @@ properly provides the modeline in dired mode. "
     (setq ranger-pre-dired-listing dired-listing-switches)
     (setq ranger-pre-saved t))
 
+  ;; save window-config for frame unless already
+  ;; specified from running `ranger'
+  (unless (r--fget ranger-minimal)
+    (r--aput ranger-frames-alist
+             (window-frame)
+             (current-window-configuration)
+             t))
+  (r--aput ranger-windows-alist
+           (selected-window)
+           (current-buffer)
+           t)
   ;; reset subdir optiona
   (setq ranger-subdir-p nil)
 
@@ -1858,16 +1945,6 @@ properly provides the modeline in dired mode. "
 
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
-  ;; save window-config for frame unless already
-  ;; specified from running `ranger'
-  (r--aput ranger-frames-alist
-           (window-frame)
-           (cons
-            (cons 'config (current-window-configuration))
-            (cons 'windows ()))
-           t)
-
-
   ;; hide details line at top - show symlink targets
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
   (make-local-variable 'dired-hide-symlink-targets)
@@ -1893,7 +1970,7 @@ properly provides the modeline in dired mode. "
     (setq header-line-format `(:eval (,ranger-header-func))))
 
   (ranger-show-details)
-  (ranger-set-modeline))
+  (ranger-set-modeline)) 
 
 ;;;###autoload
 (when ranger-override-dired
@@ -1902,12 +1979,10 @@ properly provides the modeline in dired mode. "
 ;;;###autoload
 (defun ranger-override-dired-fn ()
   "Open dired as deer unless already in ranger-mode"
-  (let ((frame-buf (r--fget ranger-buffer)))
-    (unless (and frame-buf
-                 (buffer-live-p frame-buf))
-      (message "Override attempted")
-      ;; (deer)
-      )))
+  (let ((ranger-windows (r--akeys ranger-windows-alist)))
+    (unless (memq (selected-window) ranger-windows)
+      ;; (message "Override attempted")
+      (deer))))
 
 ;;;###autoload
 (define-minor-mode ranger-mode
@@ -1926,8 +2001,7 @@ properly provides the modeline in dired mode. "
         (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
         (ranger-setup)
         (add-hook 'window-configuration-change-hook 'ranger-window-check))
-    (progn
-      (ranger-revert))))
+    (ranger-revert)))
 
 (provide 'ranger)
 
