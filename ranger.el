@@ -617,16 +617,14 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
 (defun ranger-show-bookmarks ()
   "Show bookmark prompt for all bookmarked directories."
   (interactive)
-  (unless bookmark-alist
-    (bookmark-maybe-load-default-file))
-  (let ((bookmark (completing-read "Select from bookmarks: "
-                                   (delq nil (mapcar
-                                              #'(lambda (bm)
-                                                  (when (file-directory-p (cdr (cadr bm)))
-                                                    (cdr  (cadr bm))))
-                                              bookmark-alist)))))
-    (when bookmark
-      (ranger-find-file bookmark))))
+  (let ((bookmark
+         (completing-read "Select from bookmarks: "
+                          (delq nil (mapcar
+                                     #'(lambda (bm)
+                                         (when (file-directory-p (cdr (cadr bm)))
+                                           (cdr  (cadr bm))))
+                                     bookmark-alist)))))
+    (when bookmark (ranger-find-file bookmark))))
 
 (defun ranger-create-mark (mark)
   "Create new bookmark using internal bookmarks, designating bookmark name as
@@ -640,16 +638,15 @@ ranger-`CHAR'."
 (defun ranger-goto-mark ()
   "Go to bookmarks specified from `ranger-create-mark'."
   (interactive)
-  (unless bookmark-alist
-    (bookmark-maybe-load-default-file))
-  (let* ((mark (read-key
-                (mapconcat
-                 #'(lambda (bm)
-                     (when (and
-                            (string-match "ranger-" (car  bm))
-                            (file-directory-p (cdr (cadr bm))))
-                       (replace-regexp-in-string "ranger-" "" (car bm))))
-                 bookmark-alist " ")))
+  (let* ((mark
+          (read-key
+           (mapconcat
+            #'(lambda (bm)
+                (when (and
+                       (string-match "ranger-" (car  bm))
+                       (file-directory-p (cdr (cadr bm))))
+                  (replace-regexp-in-string "ranger-" "" (car bm))))
+            bookmark-alist " ")))
          (mark-letter (char-to-string mark))
          (bookmark-name (concat "ranger-" mark-letter))
          (bookmark-path (bookmark-location bookmark-name)))
@@ -1693,6 +1690,10 @@ properly provides the modeline in dired mode. "
 
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
+
+  ;; load bookmarks
+  (unless bookmark-alist
+    (bookmark-maybe-load-default-file))
 
   (require 'dired-x)
 
