@@ -217,35 +217,33 @@ Outputs a string that will show up on the header-line."
 (defvar image-dired-cmd-create-temp-image-options)
 (defvar image-dired-display-image-buffer)
 
-(defvar ranger-current-tab 1)
-(defvar ranger-current-file nil)
-
-(defvar ranger-tabs-alist ()
-  "List of tabs to keep track of in ranger.")
-
-(defvar ranger-history-index 0)
-(defvar ranger-subdir-p nil)
+;; global variables
 
 (defvar ranger-sorting-switches nil)
-
-(defvar ranger-history-ring (make-ring ranger-history-length))
-
-(defvar ranger-copy-ring (make-ring ranger-copy-ring-length))
-
-(defvar ranger-child-name nil)
-(make-variable-buffer-local 'ranger-child-name)
-
-(defvar ranger-image-scale-ratio 1.3)
-(make-variable-buffer-local 'ranger-scale-image-ratio)
-
-(defvar ranger-image-fit-window t)
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
 (defvar ranger-frame nil)
 
-(defvar ranger-minimal nil)
+(defvar ranger-windows-alist ()
+  "List of windows using ranger")
 
+(defvar ranger-frames-alist ()
+  "List of frames using ranger")
+
+(defvar ranger-tabs-alist ()
+  "List of tabs to keep track of in ranger.")
+
+(defvar ranger-history-index 0)
+
+(defvar ranger-history-ring (make-ring ranger-history-length))
+
+(defvar ranger-copy-ring (make-ring ranger-copy-ring-length))
+
+(defvar ranger-image-scale-ratio 1.3)
+(defvar ranger-image-fit-window nil)
+
+(defvar ranger-pre-alist)
 (defvar ranger-pre-saved nil)
 (defvar ranger-pre-hl-mode nil)
 (defvar ranger-pre-arev-mode nil)
@@ -264,6 +262,22 @@ Outputs a string that will show up on the header-line."
 (defvar ranger-visited-buffers ()
   "List of buffers visited in ranger")
 
+;; frame specific variables
+(defvar ranger-minimal nil)
+
+(defvar ranger-subdir-p nil)
+
+;; buffer local variables
+
+(defvar ranger-current-tab 1)
+
+(defvar ranger-current-file nil)
+;; (make-variable-buffer-local 'ranger-current-file)
+
+(defvar ranger-child-name nil)
+(make-variable-buffer-local 'ranger-child-name)
+
+;; hooks
 (defvar ranger-mode-load-hook nil)
 (defvar ranger-parent-dir-hook '(revert-buffer
                                  dired-hide-details-mode
