@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.7
+;; Version: 0.9.8
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
@@ -46,6 +46,13 @@
 ;; - move through navigation history
 ;; - copy and paste functionality utilizing a copy ring
 
+;;; KNOWN ISSUES
+
+;; - window specific settings neededs
+;;  - current tab
+;;  - history
+;;  - current-file
+
 ;;; HISTORY
 
 ;; version 0.9.1, 2015-07-19 changed package to ranger
@@ -54,6 +61,7 @@
 ;; version 0.9.5, 2015-08-20 fixed most bugs when reverting from ranger
 ;; version 0.9.6, 2015-09-11 delete all accessed buffers, add details to echo
 ;; version 0.9.7, 2015-09-13 copy and paste functionality added
+;; version 0.9.8, 2015-10-04 multiple ranger window support, override dired
 
 ;;; Code:
 
@@ -408,8 +416,8 @@ Outputs a string that will show up on the header-line."
   "Show copy ring in `ranger-copy-ring', selection inserts at top for use."
   (interactive (list
                 (completing-read "Select from copy ring: "
-                                     (ranger--ring-elements
-                                      ranger-copy-ring)))))
+                                 (ranger--ring-elements
+                                  ranger-copy-ring)))))
 
 (defun ranger-update-copy-ring (move append)
   "Add marked files to `ranger-copy-ring'. When `MOVE' is non-nil, targets will
@@ -509,72 +517,103 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                      ))))
 
 
+;;; frame parameter helpers
+
+(defmacro r--fget (var &optional frame)
+  "Return the value of `VAR', looks for buffer local version first."
+  (let ((parameter (intern (format "%s" var))))
+    `(or
+      (when (local-variable-if-set-p (quote ,parameter))
+        (buffer-local-value (quote ,parameter) (current-buffer)))
+      (frame-parameter ,frame (quote ,parameter))
+      ,var)))
+
+(defmacro r--fset (var val &optional frame buffer-local)
+  "Set the value of `VAR' in local buffer and on frame. When `BUFFER-LOCAL' is
+non-nil, set buffer local variable as well."
+  (let ((parameter (intern (format "%s" var))))
+    `(progn
+       (when ,buffer-local
+         (set (make-local-variable (quote ,parameter)) ,val))
+       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
+       ;; (message "%s" (frame-parameter nil ,parameter))
+       )))
+
+(defmacro r--fclear (parameter)
+  `(r--fset ,parameter nil))
+
+;; (message "%s:%s:%s:%s:%s"
+;;          (r--fget ranger-minimal)
+;;          (r--fget ranger-current-file)
+;;          (frame-parameter nil 'ranger-minimal)
+;;          (buffer-local-value ranger-minimal (current-buffer))
+;;          ranger-minimal)
+
+;;; alist helpers
+
+(defun r--aget (alist key)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (cdr-safe (assoc key alist)))
+
+(defun r--akeys (alist)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (mapcar 'car alist))
+
+(defmacro r--aput (alist key value &optional no-overwrite)
+  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
+to not replace existing value."
+  `(let ((sublist (assoc ,key ,alist)))
+     (if sublist
+         (unless ,no-overwrite
+           (setcdr sublist ,value))
+       (push (cons ,key ,value) ,alist))))
+
+(defmacro r--aremove (alist key)
+  "Remove KEY's key-value-pair from ALIST."
+  `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
+
+
 ;;tabs
-(defun ranger-new-tab (&optional index)
-  "Create new tab using optional `INDEX' with the current directory."
-  (interactive)
+
+(defun ranger--available-tabs ()
+  "Returns list of unused tabs."
   (let* ((tabs
-          (mapcar
-           'car ranger-tabs-alist))
+          (r--akeys ranger-tabs-alist))
          (total-tabs
           (number-sequence 1 ranger-max-tabs))
          (available-tabs
-          (cl-remove-if '(lambda (tab) (member tab tabs)) total-tabs))
+          (cl-remove-if '(lambda (tab) (member tab tabs)) total-tabs)))
+    available-tabs))
+
+(defun ranger-new-tab (&optional index no-refresh)
+  "Create new tab using optional `INDEX' with the current directory."
+  (interactive)
+  (let* ((available-tabs (ranger--available-tabs))
          (index (or index
                     (and available-tabs
-                         (apply 'min available-tabs))))
-         )
-    ;; (message (format "%s" (apply 'min available-tabs)))
+                         (apply 'min available-tabs))
+                    ranger-current-tab)))
+    ;; (message (format "%s" index))
     (when (and index (<= index ranger-max-tabs))
       (setq ranger-current-tab index)
       (ranger-update-tab index)
-      (ranger-setup-preview))))
-
-(defun ranger--tabs-list ()
-  (let* ((curr ranger-current-tab)
-         (tabs
-          (sort
-           (mapcar
-            'car ranger-tabs-alist) '<)))
-    (mapconcat
-     (lambda (tab)
-       (let* ((item (assoc tab ranger-tabs-alist))
-              (key (car-safe item))
-              (roman (ranger--ar2ro key))
-              (value (car-safe (cdr-safe item)))
-              ret)
-         (setq ret (cl-case ranger-tabs-style
-                     ('normal (format "%d:%s" key value))
-                     ('roman (format "%s" roman))
-                     ('number (format "%s" key))))
-         (if (equal tab curr)
-             (propertize ret 'face 'default)
-           ret)))
-     tabs " ")))
-
-(defun ranger--ar2ro (AN)
-  "translate from arabic number AN to roman number,
-   ranger--ar2ro returns string of roman numerals."
-  (cond
-   ((>= AN 10) (concat "X" (ranger--ar2ro (- AN 10))))
-   ((>= AN 9) (concat "I" (concat "X" (ranger--ar2ro (- AN 9)))))
-   ((>= AN 5) (concat "V" (ranger--ar2ro (- AN 5))))
-   ((>= AN 4) (concat "I" (concat "V" (ranger--ar2ro (- AN 4)))))
-   ((>= AN 1) (concat "I" (ranger--ar2ro (- AN 1))))
-   ((= AN 0) nil)))
+      (unless no-refresh
+        (ranger-setup-preview)))))
 
 (defun ranger-close-tab (&optional index)
   (interactive)
   (let ((index (or index
-                     ranger-current-tab)))
+                   ranger-current-tab)))
     (when index
-      (setq ranger-tabs-alist (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
+      (r--aremove ranger-tabs-alist index)
       (ranger-prev-tab))))
 
 (defun ranger-other-tab (dir &optional index)
   (interactive)
   (let* ((tabs
-          (mapcar 'car ranger-tabs-alist))
+          (r--akeys ranger-tabs-alist))
          (tab ranger-current-tab)
          (target index))
     (while (and
@@ -602,16 +641,16 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   (let ((entry dired-directory)
         (relative (substring (ranger--dir-relative) 0 -1)))
     (when entry
-      (setq ranger-tabs-alist (delq (assoc index ranger-tabs-alist) ranger-tabs-alist))
-      (add-to-list 'ranger-tabs-alist (cons index (cons relative entry)))
-      )))
+      (r--aput ranger-tabs-alist
+               index
+               (cons relative entry)))))
 
 (defun ranger-goto-tab (index)
   (interactive)
-  (let ((tab (assoc index ranger-tabs-alist)))
+  (let ((tab (r--aget ranger-tabs-alist index)))
     (when tab
       (setq ranger-current-tab index)
-      (ranger-find-file (cdr (cdr tab))))))
+      (ranger-find-file (cdr tab)))))
 
 
 ;; marks
@@ -678,8 +717,7 @@ ranger-`CHAR'."
    (list
     (completing-read "Select from history: "
                      (ranger--ring-elements ranger-history-ring))))
-  (when history
-    (ranger-find-file history)))
+  (when history (ranger-find-file history)))
 
 (defun ranger-jump-history (jump)
   "Move through history ring by increment `jump'"
@@ -864,15 +902,26 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (inhibit-redisplay t))
+        (frame (window-frame))
+        (minimal (r--fget ranger-minimal)))
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (unless (get-register :ranger_dired_before)
-              (window-configuration-to-register :ranger_dired_before))
+            (unless minimal
+              (r--aput ranger-frames-alist
+                       frame
+                       (current-window-configuration)
+                       t))
+            (r--aput ranger-windows-alist
+                     (selected-window)
+                     (current-buffer)
+                     t)
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
+            (if minimal
+                (r--fset ranger-minimal t)
+              (r--fset ranger-minimal nil))
             (ranger-enable))
         (progn
           (ranger-disable)
@@ -1023,8 +1072,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                                 (list dired-directory))
                        ""))
            (filedir-size (if sizes (ranger--get-file-sizes
-                                (ranger--get-file-listing dired-directory))
-                       ""))
+                                    (ranger--get-file-listing dired-directory))
+                           ""))
            (file-date (format-time-string "%Y-%m-%d %H:%m"
                                           (nth 5 fattr)))
            (file-perm (nth 8 fattr))
@@ -1044,7 +1093,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                      (length file-perm)))
            (message-log-max nil))
 
-      (setq ranger-current-file entry)
+      (r--fset ranger-current-file entry nil t)
       (message "%s" (format
                      (format  "%%s     f:%%08s d:%%08s t:%%08s%%%ds %%s" space)
                      (propertize file-date 'face 'font-lock-warning-face)
@@ -1093,6 +1142,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (unused-windows ()))
 
     (setq ranger-buffer (current-buffer))
+
     (setq ranger-window (get-buffer-window (current-buffer)))
 
     (setq ranger-visited-buffers (append ranger-parent-buffers ranger-visited-buffers))
@@ -1102,7 +1152,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-parent-dirs ())
 
     (while (and parent-name
-                (not ranger-minimal)
+                (not (r--fget ranger-minimal))
                 (file-directory-p parent-name)
                 (< i ranger-parent-depth))
       (setq i (+ i 1))
@@ -1124,10 +1174,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
       (walk-window-tree
        (lambda (window)
          (progn
-           ;; (unless (or
-           ;;          (member window ranger-parent-windows)
-           ;;          (eq window ranger-window))
-           ;;   (add-to-list 'unused-windows window))
            (when (member window ranger-parent-windows)
              ;; select-window needed for hl-line
              (select-window window)
@@ -1135,16 +1181,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
        nil nil 'nomini))
 
     (select-window ranger-window)
-
-    ;; (unless ranger-minimal
-    ;;   (cl-loop for unused-window in unused-windows do
-    ;;            (when (and unused-window
-    ;;                       (window-live-p unused-window))
-    ;;              (message "deleting window")
-    ;;              (redisplay)
-    ;;              (sleep-for 3)
-    ;;              (delete-window unused-window))))
-
     ))
 
 (defun ranger-make-parent (parent)
@@ -1293,7 +1329,7 @@ is set, show literally instead of actual buffer."
     (when (and ranger-preview-window
                (window-live-p ranger-preview-window))
       (ignore-errors (delete-window ranger-preview-window)))
-    (when (and (not ranger-minimal)
+    (when (and (not (r--fget ranger-minimal))
                entry-name
                ranger-preview-file)
       (unless (or
@@ -1451,45 +1487,77 @@ fraction of the total frame size"
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
   ;; restore window configuration
-  (when (get-register :ranger_dired_before)
-    (ignore-errors
-      (jump-to-register :ranger_dired_before))
-    (set-register :ranger_dired_before nil))
 
-  ;; revert appearance
-  (ranger-revert-appearance (or buffer (current-buffer)))
-  (ranger-revert-appearance ranger-buffer)
+  (let* ((minimal (r--fget ranger-minimal))
+         (prev-buffer
+          (r--aget ranger-windows-alist
+                   (selected-window)))
+         (win-config
+          (r--aget ranger-frames-alist
+                   (window-frame))))
 
+    (when (or win-config
+              prev-buffer)
 
-  ;; delete and cleanup buffers
-  (let ((all-ranger-buffers
-         (cl-remove-duplicates
-          (append
-           ranger-preview-buffers
-           ranger-parent-buffers
-           ranger-visited-buffers
-           (list ranger-buffer)
-           )
-          :test (lambda (x y) (or (null y) (eq x y)))
-          )))
-    ;; (message (format "all buffers : %s" all-ranger-buffers))
+      (r--aremove ranger-windows-alist (selected-window))
 
-    (if ranger-cleanup-on-disable
-        (mapc 'ranger-kill-buffer all-ranger-buffers)
-      (mapc 'ranger-revert-appearance all-ranger-buffers)))
+      (when (and minimal
+                 prev-buffer
+                 (buffer-live-p prev-buffer))
+        (switch-to-buffer prev-buffer))
 
-  ;; kill preview buffer
-  (when (get-buffer "*ranger-prev*")
-    (kill-buffer (get-buffer "*ranger-prev*")))
+      (when (and (not minimal)
+                 win-config
+                 (window-configuration-p win-config))
+        (set-window-configuration win-config)
+        (r--aremove ranger-frames-alist (window-frame)))
 
-  ;; clear variables
-  (setq ranger-preview-buffers ()
-        ranger-visited-buffers ()
-        ranger-parent-buffers ())
-  (setq ranger-minimal nil)
+      ;; (r--aremove ranger-tabs-alist ranger-current-tab)
 
-  ;; clear ranger-show-details information
-  (message "%s" ""))
+      (when (not (or (ranger-windows-exists-p)
+                     (ranger-frame-exists-p)))
+
+        (message "Reverting all buffers")
+        ;; remove all hooks and advices
+        (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
+        (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+
+        (r--fset ranger-minimal nil)
+
+        ;; revert appearance
+        (ranger-revert-appearance (or buffer (current-buffer)))
+        (ranger-revert-appearance ranger-buffer)
+
+        ;; delete and cleanup buffers
+        (let ((all-ranger-buffers
+               (cl-remove-duplicates
+                (append
+                 ranger-preview-buffers
+                 ranger-parent-buffers
+                 ranger-visited-buffers
+                 (list ranger-buffer))
+                :test (lambda (x y) (or (null y) (eq x y)))
+                )))
+          ;; (message (format "all buffers : %s" all-ranger-buffers))
+
+          (if ranger-cleanup-on-disable
+              (mapc 'ranger-kill-buffer all-ranger-buffers)
+            (mapc 'ranger-revert-appearance all-ranger-buffers)))
+
+        ;; kill preview buffer
+        (when (get-buffer "*ranger-prev*")
+          (kill-buffer (get-buffer "*ranger-prev*")))
+
+        (setq ranger-frames-alist ())
+        (setq ranger-windows-alist ())
+
+        ;; clear variables
+        (setq ranger-preview-buffers ()
+              ranger-visited-buffers ()
+              ranger-parent-buffers ()))
+
+      ;; clear ranger-show-details information
+      (message "%s" ""))))
 
 (defun ranger-revert-appearance (buffer)
   "Revert the `BUFFER' to pre-ranger defaults"
@@ -1517,7 +1585,7 @@ fraction of the total frame size"
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
   (if (derived-mode-p 'dired-mode)
-        (ranger-enable)
+      (ranger-enable)
     (progn
       ;; Try to manage new windows / frames created without killing ranger
       (let ((current (current-buffer))
@@ -1530,25 +1598,42 @@ fraction of the total frame size"
           (progn
             (message "Redirecting window to new frame")
             (set-window-buffer nil ranger-buffer)
-            (display-buffer-other-frame current)))))))
+            (when current
+              (display-buffer-other-frame current))))))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
-  (let ((windows (window-list)))
-    ;; if frame is killed, revert buffer settings
-    (if (not (frame-live-p ranger-frame))
+  (let* ((windows (window-list))
+         (ranger-windows (r--akeys ranger-windows-alist))
+         (ranger-frames (r--akeys ranger-frames-alist)))
+    ;; if all frames and windows are killed, revert buffer settings
+    (if (not  (or (ranger-windows-exists-p)
+                  (ranger-frame-exists-p)))
         (progn
-          (message "Ranger frame has been killed, reverting ranger settings and cleaning buffers.")
-          ;; don't revert window config now that ranger isn't found.
-          (set-register :ranger_dired_before nil)
-          (ranger-revert)
-          (remove-hook 'window-configuration-change-hook 'ranger-window-check))
-      ;; when still in ranger's frame, make sure ranger's primary window and buffer are still here.
-      (when (eq (window-frame) ranger-frame)
+          (message "All ranger frames have been killed, reverting ranger settings and cleaning buffers.")
+          (ranger-revert))
+      ;; when still in ranger's window, make sure ranger's primary window and buffer are still here.
+      (when (memq (selected-window) ranger-windows)
         (unless (and (memq ranger-window windows)
                      (eq (window-buffer ranger-window) ranger-buffer))
           (remove-hook 'window-configuration-change-hook 'ranger-window-check)
           (ranger-still-dired))))))
+
+(defun ranger-windows-exists-p ()
+  "Test if any ranger-windows are live."
+  (if (delq nil
+            (mapcar 'window-live-p
+                    (r--akeys ranger-windows-alist)))
+      t
+    nil))
+
+(defun ranger-frame-exists-p ()
+  "Test if any ranger-frames are live."
+  (if (delq nil
+            (mapcar 'frame-live-p
+                    (r--akeys ranger-frames-alist)))
+      t
+    nil))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -1572,6 +1657,35 @@ fraction of the total frame size"
             (file-relative-name current-name parent-name))))
     relative))
 
+(defun ranger--header-tabs ()
+  (let* ((curr ranger-current-tab)
+         (tabs (sort (r--akeys ranger-tabs-alist) '<)))
+    (mapconcat
+     (lambda (key)
+       (let* ((item (r--aget ranger-tabs-alist key))
+              (roman (ranger--ar2ro key))
+              (value (car-safe item))
+              ret)
+         (setq ret (cl-case ranger-tabs-style
+                     ('normal (format "%d:%s" key value))
+                     ('roman (format "%s" roman))
+                     ('number (format "%s" key))))
+         (if (equal key curr)
+             (propertize ret 'face 'default)
+           ret)))
+     tabs " ")))
+
+(defun ranger--ar2ro (AN)
+  "translate from arabic number AN to roman number,
+   ranger--ar2ro returns string of roman numerals."
+  (cond
+   ((>= AN 10) (concat "X" (ranger--ar2ro (- AN 10))))
+   ((>= AN 9) (concat "I" (concat "X" (ranger--ar2ro (- AN 9)))))
+   ((>= AN 5) (concat "V" (ranger--ar2ro (- AN 5))))
+   ((>= AN 4) (concat "I" (concat "V" (ranger--ar2ro (- AN 4)))))
+   ((>= AN 1) (concat "I" (ranger--ar2ro (- AN 1))))
+   ((= AN 0) nil)))
+
 (defun ranger--header-rhs ()
   (concat
    (propertize
@@ -1582,26 +1696,28 @@ fraction of the total frame size"
     'face 'font-lock-comment-face)
    (when (> (length ranger-tabs-alist) 1)
      (format "| %s"
-             (ranger--tabs-list)))))
+             (ranger--header-tabs)))))
 
 (defun ranger--header-lhs ()
   "Setup header-line for ranger buffer."
   (let* ((user (user-login-name))
-         (file-path (file-name-directory ranger-current-file))
-         (file-name (file-name-nondirectory ranger-current-file))
-         (lhs (format "%s%s"
-                      file-path
-                      (propertize file-name 'face 'font-lock-constant-face))))
-    lhs))
+         (current-file (or (r--fget ranger-current-file) ""))
+         (file-path (file-name-directory current-file))
+         (file-name (file-name-nondirectory current-file)))
+    (format "%s%s"
+            file-path
+            (propertize file-name 'face 'font-lock-constant-face))))
 
 (defun ranger--header-string ()
   "Compose header string"
   (let* ((lhs (ranger--header-lhs))
-         (small-header (and (not ranger-minimal) ranger-preview-file))
          (rhs (ranger--header-rhs))
+         (minimal (r--fget ranger-minimal))
          (used-length (+ (length rhs) (length lhs)))
          (total-window-width (+ (window-width ranger-window)
-                                (if ranger-preview-file
+                                (if (and
+                                     (not minimal)
+                                     ranger-preview-file)
                                     (+ (window-width ranger-preview-window) 2)
                                   0)))
          (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
@@ -1614,11 +1730,11 @@ fraction of the total frame size"
   "Setup header-line for ranger parent buffer."
   (let* ((relative (ranger--dir-relative))
          (header (format " %s" relative)))
-      (propertize header 'face 'dired-header)))
+    (propertize header 'face 'dired-header)))
 
 (defun ranger-preview-header-line ()
   "Setup header-line for ranger parent buffer."
-    (substring (ranger--header-string) (+ (window-width ranger-window) 2) ))
+  (substring (ranger--header-string) (+ (window-width ranger-window) 2) ))
 
 (defun ranger-header-line ()
   "Setup header-line for ranger parent buffer."
@@ -1675,13 +1791,17 @@ properly provides the modeline in dired mode. "
 (defun deer ()
   "Launch dired in a minimal ranger window."
   (interactive)
-  (setq ranger-minimal t)
-  (ranger))
+  (let* ((file buffer-file-name)
+         (dir (if file (file-name-directory file) default-directory)))
+    (when dir
+      (r--fset ranger-minimal t)
+      (ranger-find-file dir))))
 
 (defun ranger-minimal-toggle ()
   (interactive)
-  (let ((minimal ranger-minimal))
+  (let ((minimal (r--fget ranger-minimal)))
     (ranger-revert)
+    ;; (message "%s" minimal)
     (if minimal
         (ranger)
       (deer))))
@@ -1692,7 +1812,9 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let* ((file buffer-file-name)
          (dir (if file (file-name-directory file) default-directory)))
-    (when dir (ranger-find-file dir))))
+    (when dir
+      (r--fset ranger-minimal nil)
+      (ranger-find-file dir))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
@@ -1727,6 +1849,17 @@ properly provides the modeline in dired mode. "
     (setq ranger-pre-dired-listing dired-listing-switches)
     (setq ranger-pre-saved t))
 
+  ;; save window-config for frame unless already
+  ;; specified from running `ranger'
+  (unless (r--fget ranger-minimal)
+    (r--aput ranger-frames-alist
+             (window-frame)
+             (current-window-configuration)
+             t))
+  (r--aput ranger-windows-alist
+           (selected-window)
+           (current-buffer)
+           t)
   ;; reset subdir optiona
   (setq ranger-subdir-p nil)
 
@@ -1734,26 +1867,20 @@ properly provides the modeline in dired mode. "
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
+
   (setq ranger-preview-window nil)
 
   ;; hide groups, show human readable file sizes
   ;; TODO add as defcustom
   (setq dired-listing-switches "-alGh")
 
+  (unless (r--fget ranger-minimal)
+    (dired-hide-details-mode -1)
+    (delete-other-windows))
+
   ;; CHANGE - removed
   ;; (dired-sort-other dired-listing-switches)
 
-  ;; clear out everything if not in deer mode
-  (unless ranger-minimal
-    (delete-other-windows))
-
-  (add-to-list 'ranger-visited-buffers ranger-buffer)
-
-  ;; unless specified from running `ranger'
-  (unless (get-register :ranger_dired_before)
-    (window-configuration-to-register :ranger_dired_before))
-
-  (ranger-omit)
   ;; consider removing
   (auto-revert-mode)
 
@@ -1762,8 +1889,9 @@ properly provides the modeline in dired mode. "
   ;; truncate lines for primary window
   (setq truncate-lines t)
 
-  (unless ranger-minimal
-    (dired-hide-details-mode -1))
+  ;; clear out everything if not in deer mode
+
+  (add-to-list 'ranger-visited-buffers ranger-buffer)
 
   ;; hide details line at top - show symlink targets
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
@@ -1772,9 +1900,13 @@ properly provides the modeline in dired mode. "
 
   (ranger-sort t)
   (ranger-show-flags)
+  (ranger-omit)
   (ranger-hide-dotfiles)
 
-  (ranger-update-tab ranger-current-tab)
+  ;; open new tab if ranger is in multiple frames.
+  (if (> (length ranger-frames-alist) 1)
+      (ranger-new-tab nil t)
+    (ranger-update-tab ranger-current-tab))
 
   (ranger-setup-parents)
   (ranger-setup-preview)
@@ -1805,12 +1937,7 @@ properly provides the modeline in dired mode. "
         (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
         (ranger-setup)
         (add-hook 'window-configuration-change-hook 'ranger-window-check))
-    (progn
-      (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
-      (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-      (ranger-revert)
-      )
-    ))
+    (ranger-revert)))
 
 (provide 'ranger)
 
