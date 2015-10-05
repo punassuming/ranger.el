@@ -215,6 +215,7 @@ Outputs a string that will show up on the header-line."
                 (const :tag "Roman numerals" :value roman)
                 (const :tag "Numbers only" :value numbers)))
 
+
 (defcustom ranger-override-dired nil
   "When non-nil, load `deer' whenever dired is loaded.")
 
@@ -1068,12 +1069,24 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Echo file details"
   (when (dired-get-filename nil t)
     (let* ((entry (dired-get-filename nil t))
+           (filename (file-name-nondirectory entry))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
            (file-size (file-size-human-readable (nth 7 fattr)))
            (dir-size (if sizes (ranger--get-file-sizes
                                 (list dired-directory))
                        ""))
+           (user (nth 2 fattr))
+           (filemount
+            (mapconcat
+             (lambda (n)
+               (format "%s"
+                       (nth 0 n)
+                       ;; (nth 1 n)
+                       ;; (nth 2 n)
+                       ))
+             (ranger--get-mount-partitions)
+             " "))
            (filedir-size (if sizes (ranger--get-file-sizes
                                     (ranger--get-file-listing dired-directory))
                            ""))
@@ -1087,25 +1100,24 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                              final-pos))
            (footer-spec (ranger--footer-spec))
            (space (- fwidth
-                     7
-                     (max 08 (length file-size))
-                     (max 08 (length filedir-size))
-                     (max 08 (length dir-size))
+                     (max 8
+                          (length file-size))
                      (length position)
+                     (length filemount)
                      (length file-date)
                      (length file-perm)))
-           (message-log-max nil))
-
+           (message-log-max nil)
+           (msg
+            (format
+             (format  "%%s %%s %%%ds %%s %%s" space)
+             (propertize file-date 'face 'font-lock-warning-face)
+             file-perm
+             file-size
+             filemount
+             position
+             )))
       (r--fset ranger-current-file entry nil t)
-      (message "%s" (format
-                     (format  "%%s     f:%%08s d:%%08s t:%%08s%%%ds %%s" space)
-                     (propertize file-date 'face 'font-lock-warning-face)
-                     file-size
-                     filedir-size
-                     dir-size
-                     position
-                     file-perm
-                     )))))
+      (message "%s" msg))))
 
 
 
@@ -1386,6 +1398,26 @@ is set, show literally instead of actual buffer."
                 (progn
                   (re-search-backward "\\(^[0-9.,]+[A-Za-z]+\\).*total$")
                   (match-string 1)))) ""))
+
+(defun ranger--get-mount-partitions ()
+  "Determine file size of provided list of files in `FILESET'."
+  (if (executable-find "df")
+      (with-temp-buffer
+        (apply 'call-process "df" nil t t (list  "-h" "--output=target,avail,size"))
+        (let ((first-line 0))
+          (cl-loop for line in
+                   (split-string
+                    (replace-regexp-in-string
+                     "[ \t]+" " "
+                     (replace-regexp-in-string
+                      "\n$"
+                      "" (buffer-string))) "[\n\r]+")
+                   do (setq  first-line (+ first-line 1))
+                   with test = ()
+                   for test = (split-string line "[ \t]+")
+                   when (> first-line 1) collect test)))
+    '("")))
+
 
 (defun ranger--get-file-listing (dir)
   "Return listing of files in dired directory."
@@ -1923,7 +1955,6 @@ properly provides the modeline in dired mode. "
   (ranger-show-details)
   (ranger-set-modeline))
 
-;;;###autoload
 (when ranger-override-dired
   (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
 
