@@ -293,7 +293,7 @@ succession."
 (defvar ranger-current-tab 1)
 
 (defvar ranger-current-file nil)
-(make-variable-buffer-local 'ranger-current-file)
+;; (make-variable-buffer-local 'ranger-current-file)
 
 (defvar ranger-child-name nil)
 (make-variable-buffer-local 'ranger-child-name)
@@ -625,8 +625,7 @@ to not replace existing value."
 
 (defun ranger-other-tab (dir &optional index)
   (interactive)
-  (let* ((tabs
-          (r--akeys ranger-tabs-alist))
+  (let* ((tabs (r--akeys ranger-tabs-alist))
          (tab ranger-current-tab)
          (target index))
     (while (and
@@ -909,26 +908,31 @@ ranger-`CHAR'."
       (ranger-find-file parent)
       (dired-goto-file current))))
 
+(defun ranger-save-window-config (&optional overwrite)
+  (let ((frame (window-frame))
+        (window (selected-window))
+        (minimal (r--fget ranger-minimal)))
+    (unless minimal
+      (r--aput ranger-frames-alist
+               frame
+               (current-window-configuration)
+               (null overwrite)))
+    (r--aput ranger-windows-alist
+             window
+             (cons (current-buffer) nil)
+             (null overwrite))))
+
 (defun ranger-find-file (&optional entry ignore-history)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (frame (window-frame))
         (minimal (r--fget ranger-minimal)))
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (unless minimal
-              (r--aput ranger-frames-alist
-                       frame
-                       (current-window-configuration)
-                       t))
-            (r--aput ranger-windows-alist
-                     (selected-window)
-                     (current-buffer)
-                     t)
+            (ranger-save-window-config)
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
@@ -1125,7 +1129,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              filemount
              position
              )))
-      ;; (ranger-update-current-file)
       (message "%s" msg))))
 
 (defun ranger-show-details ()
@@ -1550,31 +1553,36 @@ fraction of the total frame size"
   ;; restore window configuration
 
   (let* ((minimal (r--fget ranger-minimal))
-         (prev-buffer
+         (ranger-window-props
           (r--aget ranger-windows-alist
                    (selected-window)))
-         (win-config
+         (prev-buffer (car ranger-window-props))
+         (ranger-buffer (cdr ranger-window-props))
+         (config
           (r--aget ranger-frames-alist
                    (window-frame))))
 
-    (when (or win-config
+    (when (or config
               prev-buffer)
 
       (r--aremove ranger-windows-alist (selected-window))
 
-      (when (and minimal
-                 prev-buffer
+      (if minimal
+          (when (and prev-buffer
                  (buffer-live-p prev-buffer))
         (switch-to-buffer prev-buffer))
-
-      (when (and (not minimal)
-                 win-config
-                 (window-configuration-p win-config))
-        (set-window-configuration win-config)
-        (r--aremove ranger-frames-alist (window-frame)))
+        (when (and config
+                   (window-configuration-p config))
+          (set-window-configuration config)
+          (r--aremove ranger-frames-alist (window-frame))))
 
       ;; (r--aremove ranger-tabs-alist ranger-current-tab)
 
+      ;; revert appearance
+      (ranger-revert-appearance (or buffer (current-buffer)))
+      (ranger-revert-appearance ranger-buffer)
+
+      ;; if no more ranger frames
       (when (not (or (ranger-windows-exists-p)
                      (ranger-frame-exists-p)))
 
@@ -1583,11 +1591,8 @@ fraction of the total frame size"
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
 
+        ;; revert setting for minimal
         (r--fset ranger-minimal nil)
-
-        ;; revert appearance
-        (ranger-revert-appearance (or buffer (current-buffer)))
-        (ranger-revert-appearance ranger-buffer)
 
         ;; delete and cleanup buffers
         (let ((all-ranger-buffers
@@ -1649,7 +1654,12 @@ fraction of the total frame size"
       (ranger-enable)
     (progn
       ;; Try to manage new windows / frames created without killing ranger
-      (let ((current (current-buffer))
+      (let ((ranger-window-props
+             (r--aget ranger-windows-alist
+                      (selected-window)))
+            (prev-buffer (car ranger-window-props))
+            (ranger-buffer (cdr ranger-window-props))
+            (current (current-buffer))
             (buffer-fn (buffer-file-name (current-buffer))))
         (if buffer-fn
             (progn
@@ -1665,6 +1675,11 @@ fraction of the total frame size"
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
   (let* ((windows (window-list))
+         (ranger-window-props
+          (r--aget ranger-windows-alist
+                   (selected-window)))
+         (prev-buffer (car ranger-window-props))
+         (ranger-buffer (cdr ranger-window-props))
          (ranger-windows (r--akeys ranger-windows-alist))
          (ranger-frames (r--akeys ranger-frames-alist)))
     ;; if all frames and windows are killed, revert buffer settings
@@ -1674,9 +1689,10 @@ fraction of the total frame size"
           (message "All ranger frames have been killed, reverting ranger settings and cleaning buffers.")
           (ranger-revert))
       ;; when still in ranger's window, make sure ranger's primary window and buffer are still here.
-      (when (memq (selected-window) ranger-windows)
-        (unless (and (memq ranger-window windows)
-                     (eq (window-buffer ranger-window) ranger-buffer))
+      (when ranger-window-props
+        ;; Unless selected window does not have ranger buffer
+        (unless (and (memq (selected-window) ranger-windows)
+                     (eq (current-buffer) ranger-buffer))
           (remove-hook 'window-configuration-change-hook 'ranger-window-check)
           (ranger-still-dired))))))
 
@@ -1808,19 +1824,23 @@ fraction of the total frame size"
 properly provides the modeline in dired mode. "
   (when (eq major-mode 'dired-mode)
     (setq mode-name
-          (let (case-fold-search)
+          (concat
+           ;; (if buffer-read-only "<N>" "<I>")
+           "Ranger:"
             (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
-                   "Ranger:mtime")
+                    "mtime")
                   ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
-                   "Ranger:ctime")
+                    "ctime")
                   ((string-match "^-[^X]*X[^X]*$" dired-actual-switches)
-                   "Ranger:ext")
+                    "ext")
                   ((string-match "^-[^S]*S[^S]*$" dired-actual-switches)
-                   "Ranger:size")
+                    "size")
                   ((string-match "^-[^SXUt]*$" dired-actual-switches)
-                   "Ranger:name")
+                    "name")
                   (t
-                   (concat "Ranger " dired-actual-switches)))))
+                    dired-actual-switches))
+             (when (string-match "r" dired-actual-switches) " (r)")
+             ))
     (with-eval-after-load "diminish"
       (diminish 'ranger-mode)
       (diminish 'dired-omit-mode)
@@ -1910,15 +1930,8 @@ properly provides the modeline in dired mode. "
 
   ;; save window-config for frame unless already
   ;; specified from running `ranger'
-  (unless (r--fget ranger-minimal)
-    (r--aput ranger-frames-alist
-             (window-frame)
-             (current-window-configuration)
-             t))
-  (r--aput ranger-windows-alist
-           (selected-window)
-           (current-buffer)
-           t)
+  (ranger-save-window-config)
+
   ;; reset subdir optiona
   (setq ranger-subdir-p nil)
 
@@ -1926,6 +1939,12 @@ properly provides the modeline in dired mode. "
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
+
+  (r--aput ranger-windows-alist
+           (selected-window)
+           (cons 
+            (car-safe (r--aget ranger-windows-alist (selected-window)))
+            (current-buffer)))
 
   (setq ranger-preview-window nil)
 
