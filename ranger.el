@@ -1416,7 +1416,7 @@ is set, show literally instead of actual buffer."
                    with test = ()
                    for test = (split-string line "[ \t]+")
                    when (> first-line 1) collect test)))
-    '("")))
+    '((""))))
 
 
 (defun ranger--get-file-listing (dir)
@@ -1797,10 +1797,8 @@ properly provides the modeline in dired mode. "
                    (concat "Ranger " dired-actual-switches)))))
     (with-eval-after-load "diminish"
       (diminish 'ranger-mode)
-      (with-eval-after-load "dired-omit-mode"
-        (diminish 'dired-omit-mode " O"))
-      (with-eval-after-load 'auto-revert-mode
-        (diminish 'auto-revert-mode " R")))
+      (diminish 'dired-omit-mode)
+      (diminish 'auto-revert-mode))
     (force-mode-line-update)))
 
 (defun ranger-setup-dired-buffer ()
