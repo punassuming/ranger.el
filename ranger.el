@@ -218,6 +218,13 @@ Outputs a string that will show up on the header-line."
 
 (defcustom ranger-override-dired nil
   "When non-nil, load `deer' whenever dired is loaded.")
+
+(defcustom ranger-echo-delay 0.2
+  "Delay for echoing information for commands used in rapid
+succession."
+  :group 'ranger
+  :type 'integer)
+
 
 
 ;; declare used variables
@@ -273,6 +280,8 @@ Outputs a string that will show up on the header-line."
 
 (defvar ranger-visited-buffers ()
   "List of buffers visited in ranger")
+
+(defvar ranger-echo-delay-timer nil)
 
 ;; frame specific variables
 (defvar ranger-minimal nil)
@@ -1043,7 +1052,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (dired-next-line 1)
   (when (eobp)
     (dired-next-line -1))
-  (ranger-show-details)
+  (ranger-show-details-delayed)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
@@ -1054,7 +1063,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (unless ranger-modify-header
     (when (bobp)
       (dired-next-line 1)))
-  (ranger-show-details)
+  (ranger-show-details-delayed)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
@@ -1118,6 +1127,16 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              )))
       (r--fset ranger-current-file entry nil t)
       (message "%s" msg))))
+
+(defun ranger-show-details-delayed ()
+  (if ranger-echo-delay
+      (unless (timerp ranger-echo-delay-timer)
+        (setq ranger-echo-delay-timer
+              (run-with-idle-timer
+               ranger-echo-delay nil
+               (lambda () (ranger-show-details)
+                 (setq ranger-echo-delay-timer nil)))))
+    (ranger-show-details)))
 
 
 
