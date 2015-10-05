@@ -293,7 +293,7 @@ succession."
 (defvar ranger-current-tab 1)
 
 (defvar ranger-current-file nil)
-;; (make-variable-buffer-local 'ranger-current-file)
+(make-variable-buffer-local 'ranger-current-file)
 
 (defvar ranger-child-name nil)
 (make-variable-buffer-local 'ranger-child-name)
@@ -1052,7 +1052,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (dired-next-line 1)
   (when (eobp)
     (dired-next-line -1))
-  (ranger-show-details-delayed)
+  (ranger-show-details)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
@@ -1063,7 +1063,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (unless ranger-modify-header
     (when (bobp)
       (dired-next-line 1)))
-  (ranger-show-details-delayed)
+  (ranger-show-details)
   (when ranger-preview-file
     (ranger-setup-preview)))
 
@@ -1072,9 +1072,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-show-size ()
   "Show directory size."
   (interactive)
-  (ranger-show-details t))
+  (ranger-details-message t))
 
-(defun ranger-show-details (&optional sizes)
+(defun ranger-details-message (&optional sizes)
   "Echo file details"
   (when (dired-get-filename nil t)
     (let* ((entry (dired-get-filename nil t))
@@ -1125,18 +1125,25 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              filemount
              position
              )))
-      (r--fset ranger-current-file entry nil t)
+      ;; (ranger-update-current-file)
       (message "%s" msg))))
 
-(defun ranger-show-details-delayed ()
+(defun ranger-show-details ()
+  (ranger-update-current-file)
   (if ranger-echo-delay
-      (unless (timerp ranger-echo-delay-timer)
-        (setq ranger-echo-delay-timer
-              (run-with-idle-timer
-               ranger-echo-delay nil
-               (lambda () (ranger-show-details)
-                 (setq ranger-echo-delay-timer nil)))))
-    (ranger-show-details)))
+      (or (and ranger-echo-delay-timer
+               (memq ranger-echo-delay-timer timer-idle-list))
+          (setq ranger-echo-delay-timer
+                (run-with-idle-timer
+                 ranger-echo-delay nil
+                 (lambda () (and ranger-mode (ranger-details-message))))))
+    (ranger-details-message)))
+
+(defun ranger-update-current-file ()
+  (r--fset ranger-current-file
+           (or
+            (dired-get-filename nil t)
+            dired-directory) nil t))
 
 
 
