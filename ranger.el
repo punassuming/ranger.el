@@ -991,30 +991,33 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-enable))
-        (progn
-          (ranger-disable)
-          (find-file find-name))))))
+          (find-file find-name)))))
 
-(defun ranger-open-file (&optional horizontal)
+(defun ranger-open-file (&optional mode)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
   (let ((marked-files (dired-get-marked-files)))
     (cl-loop for find-name in marked-files do
-             (when (and find-name
-                        (not (file-directory-p find-name)))
-               (cl-case horizontal
-                 ('frame
-                  (let ((goto-frame (make-frame)))
-                    (select-frame-set-input-focus goto-frame)))
-                 (t
-                  (ranger-disable)
-                  (split-window-right)
-                  (windmove-right))
-                 (nil
-                  (ranger-disable)
-                  (split-window-below)
-                  (windmove-down)))
-               (find-file find-name)))))
+             (let ((dir-p (file-directory-p find-name))
+                   (min (r--fget ranger-minimal)))
+               (when (and find-name)
+                 (cl-case mode
+                   ('frame
+                    (let ((goto-frame (make-frame)))
+                      (select-frame-set-input-focus goto-frame)))
+                   ('horizontal
+                    (when (or min (not  dir-p))
+                      (unless min
+                        (ranger-disable))
+                      (split-window-right)
+                      (windmove-right)))
+                   ('vertical
+                    (when (or min (not dir-p))
+                      (unless min
+                        (ranger-disable))
+                    (split-window-below)
+                    (windmove-down))))
+               (ranger-find-file find-name))))))
 
 ;; idea taken from http://ergoemacs.org/emacs/emacs_dired_open_file_in_ext_apps.html
 (defun ranger-open-in-external-app ()
@@ -1038,12 +1041,12 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-open-file-horizontally ()
   "Open current file as a split with previously opened window"
   (interactive)
-  (ranger-open-file t))
+  (ranger-open-file 'horizontal))
 
 (defun ranger-open-file-vertically ()
   "Open current file as a split with previously opened window"
   (interactive)
-  (ranger-open-file nil))
+  (ranger-open-file 'vertical))
 
 (defun ranger-open-file-frame ()
   "Open current file as a split with previously opened window"
