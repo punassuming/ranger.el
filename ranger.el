@@ -239,6 +239,7 @@ succession."
 ;; global variables
 
 (defvar ranger-sorting-switches nil)
+(defvar ranger-override-dired nil)
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
