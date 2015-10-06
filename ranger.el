@@ -240,6 +240,7 @@ succession."
 
 (defvar ranger-sorting-switches nil)
 (defvar ranger-override-dired nil)
+(defvar ranger-override-dired nil)
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
@@ -1657,13 +1658,13 @@ fraction of the total frame size"
       (ranger-enable)
     (progn
       ;; Try to manage new windows / frames created without killing ranger
-      (let ((ranger-window-props
-             (r--aget ranger-windows-alist
-                      (selected-window)))
-            (prev-buffer (car ranger-window-props))
-            (ranger-buffer (cdr ranger-window-props))
-            (current (current-buffer))
-            (buffer-fn (buffer-file-name (current-buffer))))
+      (let* ((ranger-window-props
+              (r--aget ranger-windows-alist
+                       (selected-window)))
+             (prev-buffer (car ranger-window-props))
+             (ranger-buffer (cdr ranger-window-props))
+             (current (current-buffer))
+             (buffer-fn (buffer-file-name (current-buffer))))
         (if buffer-fn
             (progn
               (message "File opened, exiting ranger")
