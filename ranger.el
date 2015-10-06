@@ -148,7 +148,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-show-literal t
+(defcustom ranger-show-literal nil
   "When non-nil it will show file literally."
   :group 'ranger
   :type 'boolean)
@@ -189,6 +189,11 @@
   :group 'ranger
   :type 'integer)
 
+(defcustom ranger-delay 0.2
+  "Time in seconds to delay running macro defined `-delayed' functions."
+  :group 'ranger
+  :type 'float)
+
 ;; header functions
 (defcustom ranger-header-func 'ranger-header-line
   "Function used to output header of primary ranger window.
@@ -215,10 +220,8 @@ Outputs a string that will show up on the header-line."
                 (const :tag "Roman numerals" :value roman)
                 (const :tag "Numbers only" :value numbers)))
 
-
 (defcustom ranger-override-dired nil
   "When non-nil, load `deer' whenever dired is loaded.")
-
 
 (defcustom ranger-dont-show-binary t
   "When non-nil, detect binary files and don't show them in the
@@ -635,6 +638,10 @@ the idle timer fires are ignored."
                        (lambda ()
                          (,func-sym)
                          (setq ,timer nil)))))))))
+
+;; define delayed functions
+(ranger-define-delayed ranger-show-details ranger-delay)
+(ranger-define-delayed ranger-setup-preview ranger-delay)
 
 
 ;;tabs
@@ -1185,9 +1192,6 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              )))
       (message "%s" msg))))
 
-(ranger-define-delayed ranger-show-details 0.2)
-(ranger-define-delayed ranger-setup-preview 0.2)
-
 (defun ranger-update-current-file ()
   (r--fset ranger-current-file
            (or
@@ -1598,8 +1602,8 @@ fraction of the total frame size"
   "Delete unmodified buffers and any dired buffer"
   (when
       (and (buffer-live-p buffer)
-           (or (eq 'dired-mode (buffer-local-value 'major-mode buffer))
-               (not (buffer-modified-p buffer))))
+           (eq 'dired-mode (buffer-local-value 'major-mode buffer)))
+               ;; (not (buffer-modified-p buffer))
     (kill-buffer buffer)))
 
 
