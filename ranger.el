@@ -315,12 +315,20 @@ succession."
 
 
 ;; mapping macro
-(defmacro ranger-map (key func)
+(defmacro ranger-map (key def &rest bindings)
   "Define macro to bind evil and emacs state for ranger"
-  `(progn
-     (eval-after-load 'evil
-       #'(evil-define-key 'normal ranger-mode-map ,key ,func))
-     (define-key ranger-mode-map ,key ,func)))
+  (declare (indent defun))
+  `(let* ((key ,key) (def ,def)
+          (bindings (list ,@bindings)) aux)
+     (while key
+       (with-eval-after-load 'evil
+         (setq aux (evil-get-auxiliary-keymap ranger-mode-map 'normal t))
+         (define-key aux key def))
+       (define-key ranger-mode-map key def)
+       (setq key (pop bindings)
+             def (pop bindings)))
+     (with-eval-after-load 'evil
+       (evil-set-keymap-prompt aux (keymap-prompt aux)))))
 
 ;; mappings
 (when ranger-key
@@ -332,17 +340,15 @@ succession."
   "Define mappings for ranger-mode."
 
   ;; make sure ranger normalizes current mappings
-  (when (featurep 'evil)
+  (with-eval-after-load 'evil
     ;; turn off evilified buffers for evilify usage
-    (progn
-      (when (and (fboundp 'evil-evilified-state-p)
-                 (evil-evilified-state-p))
-        (evil-evilified-state -1))
-      (evil-normal-state)
-      (evil-normalize-keymaps)
-      (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)))
+    (when (and (fboundp 'evil-evilified-state-p)
+               (evil-evilified-state-p))
+      (evil-evilified-state -1))
+    (evil-normal-state)
+    (evil-normalize-keymaps)
+    (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)
 
-  (with-eval-after-load "evil"
     ;; some evil specific bindings
     (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
     (evil-define-key 'normal ranger-mode-map
@@ -350,69 +356,66 @@ succession."
       "n"            'evil-search-next
       "N"            'evil-search-previous))
 
-  (ranger-map "?"           'ranger-help)
-  (ranger-map "'"           'ranger-show-size)
-  (ranger-map "!"           'shell-command)
-  (ranger-map "B"           'ranger-show-bookmarks)
-  (ranger-map "D"           'dired-do-delete)
-  (ranger-map "G"           'ranger-goto-bottom)
-  (ranger-map "H"           'ranger-prev-history)
-  (ranger-map "I"           'ranger-insert-subdir)
-  (ranger-map "J"           'ranger-next-subdir)
-  (ranger-map "K"           'ranger-prev-subdir)
-  (ranger-map "L"           'ranger-next-history)
-  (ranger-map "R"           'dired-do-rename)
-  (ranger-map "S"           'eshell)
-  (ranger-map "["           'ranger-prev-parent)
-  (ranger-map "]"           'ranger-next-parent)
-  (ranger-map "f"           'ranger-search-files)
-  (ranger-map "gg"          'ranger-goto-top)
-  (ranger-map "gh"          'ranger-go-home)
-  (ranger-map "h"           'ranger-up-directory)
-  (ranger-map "-"           'ranger-up-directory)
-  (ranger-map "i"           'ranger-preview-toggle)
-  (ranger-map "j"           'ranger-next-file)
-  (ranger-map "k"           'ranger-prev-file)
-  (ranger-map "l"           'ranger-find-file)
-  (ranger-map "m"           'ranger-create-mark)
-  (ranger-map "o"           'ranger-sort-criteria)
-  (ranger-map "ws"          'ranger-open-file-vertically)
-  (ranger-map "wv"          'ranger-open-file-horizontally)
-  (ranger-map "wf"          'ranger-open-file-frame)
-  (ranger-map "we"          'ranger-open-in-external-app)
-  (ranger-map "q"           'ranger-disable)
-  (ranger-map "u"           'dired-unmark)
-  (ranger-map "v"           'dired-toggle-marks)
-  (ranger-map "zz"          'ranger-show-history)
-
-  ;; copy and paste
-  (ranger-map "yy"          'ranger-copy)
-  (ranger-map "dd"          'ranger-cut)
-  (ranger-map "pp"          'ranger-paste)
-  (ranger-map "po"          'ranger-paste-over)
-  (ranger-map "p?"          'ranger-show-copy-contents)
-
-  ;; settings
-  (ranger-map "z+"          'ranger-more-parents)
-  (ranger-map "z-"          'ranger-less-parents)
-  (ranger-map "zh"          'ranger-toggle-dotfiles)
-  (ranger-map "zi"          'ranger-toggle-literal)
-  (ranger-map "zp"          'ranger-minimal-toggle)
-  (ranger-map "zf"          'ranger-toggle-scale-images)
-
-  ;; tabs
-  (ranger-map "gn"          'ranger-new-tab)
-  (ranger-map "gT"          'ranger-prev-tab)
-  (ranger-map "gt"          'ranger-next-tab)
-  (ranger-map "gc"          'ranger-close-tab)
-
-  (ranger-map (kbd "C-r")   'ranger-refresh)
-  (ranger-map (kbd "C-SPC") 'ranger-mark)
-  (ranger-map (kbd "TAB")   'ranger-mark)
-  (ranger-map (kbd "C-j")   'ranger-scroll-page-down)
-  (ranger-map (kbd "C-k")   'ranger-scroll-page-up)
-  (ranger-map (kbd "RET")   'ranger-find-file)
-  (ranger-map (kbd "`")     'ranger-goto-mark)
+  (ranger-map
+    "?"           'ranger-help
+    "'"           'ranger-show-size
+    "!"           'shell-command
+    "B"           'ranger-show-bookmarks
+    "D"           'dired-do-delete
+    "G"           'ranger-goto-bottom
+    "H"           'ranger-prev-history
+    "I"           'ranger-insert-subdir
+    "J"           'ranger-next-subdir
+    "K"           'ranger-prev-subdir
+    "L"           'ranger-next-history
+    "R"           'dired-do-rename
+    "S"           'ranger-pop-eshell
+    "["           'ranger-prev-parent
+    "]"           'ranger-next-parent
+    "f"           'ranger-search-files
+    "gg"          'ranger-goto-top
+    "gh"          'ranger-go-home
+    "h"           'ranger-up-directory
+    "-"           'ranger-up-directory
+    "i"           'ranger-preview-toggle
+    "j"           'ranger-next-file
+    "k"           'ranger-prev-file
+    "l"           'ranger-find-file
+    "m"           'ranger-create-mark
+    "o"           'ranger-sort-criteria
+    "ws"          'ranger-open-file-vertically
+    "wv"          'ranger-open-file-horizontally
+    "wf"          'ranger-open-file-frame
+    "we"          'ranger-open-in-external-app
+    "q"           'ranger-disable
+    "u"           'dired-unmark
+    "v"           'dired-toggle-marks
+    "zz"          'ranger-show-history
+    ;; copy and paste
+    "yy"          'ranger-copy
+    "dd"          'ranger-cut
+    "pp"          'ranger-paste
+    "po"          'ranger-paste-over
+    "p?"          'ranger-show-copy-contents
+    ;; settings
+    "z+"          'ranger-more-parents
+    "z-"          'ranger-less-parents
+    "zh"          'ranger-toggle-dotfiles
+    "zi"          'ranger-toggle-literal
+    "zp"          'ranger-minimal-toggle
+    "zf"          'ranger-toggle-scale-images
+    ;; tabs
+    "gn"          'ranger-new-tab
+    "gT"          'ranger-prev-tab
+    "gt"          'ranger-next-tab
+    "gc"          'ranger-close-tab
+    (kbd "C-r")   'ranger-refresh
+    (kbd "C-SPC") 'ranger-mark
+    (kbd "TAB")   'ranger-mark
+    (kbd "C-j")   'ranger-scroll-page-down
+    (kbd "C-k")   'ranger-scroll-page-up
+    (kbd "RET")   'ranger-find-file
+    (kbd "`")     'ranger-goto-mark)
 
 
   ;; and simulating search in standard emacs
@@ -530,6 +533,28 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                      (ranger--get-file-sizes fileset)
                      (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
                      ))))
+
+(defun ranger-pop-eshell (&optional arg)
+  (interactive)
+  (let* ((eshell-buffer-name "*eshell*")
+         (buf
+          (cond
+           ((numberp arg)
+            (get-buffer-create (format "%s<%d>"
+                                       eshell-buffer-name
+                                       arg)))
+           (arg
+            (generate-new-buffer eshell-buffer-name))
+           (t
+            (get-buffer-create eshell-buffer-name)
+            ))))
+    (cl-assert (and buf (buffer-live-p buf)))
+    (split-window-below)
+    (windmove-down)
+    (pop-to-buffer-same-window buf)
+    (unless (derived-mode-p 'eshell-mode)
+      (eshell-mode))
+    buf))
 
 
 ;;; frame parameter helpers
