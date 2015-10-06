@@ -219,12 +219,6 @@ Outputs a string that will show up on the header-line."
 (defcustom ranger-override-dired nil
   "When non-nil, load `deer' whenever dired is loaded.")
 
-(defcustom ranger-echo-delay 0.2
-  "Delay for echoing information for commands used in rapid
-succession."
-  :group 'ranger
-  :type 'integer)
-
 
 
 ;; declare used variables
@@ -282,8 +276,6 @@ succession."
 
 (defvar ranger-visited-buffers ()
   "List of buffers visited in ranger")
-
-(defvar ranger-echo-delay-timer nil)
 
 ;; frame specific variables
 (defvar ranger-minimal nil)
@@ -613,6 +605,30 @@ to not replace existing value."
 (defmacro r--aremove (alist key)
   "Remove KEY's key-value-pair from ALIST."
   `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
+
+
+;;; delayed function creation
+
+(defmacro ranger-define-delayed (func-sym delay)
+  "Define a delayed version of FUNC-SYM with delay time DELAY.
+When called, a delayed function only runs after the idle time
+specified by DELAY. Multiple calls to the same function before
+the idle timer fires are ignored."
+  (let* ((func-str (symbol-name func-sym))
+         (new-func (intern (format "%s-delayed" func-str)))
+         (time-var (intern (format "%s-delay-time" func-str)))
+         (timer (intern (format "%s-delay-timer" func-str))))
+    `(progn (defvar ,time-var ,delay)
+            (defvar ,timer nil)
+            (defun ,new-func ()
+              ,(format "Delayed version of %s" func-str)
+              (unless (timerp ,timer)
+                (setq ,timer
+                      (run-with-idle-timer
+                       ,delay nil
+                       (lambda ()
+                         (,func-sym)
+                         (setq ,timer nil)))))))))
 
 
 ;;tabs
@@ -1160,16 +1176,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              )))
       (message "%s" msg))))
 
-(defun ranger-show-details ()
-  (ranger-update-current-file)
-  (if ranger-echo-delay
-      (or (and ranger-echo-delay-timer
-               (memq ranger-echo-delay-timer timer-idle-list))
-          (setq ranger-echo-delay-timer
-                (run-with-idle-timer
-                 ranger-echo-delay nil
-                 (lambda () (and ranger-mode (ranger-details-message))))))
-    (ranger-details-message)))
+(ranger-define-delayed ranger-show-details 0.2)
 
 (defun ranger-update-current-file ()
   (r--fset ranger-current-file
