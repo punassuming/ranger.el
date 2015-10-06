@@ -179,10 +179,10 @@
   :group 'ranger
   :type 'float)
 
-(defcustom ranger-key "C-p"
+(defcustom ranger-key [?\C-p]
   "`dired-mode' key used to toggle `ranger-mode'"
   :group 'ranger
-  :type 'string)
+  :type 'sexp)
 
 (defcustom ranger-max-tabs 9
   "Maximum number of tabs to allow ranger to maintain."
@@ -331,8 +331,8 @@ preview window."
 ;; mappings
 (when ranger-key
   (with-eval-after-load "evil"
-    (evil-define-key 'normal dired-mode-map (kbd ranger-key) 'ranger-mode))
-  (define-key ranger-mode-map (kbd ranger-key) 'ranger-mode))
+    (evil-define-key 'normal dired-mode-map ranger-key 'ranger-mode))
+  (define-key ranger-mode-map ranger-key 'ranger-mode))
 
 (defun ranger-define-maps ()
   "Define mappings for ranger-mode."
@@ -1632,8 +1632,10 @@ fraction of the total frame size"
       ;; (r--aremove ranger-tabs-alist ranger-current-tab)
 
       ;; revert appearance
+      (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
       (ranger-revert-appearance (or buffer (current-buffer)))
       (ranger-revert-appearance ranger-buffer)
+      (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
 
       ;; if no more ranger frames
       (when (not (or (ranger-windows-exists-p)
