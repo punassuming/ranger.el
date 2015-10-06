@@ -225,6 +225,12 @@ succession."
   :group 'ranger
   :type 'integer)
 
+(defcustom ranger-dont-show-binary t
+  "When non-nil, detect binary files and don't show them in the
+preview window."
+  :group 'ranger
+  :type 'boolean)
+
 
 
 ;; declare used variables
@@ -1410,29 +1416,32 @@ is set, show literally instead of actual buffer."
                (member (file-name-extension entry-name)
                        ranger-excluded-extensions))
         (with-demoted-errors "%S"
-          (let* ((preview-window (display-buffer
-                                  (if (file-directory-p entry-name)
-                                      (ranger-dir-contents entry-name)
-                                    (ranger-preview-buffer entry-name))
-                                  `(ranger-display-buffer-at-side . ((side . right)
-                                                                     (slot . 1)
-                                                                     ;; (inhibit-same-window . t)
-                                                                     (window-width . ,(- ranger-width-preview
-                                                                                         (min
-                                                                                          (- ranger-max-parent-width
-                                                                                             ranger-width-parents)
-                                                                                          (* (- ranger-parent-depth 1)
-                                                                                             ranger-width-parents))))))))
-                 (preview-buffer
-                  (window-buffer preview-window)))
+          (let* ((dir (file-directory-p entry-name))
+                 (preview-buffer (if dir
+                                     (ranger-dir-contents entry-name)
+                                   (ranger-preview-buffer entry-name)))
+                 preview-window)
+            (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
+                   (setq preview-window
+                         (display-buffer
+                          preview-buffer
+                          `(ranger-display-buffer-at-side . ((side . right)
+                                                             (slot . 1)
+                                                             ;; (inhibit-same-window . t)
+                                                             (window-width . ,(- ranger-width-preview
+                                                                                 (min
+                                                                                  (- ranger-max-parent-width
+                                                                                     ranger-width-parents)
+                                                                                  (* (- ranger-parent-depth 1)
+                                                                                     ranger-width-parents)))))))))
 
-            (with-current-buffer preview-buffer
-              (when ranger-modify-header
-                (setq header-line-format `(:eval (,ranger-preview-header-func)))))
+                 (with-current-buffer preview-buffer
+                   (when ranger-modify-header
+                     (setq header-line-format `(:eval (,ranger-preview-header-func)))))
 
-            (add-to-list 'ranger-preview-buffers preview-buffer)
-            (setq ranger-preview-window preview-window)
-            (dired-hide-details-mode t)))))))
+                 (add-to-list 'ranger-preview-buffers preview-buffer)
+                 (setq ranger-preview-window preview-window)
+                 (dired-hide-details-mode t)))))))
 
 
 ;; utilities
@@ -1559,6 +1568,13 @@ fraction of the total frame size"
         (when (dired-get-filename t t)
           (subst-char-in-region (1- (point)) (point)
                                 (preceding-char) ?\s))))))
+
+;; Idea from http://emacs.stackexchange.com/questions/10277/make-emacs-automatically-open-binary-files-in-hexl-mode
+(defun ranger--prev-binary-p ()
+  (with-current-buffer "*ranger-prev*"
+    (save-excursion
+      (goto-char (point-min))
+      (search-forward (string ?\x00) nil t 1))))
 
 
 ;; cleanup and reversion
