@@ -843,22 +843,24 @@ ranger-`CHAR'."
 (defun ranger-preview-toggle ()
   "Toggle preview of selected file."
   (interactive)
-  (if ranger-preview-file
+  (if (r--fget ranger-minimal)
+      (message
+       "Currently in deer mode. Previews are disabled.")
+    (if ranger-preview-file
+        (progn
+          (when (and ranger-preview-window
+                     (window-live-p ranger-preview-window)
+                     (window-at-side-p ranger-preview-window 'right))
+            (ignore-errors
+              (delete-window ranger-preview-window)))
+          (dired-hide-details-mode -1)
+          (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+          (setq ranger-preview-file nil))
       (progn
-        (when (and ranger-preview-window
-                   (window-live-p ranger-preview-window)
-                   (window-at-side-p ranger-preview-window 'right))
-          (ignore-errors
-            (delete-window ranger-preview-window)))
-        (dired-hide-details-mode -1)
-        (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
-        (setq ranger-preview-file nil))
-    (progn
-      (setq ranger-preview-file t)
-      (dired-hide-details-mode t)
-      (setq dired-hide-details-hide-symlink-targets nil))
-    (ranger-setup-preview))
-  (ranger-show-details))
+        (setq ranger-preview-file t)
+        (dired-hide-details-mode t)
+        (setq dired-hide-details-hide-symlink-targets nil))
+      (ranger-setup-preview))))
 
 (defun ranger-toggle-scale-images ()
   "Show/hide dot-files."
@@ -1569,8 +1571,8 @@ fraction of the total frame size"
 
       (if minimal
           (when (and prev-buffer
-                 (buffer-live-p prev-buffer))
-        (switch-to-buffer prev-buffer))
+                     (buffer-live-p prev-buffer))
+            (switch-to-buffer prev-buffer))
         (when (and config
                    (window-configuration-p config))
           (set-window-configuration config)
@@ -1817,7 +1819,8 @@ fraction of the total frame size"
   "Setup header-line for ranger parent buffer."
   (substring (ranger--header-string) 0
              (+ (window-width ranger-window)
-                (if ranger-preview-file 2 0))))
+                (if (and (not (r--fget ranger-minimal))
+                         ranger-preview-file) 2 0))))
 
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
@@ -1827,20 +1830,20 @@ properly provides the modeline in dired mode. "
           (concat
            ;; (if buffer-read-only "<N>" "<I>")
            "Ranger:"
-            (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
-                    "mtime")
-                  ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
-                    "ctime")
-                  ((string-match "^-[^X]*X[^X]*$" dired-actual-switches)
-                    "ext")
-                  ((string-match "^-[^S]*S[^S]*$" dired-actual-switches)
-                    "size")
-                  ((string-match "^-[^SXUt]*$" dired-actual-switches)
-                    "name")
-                  (t
-                    dired-actual-switches))
-             (when (string-match "r" dired-actual-switches) " (r)")
-             ))
+           (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
+                  "mtime")
+                 ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
+                  "ctime")
+                 ((string-match "^-[^X]*X[^X]*$" dired-actual-switches)
+                  "ext")
+                 ((string-match "^-[^S]*S[^S]*$" dired-actual-switches)
+                  "size")
+                 ((string-match "^-[^SXUt]*$" dired-actual-switches)
+                  "name")
+                 (t
+                  dired-actual-switches))
+           (when (string-match "r" dired-actual-switches) " (r)")
+           ))
     (with-eval-after-load "diminish"
       (diminish 'ranger-mode)
       (diminish 'dired-omit-mode)
@@ -1942,7 +1945,7 @@ properly provides the modeline in dired mode. "
 
   (r--aput ranger-windows-alist
            (selected-window)
-           (cons 
+           (cons
             (car-safe (r--aget ranger-windows-alist (selected-window)))
             (current-buffer)))
 
