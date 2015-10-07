@@ -1129,6 +1129,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (dired-next-line -1))
   (ranger-show-details)
   (when ranger-preview-file
+    (when (get-buffer "*ranger-prev*")
+      (with-current-buffer "*ranger-prev*"
+        (erase-buffer)))
     (ranger-setup-preview-delayed)))
 
 (defun ranger-prev-file ()
@@ -1140,6 +1143,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
       (dired-next-line 1)))
   (ranger-show-details)
   (when ranger-preview-file
+    (when (get-buffer "*ranger-prev*")
+      (with-current-buffer "*ranger-prev*"
+        (erase-buffer)))
     (ranger-setup-preview-delayed)))
 
 (defun ranger--footer-spec ())
