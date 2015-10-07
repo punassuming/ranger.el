@@ -153,6 +153,16 @@
   :group 'ranger
   :type 'boolean)
 
+(defcustom ranger-listing-switches "-alGh"
+  "Default listing switchs for dired buffer."
+  :group 'ranger
+  :type 'string)
+
+(defcustom ranger-listing-dir-first t
+  "Non-nil modifies dired buffer to sort directories first."
+  :group 'ranger
+  :type 'boolean)
+
 (defcustom ranger-persistent-sort nil
   "When non-nil, sort all directories with the current flags."
   :group 'ranger
@@ -1931,7 +1941,8 @@ properly provides the modeline in dired mode. "
             (kill-whole-line)
           (forward-line 1))
         ;; check sorting mode and sort with directories first
-        (when (not (string-match "[XStU]+" switches))
+        (when (and ranger-listing-dir-first
+                   (not (string-match "[XStU]+" switches)))
           (if (string-match "r" switches)
               (sort-regexp-fields nil "^.*$" "[ ]*." (point) (point-max))
             (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max))))
@@ -2020,8 +2031,7 @@ properly provides the modeline in dired mode. "
   (setq ranger-preview-window nil)
 
   ;; hide groups, show human readable file sizes
-  ;; TODO add as defcustom
-  (setq dired-listing-switches "-alGh")
+  (setq dired-listing-switches ranger-listing-switches)
 
   (unless (r--fget ranger-minimal)
     (dired-hide-details-mode -1)
