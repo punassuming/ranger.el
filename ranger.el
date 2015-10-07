@@ -4,7 +4,7 @@
 ;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.8
+;; Version: 0.9.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
@@ -640,7 +640,7 @@ the idle timer fires are ignored."
                          (setq ,timer nil)))))))))
 
 ;; define delayed functions
-(ranger-define-delayed ranger-show-details ranger-delay)
+(ranger-define-delayed ranger-details-message ranger-delay)
 (ranger-define-delayed ranger-setup-preview ranger-delay)
 
 
@@ -1139,6 +1139,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (ranger-details-message t))
 
+(defun ranger-show-details ()
+  (ranger-update-current-file)
+  (ranger-details-message-delayed))
+
 (defun ranger-details-message (&optional sizes)
   "Echo file details"
   (when (dired-get-filename nil t)
@@ -1336,20 +1340,24 @@ slot)."
   (let ((temp-buffer (or (get-buffer "*ranger-prev*")
                          (generate-new-buffer "*ranger-prev*"))))
     (with-demoted-errors
-        (with-current-buffer temp-buffer
-          (make-local-variable 'font-lock-defaults)
-          (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
-          (erase-buffer)
-          (turn-on-font-lock)
-          (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
-          (goto-char (point-min))
-          ;; truncate lines in directory buffer
-          (setq truncate-lines t)
-          ;; remove . and .. from directory listing
-          (save-excursion
-            (while (re-search-forward "total used in directory\\|\\.$" nil t)
-              (kill-whole-line)))
-          (current-buffer)))))
+        (let ((inhibit-read-only t) (buffer-undo-list t) (inhibit-point-motion-hooks t)
+              before-change-functions after-change-functions deactivate-mark
+              buffer-file-name buffer-file-truename)
+          (unwind-protect
+              (with-current-buffer temp-buffer
+                (make-local-variable 'font-lock-defaults)
+                (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
+                (erase-buffer)
+                (turn-on-font-lock)
+                (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
+                (goto-char (point-min))
+                ;; truncate lines in directory buffer
+                (setq truncate-lines t)
+                ;; remove . and .. from directory listing
+                (save-excursion
+                  (while (re-search-forward "total used in directory\\|\\.$" nil t)
+                    (kill-whole-line)))
+                (current-buffer)))))))
 
 (defun ranger-preview-buffer (entry-name)
   "Create the preview buffer of `ENTRY-NAME'.  If `ranger-show-literal'
