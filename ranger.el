@@ -1340,24 +1340,22 @@ slot)."
   (let ((temp-buffer (or (get-buffer "*ranger-prev*")
                          (generate-new-buffer "*ranger-prev*"))))
     (with-demoted-errors
-        (let ((inhibit-read-only t) (buffer-undo-list t) (inhibit-point-motion-hooks t)
-              before-change-functions after-change-functions deactivate-mark
-              buffer-file-name buffer-file-truename)
-          (unwind-protect
-              (with-current-buffer temp-buffer
-                (make-local-variable 'font-lock-defaults)
-                (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
-                (erase-buffer)
-                (turn-on-font-lock)
-                (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
-                (goto-char (point-min))
-                ;; truncate lines in directory buffer
-                (setq truncate-lines t)
-                ;; remove . and .. from directory listing
-                (save-excursion
-                  (while (re-search-forward "total used in directory\\|\\.$" nil t)
-                    (kill-whole-line)))
-                (current-buffer)))))))
+          (with-current-buffer temp-buffer
+            (make-local-variable 'font-lock-defaults)
+            (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
+            (buffer-disable-undo)
+            (setq buffer-undo-list t)
+            (erase-buffer)
+            (turn-on-font-lock)
+            (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
+            (goto-char (point-min))
+            ;; truncate lines in directory buffer
+            (setq truncate-lines t)
+            ;; remove . and .. from directory listing
+            (save-excursion
+              (while (re-search-forward "total used in directory\\|\\.$" nil t)
+                (kill-whole-line)))
+            (current-buffer)))))
 
 (defun ranger-preview-buffer (entry-name)
   "Create the preview buffer of `ENTRY-NAME'.  If `ranger-show-literal'
@@ -1367,6 +1365,7 @@ is set, show literally instead of actual buffer."
       (let ((temp-buffer (or (get-buffer "*ranger-prev*")
                              (generate-new-buffer "*ranger-prev*"))))
         (with-current-buffer temp-buffer
+          (buffer-disable-undo)
           (erase-buffer)
           (font-lock-mode -1)
           (insert-file-contents entry-name)
