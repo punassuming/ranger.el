@@ -1368,6 +1368,7 @@ slot)."
           (make-local-variable 'font-lock-defaults)
           (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
           (buffer-disable-undo)
+          (setq-local cursor-type nil)
           (setq buffer-undo-list t)
           (erase-buffer)
           (turn-on-font-lock)
@@ -1390,6 +1391,7 @@ is set, show literally instead of actual buffer."
                              (generate-new-buffer "*ranger-prev*"))))
         (with-current-buffer temp-buffer
           (buffer-disable-undo)
+          (setq-local cursor-type nil)
           (erase-buffer)
           (font-lock-mode -1)
           (insert-file-contents entry-name)
