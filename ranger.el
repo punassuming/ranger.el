@@ -1594,10 +1594,11 @@ fraction of the total frame size"
 
 ;; Idea from http://emacs.stackexchange.com/questions/10277/make-emacs-automatically-open-binary-files-in-hexl-mode
 (defun ranger--prev-binary-p ()
-  (with-current-buffer "*ranger-prev*"
-    (save-excursion
-      (goto-char (point-min))
-      (search-forward (string ?\x00) nil t 1))))
+  (when (get-buffer "*ranger-prev*")
+    (with-current-buffer "*ranger-prev*"
+      (save-excursion
+        (goto-char (point-min))
+        (search-forward (string ?\x00) nil t 1)))))
 
 
 ;; cleanup and reversion
