@@ -1008,7 +1008,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-enable))
-          (find-file find-name)))))
+        (find-file find-name)))))
 
 (defun ranger-open-file (&optional mode)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
@@ -1032,9 +1032,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                     (when (or min (not dir-p))
                       (unless min
                         (ranger-disable))
-                    (split-window-below)
-                    (windmove-down))))
-               (ranger-find-file find-name))))))
+                      (split-window-below)
+                      (windmove-down))))
+                 (ranger-find-file find-name))))))
 
 ;; idea taken from http://ergoemacs.org/emacs/emacs_dired_open_file_in_ext_apps.html
 (defun ranger-open-in-external-app ()
@@ -1157,24 +1157,31 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Echo file details"
   (when (dired-get-filename nil t)
     (let* ((entry (dired-get-filename nil t))
+           ;; enable to troubleshoot speeds
+           ;; (sizes t)
            (filename (file-name-nondirectory entry))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
            (file-size (file-size-human-readable (nth 7 fattr)))
-           (dir-size (if sizes (ranger--get-file-sizes
-                                (list dired-directory))
+           (dir-size (if sizes (concat "Dir " (ranger--get-file-sizes
+                                               (list dired-directory)))
                        ""))
            (user (nth 2 fattr))
            (filemount
-            (mapconcat
-             (lambda (n)
-               (format "%s"
-                       (nth 0 n)
-                       ;; (nth 1 n)
-                       ;; (nth 2 n)
-                       ))
-             (ranger--get-mount-partitions)
-             " "))
+            (if sizes 
+                (or (let ((index 0)
+                          size
+                          return)
+                      (dolist (mount (ranger--get-mount-partitions 'mount)
+                                     return)
+                        (when (string-match (concat "^" mount "/.*") entry)
+                          (setq size
+                                (nth index
+                                     (ranger--get-mount-partitions 'avail)))
+                          (setq return (format "Free %s (%s)" size mount)))
+                        (setq index (+ index 1))
+                        ))
+                    "") ""))
            (filedir-size (if sizes (ranger--get-file-sizes
                                     (ranger--get-file-listing dired-directory))
                            ""))
@@ -1190,6 +1197,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (space (- fwidth
                      (max 8
                           (length file-size))
+                     (max 8
+                          (length dir-size))
                      (length position)
                      (length filemount)
                      (length file-date)
@@ -1197,10 +1206,11 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (message-log-max nil)
            (msg
             (format
-             (format  "%%s %%s %%%ds %%s %%s" space)
+             (format  "%%s %%s %%%ds %%s %%s %%s" space)
              (propertize file-date 'face 'font-lock-warning-face)
              file-perm
              file-size
+             dir-size
              filemount
              position
              )))
@@ -1350,22 +1360,22 @@ slot)."
   (let ((temp-buffer (or (get-buffer "*ranger-prev*")
                          (generate-new-buffer "*ranger-prev*"))))
     (with-demoted-errors
-          (with-current-buffer temp-buffer
-            (make-local-variable 'font-lock-defaults)
-            (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
-            (buffer-disable-undo)
-            (setq buffer-undo-list t)
-            (erase-buffer)
-            (turn-on-font-lock)
-            (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
-            (goto-char (point-min))
-            ;; truncate lines in directory buffer
-            (setq truncate-lines t)
-            ;; remove . and .. from directory listing
-            (save-excursion
-              (while (re-search-forward "total used in directory\\|\\.$" nil t)
-                (kill-whole-line)))
-            (current-buffer)))))
+        (with-current-buffer temp-buffer
+          (make-local-variable 'font-lock-defaults)
+          (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
+          (buffer-disable-undo)
+          (setq buffer-undo-list t)
+          (erase-buffer)
+          (turn-on-font-lock)
+          (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
+          (goto-char (point-min))
+          ;; truncate lines in directory buffer
+          (setq truncate-lines t)
+          ;; remove . and .. from directory listing
+          (save-excursion
+            (while (re-search-forward "total used in directory\\|\\.$" nil t)
+              (kill-whole-line)))
+          (current-buffer)))))
 
 (defun ranger-preview-buffer (entry-name)
   "Create the preview buffer of `ENTRY-NAME'.  If `ranger-show-literal'
@@ -1454,26 +1464,26 @@ is set, show literally instead of actual buffer."
                                    (ranger-preview-buffer entry-name)))
                  preview-window)
             (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
-                   (setq preview-window
-                         (display-buffer
-                          preview-buffer
-                          `(ranger-display-buffer-at-side . ((side . right)
-                                                             (slot . 1)
-                                                             ;; (inhibit-same-window . t)
-                                                             (window-width . ,(- ranger-width-preview
-                                                                                 (min
-                                                                                  (- ranger-max-parent-width
-                                                                                     ranger-width-parents)
-                                                                                  (* (- ranger-parent-depth 1)
-                                                                                     ranger-width-parents)))))))))
+              (setq preview-window
+                    (display-buffer
+                     preview-buffer
+                     `(ranger-display-buffer-at-side . ((side . right)
+                                                        (slot . 1)
+                                                        ;; (inhibit-same-window . t)
+                                                        (window-width . ,(- ranger-width-preview
+                                                                            (min
+                                                                             (- ranger-max-parent-width
+                                                                                ranger-width-parents)
+                                                                             (* (- ranger-parent-depth 1)
+                                                                                ranger-width-parents)))))))))
 
-                 (with-current-buffer preview-buffer
-                   (when ranger-modify-header
-                     (setq header-line-format `(:eval (,ranger-preview-header-func)))))
+            (with-current-buffer preview-buffer
+              (when ranger-modify-header
+                (setq header-line-format `(:eval (,ranger-preview-header-func)))))
 
-                 (add-to-list 'ranger-preview-buffers preview-buffer)
-                 (setq ranger-preview-window preview-window)
-                 (dired-hide-details-mode t)))))))
+            (add-to-list 'ranger-preview-buffers preview-buffer)
+            (setq ranger-preview-window preview-window)
+            (dired-hide-details-mode t)))))))
 
 
 ;; utilities
@@ -1498,25 +1508,24 @@ is set, show literally instead of actual buffer."
                   (re-search-backward "\\(^[0-9.,]+[A-Za-z]+\\).*total$")
                   (match-string 1)))) ""))
 
-(defun ranger--get-mount-partitions ()
-  "Determine file size of provided list of files in `FILESET'."
+(defun ranger--get-mount-partitions (mode)
+  "Determine device information."
   (if (executable-find "df")
       (with-temp-buffer
-        (apply 'call-process "df" nil t t (list  "-h" "--output=target,avail,size"))
-        (let ((first-line 0))
-          (cl-loop for line in
-                   (split-string
-                    (replace-regexp-in-string
-                     "[ \t]+" " "
-                     (replace-regexp-in-string
-                      "\n$"
-                      "" (buffer-string))) "[\n\r]+")
-                   do (setq  first-line (+ first-line 1))
-                   with test = ()
-                   for test = (split-string line "[ \t]+")
-                   when (> first-line 1) collect test)))
-    '((""))))
-
+        (apply 'call-process "df" nil t t
+               (list  "-h"
+                      (concat "--output="
+                              (cl-case mode
+                                ('mount
+                                 (if (eq system-type 'windows-nt)
+                                     "source"
+                                   "target"))
+                                ('avail "avail")
+                                ('size "size")))))
+        (nreverse
+         (cdr (split-string
+               (replace-regexp-in-string "\n$" "" (buffer-string)) "[\n\r]+"))))
+    ()))
 
 (defun ranger--get-file-listing (dir)
   "Return listing of files in dired directory."
@@ -1621,7 +1630,7 @@ fraction of the total frame size"
   (when
       (and (buffer-live-p buffer)
            (eq 'dired-mode (buffer-local-value 'major-mode buffer)))
-               ;; (not (buffer-modified-p buffer))
+    ;; (not (buffer-modified-p buffer))
     (kill-buffer buffer)))
 
 
