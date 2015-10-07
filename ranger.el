@@ -1162,9 +1162,13 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (filename (file-name-nondirectory entry))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
-           (file-size (file-size-human-readable (nth 7 fattr)))
+           (file-size (concat "File "
+                              (file-size-human-readable (nth 7 fattr))))
            (dir-size (if sizes (concat "Dir " (ranger--get-file-sizes
-                                               (list dired-directory)))
+                                               (ranger--get-file-listing
+                                                dired-directory)
+                                               ;; (list dired-directory)
+                                               ))
                        ""))
            (user (nth 2 fattr))
            (filemount
@@ -1178,7 +1182,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                           (setq size
                                 (nth index
                                      (ranger--get-mount-partitions 'avail)))
-                          (setq return (format "Free %s (%s)" size mount)))
+                          (setq return (format "Free%s (%s)" size mount)))
                         (setq index (+ index 1))
                         ))
                     "") ""))
