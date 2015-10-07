@@ -148,7 +148,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-show-literal nil
+(defcustom ranger-show-literal t
   "When non-nil it will show file literally."
   :group 'ranger
   :type 'boolean)
