@@ -239,6 +239,12 @@ preview window."
   :group 'ranger
   :type 'boolean)
 
+(defcustom ranger-hide-cursor t
+  "When non-nil, hide cursor in dired buffers."
+  :group 'ranger
+  :type 'boolean)
+
+
 
 ;; declare used variables
 (defvar ranger-mode)
@@ -1076,7 +1082,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (let ((find-name (dired-get-filename nil t)))
     (if (file-directory-p find-name)
         (progn
-          (setq header-line-format nil)
+          ;; (setq header-line-format nil)
           (setq ranger-subdir-p t)
           (dired-insert-subdir find-name)
           (revert-buffer)
@@ -1305,7 +1311,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (when (member window ranger-parent-windows)
              ;; select-window needed for hl-line
              (select-window window)
-             (ranger-parent-child-select))))
+             (ranger-parent-child-select)
+             (when ranger-hide-cursor
+               (setq cursor-type nil))
+               )))
        nil nil 'nomini))
 
     (select-window ranger-window)
@@ -1374,8 +1383,7 @@ slot)."
           (make-local-variable 'font-lock-defaults)
           (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
           (buffer-disable-undo)
-          (setq-local cursor-type nil)
-          (setq buffer-undo-list t)
+          (setq cursor-type nil)
           (erase-buffer)
           (turn-on-font-lock)
           (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
@@ -1397,7 +1405,7 @@ is set, show literally instead of actual buffer."
                              (generate-new-buffer "*ranger-prev*"))))
         (with-current-buffer temp-buffer
           (buffer-disable-undo)
-          (setq-local cursor-type nil)
+          (setq cursor-type nil)
           (erase-buffer)
           (font-lock-mode -1)
           (insert-file-contents entry-name)
@@ -1490,8 +1498,12 @@ is set, show literally instead of actual buffer."
                                                                                 ranger-width-parents)))))))))
 
             (with-current-buffer preview-buffer
+              (setq cursor-type nil)
               (when ranger-modify-header
                 (setq header-line-format `(:eval (,ranger-preview-header-func)))))
+
+            (when (and buffer-read-only ranger-hide-cursor)
+              (setq cursor-type nil))
 
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
@@ -2035,9 +2047,6 @@ properly provides the modeline in dired mode. "
   ;; specified from running `ranger'
   (ranger-save-window-config)
 
-  ;; reset subdir optiona
-  (setq ranger-subdir-p nil)
-
   ;; ranger specific objects
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
@@ -2094,11 +2103,17 @@ properly provides the modeline in dired mode. "
   ;; scroll back to left in case new windows affected primary buffer
   (set-window-hscroll ranger-window 0)
 
+  ;; reset subdir optiona
+  (setq ranger-subdir-p nil)
+
   (when ranger-modify-header
     (setq header-line-format `(:eval (,ranger-header-func))))
 
   (ranger-show-details)
-  (ranger-set-modeline))
+  (ranger-set-modeline)
+  (when (and buffer-read-only ranger-hide-cursor)
+    (setq cursor-type nil))
+  )
 
 (when ranger-override-dired
   (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
