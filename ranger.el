@@ -244,7 +244,6 @@ preview window."
   :group 'ranger
   :type 'boolean)
 
-
 
 ;; declare used variables
 (defvar ranger-mode)
@@ -329,6 +328,92 @@ preview window."
 
 ;; maps
 (defvar ranger-mode-map (make-sparse-keymap))
+
+
+;;; frame parameter helpers
+
+(defmacro r--fget (var &optional frame)
+  "Return the value of `VAR', looks for buffer local version first."
+  (let ((parameter (intern (format "%s" var))))
+    `(or
+      (when (local-variable-if-set-p (quote ,parameter))
+        (buffer-local-value (quote ,parameter) (current-buffer)))
+      (frame-parameter ,frame (quote ,parameter))
+      ,var)))
+
+(defmacro r--fset (var val &optional frame buffer-local)
+  "Set the value of `VAR' in local buffer and on frame. When `BUFFER-LOCAL' is
+non-nil, set buffer local variable as well."
+  (let ((parameter (intern (format "%s" var))))
+    `(progn
+       (when ,buffer-local
+         (set (make-local-variable (quote ,parameter)) ,val))
+       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
+       ;; (message "%s" (frame-parameter nil ,parameter))
+       )))
+
+(defmacro r--fclear (parameter)
+  `(r--fset ,parameter nil))
+
+;; (message "%s:%s:%s:%s:%s"
+;;          (r--fget ranger-minimal)
+;;          (r--fget ranger-current-file)
+;;          (frame-parameter nil 'ranger-minimal)
+;;          (buffer-local-value ranger-minimal (current-buffer))
+;;          ranger-minimal)
+
+;;; alist helpers
+
+(defun r--aget (alist key)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (cdr-safe (assoc key alist)))
+
+(defun r--akeys (alist)
+  "Return the value of KEY in ALIST. Uses `assoc'.
+If PARAM is not found, return nil."
+  (mapcar 'car alist))
+
+(defmacro r--aput (alist key value &optional no-overwrite)
+  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
+to not replace existing value."
+  `(let ((sublist (assoc ,key ,alist)))
+     (if sublist
+         (unless ,no-overwrite
+           (setcdr sublist ,value))
+       (push (cons ,key ,value) ,alist))))
+
+(defmacro r--aremove (alist key)
+  "Remove KEY's key-value-pair from ALIST."
+  `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
+
+
+;; data structures
+(cl-defstruct (ranger-window (:constructor ranger--track-window))
+  prev-buffer curr-buffer curr-tab history)
+
+
+(defun ranger-track-window (window &optional prev curr tab)
+  (let ((new-win 
+         (ranger--track-window
+          :prev-buffer prev
+          :curr-buffer curr
+          :curr-tab tab 
+          :history (make-ring ranger-history-length))))
+    (r--aput ranger-windows-alist
+             window
+             new-win)))
+
+(cl-defstruct (ranger-tab (:constructor ranger--new-tab)) name path)
+
+(defun ranger-make-tab (index name path)
+  (let ((new-tab (ranger--new-tab :name name :path path)))
+    (r--aput ranger-tabs-alist
+             index
+             new-tab)))
+
+;; (ranger-track-window (selected-window) (current-buffer) (current-buffer) 1)
+;; (ranger-make-tab 2 "hsello" "d:/tabs")
 
 
 ;; mapping macro
@@ -573,63 +658,6 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
       (eshell-mode))
     buf))
 
-
-;;; frame parameter helpers
-
-(defmacro r--fget (var &optional frame)
-  "Return the value of `VAR', looks for buffer local version first."
-  (let ((parameter (intern (format "%s" var))))
-    `(or
-      (when (local-variable-if-set-p (quote ,parameter))
-        (buffer-local-value (quote ,parameter) (current-buffer)))
-      (frame-parameter ,frame (quote ,parameter))
-      ,var)))
-
-(defmacro r--fset (var val &optional frame buffer-local)
-  "Set the value of `VAR' in local buffer and on frame. When `BUFFER-LOCAL' is
-non-nil, set buffer local variable as well."
-  (let ((parameter (intern (format "%s" var))))
-    `(progn
-       (when ,buffer-local
-         (set (make-local-variable (quote ,parameter)) ,val))
-       (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
-       ;; (message "%s" (frame-parameter nil ,parameter))
-       )))
-
-(defmacro r--fclear (parameter)
-  `(r--fset ,parameter nil))
-
-;; (message "%s:%s:%s:%s:%s"
-;;          (r--fget ranger-minimal)
-;;          (r--fget ranger-current-file)
-;;          (frame-parameter nil 'ranger-minimal)
-;;          (buffer-local-value ranger-minimal (current-buffer))
-;;          ranger-minimal)
-
-;;; alist helpers
-
-(defun r--aget (alist key)
-  "Return the value of KEY in ALIST. Uses `assoc'.
-If PARAM is not found, return nil."
-  (cdr-safe (assoc key alist)))
-
-(defun r--akeys (alist)
-  "Return the value of KEY in ALIST. Uses `assoc'.
-If PARAM is not found, return nil."
-  (mapcar 'car alist))
-
-(defmacro r--aput (alist key value &optional no-overwrite)
-  "Remove key from alist and set key with value. Set `NO-OVERWRITE' to non-nil
-to not replace existing value."
-  `(let ((sublist (assoc ,key ,alist)))
-     (if sublist
-         (unless ,no-overwrite
-           (setcdr sublist ,value))
-       (push (cons ,key ,value) ,alist))))
-
-(defmacro r--aremove (alist key)
-  "Remove KEY's key-value-pair from ALIST."
-  `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
 
 
 ;;; delayed function creation
