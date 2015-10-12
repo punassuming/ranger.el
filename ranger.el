@@ -264,13 +264,13 @@ preview window."
 (defvar ranger-buffer nil)
 (defvar ranger-frame nil)
 
-(defvar ranger-windows-alist ()
+(defvar ranger-w-alist ()
   "List of windows using ranger")
 
-(defvar ranger-frames-alist ()
+(defvar ranger-f-alist ()
   "List of frames using ranger")
 
-(defvar ranger-tabs-alist ()
+(defvar ranger-t-alist ()
   "List of tabs to keep track of in ranger.")
 
 (defvar ranger-history-index 0)
@@ -400,7 +400,7 @@ to not replace existing value."
           :curr-buffer curr
           :curr-tab tab 
           :history (make-ring ranger-history-length))))
-    (r--aput ranger-windows-alist
+    (r--aput ranger-w-alist
              window
              new-win)))
 
@@ -408,7 +408,7 @@ to not replace existing value."
 
 (defun ranger-make-tab (index name path)
   (let ((new-tab (ranger--new-tab :name name :path path)))
-    (r--aput ranger-tabs-alist
+    (r--aput ranger-t-alist
              index
              new-tab)))
 
@@ -423,13 +423,13 @@ to not replace existing value."
   `(let* ((key ,key) (def ,def)
           (bindings (list ,@bindings)) aux)
      (while key
-       (with-eval-after-load 'evil
+       (with-eval-after-load "evil"
          (setq aux (evil-get-auxiliary-keymap ranger-mode-map 'normal t))
          (define-key aux key def))
        (define-key ranger-mode-map key def)
        (setq key (pop bindings)
              def (pop bindings)))
-     (with-eval-after-load 'evil
+     (with-eval-after-load "evil"
        (evil-set-keymap-prompt aux (keymap-prompt aux)))))
 
 ;; mappings
@@ -442,7 +442,7 @@ to not replace existing value."
   "Define mappings for ranger-mode."
 
   ;; make sure ranger normalizes current mappings
-  (with-eval-after-load 'evil
+  (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
     (when (and (fboundp 'evil-evilified-state-p)
                (evil-evilified-state-p))
@@ -693,7 +693,7 @@ the idle timer fires are ignored."
 (defun ranger--available-tabs ()
   "Returns list of unused tabs."
   (let* ((tabs
-          (r--akeys ranger-tabs-alist))
+          (r--akeys ranger-t-alist))
          (total-tabs
           (number-sequence 1 ranger-max-tabs))
          (available-tabs
@@ -720,12 +720,12 @@ the idle timer fires are ignored."
   (let ((index (or index
                    ranger-current-tab)))
     (when index
-      (r--aremove ranger-tabs-alist index)
+      (r--aremove ranger-t-alist index)
       (ranger-prev-tab))))
 
 (defun ranger-other-tab (dir &optional index)
   (interactive)
-  (let* ((tabs (r--akeys ranger-tabs-alist))
+  (let* ((tabs (r--akeys ranger-t-alist))
          (tab ranger-current-tab)
          (target index))
     (while (and
@@ -753,13 +753,13 @@ the idle timer fires are ignored."
   (let ((entry dired-directory)
         (relative (substring (ranger--dir-relative) 0 -1)))
     (when entry
-      (r--aput ranger-tabs-alist
+      (r--aput ranger-t-alist
                index
                (cons relative entry)))))
 
 (defun ranger-goto-tab (index)
   (interactive)
-  (let ((tab (r--aget ranger-tabs-alist index)))
+  (let ((tab (r--aget ranger-t-alist index)))
     (when tab
       (setq ranger-current-tab index)
       (ranger-find-file (cdr tab)))))
@@ -1010,16 +1010,16 @@ ranger-`CHAR'."
       (ranger-find-file parent)
       (dired-goto-file current))))
 
-(defun ranger-save-window-config (&optional overwrite)
+(defun ranger-save-window-settings (&optional overwrite)
   (let ((frame (window-frame))
         (window (selected-window))
         (minimal (r--fget ranger-minimal)))
     (unless minimal
-      (r--aput ranger-frames-alist
+      (r--aput ranger-f-alist
                frame
                (current-window-configuration)
                (null overwrite)))
-    (r--aput ranger-windows-alist
+    (r--aput ranger-w-alist
              window
              (cons (current-buffer) nil)
              (null overwrite))))
@@ -1034,7 +1034,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (ranger-save-window-config)
+            (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
             (find-file find-name)
@@ -1693,18 +1693,18 @@ fraction of the total frame size"
 
   (let* ((minimal (r--fget ranger-minimal))
          (ranger-window-props
-          (r--aget ranger-windows-alist
+          (r--aget ranger-w-alist
                    (selected-window)))
          (prev-buffer (car ranger-window-props))
          (ranger-buffer (cdr ranger-window-props))
          (config
-          (r--aget ranger-frames-alist
+          (r--aget ranger-f-alist
                    (window-frame))))
 
     (when (or config
               prev-buffer)
 
-      (r--aremove ranger-windows-alist (selected-window))
+      (r--aremove ranger-w-alist (selected-window))
 
       (if minimal
           (when (and prev-buffer
@@ -1713,9 +1713,9 @@ fraction of the total frame size"
         (when (and config
                    (window-configuration-p config))
           (set-window-configuration config)
-          (r--aremove ranger-frames-alist (window-frame))))
+          (r--aremove ranger-f-alist (window-frame))))
 
-      ;; (r--aremove ranger-tabs-alist ranger-current-tab)
+      ;; (r--aremove ranger-t-alist ranger-current-tab)
 
       ;; revert appearance
       (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
@@ -1755,8 +1755,8 @@ fraction of the total frame size"
         (when (get-buffer "*ranger-prev*")
           (kill-buffer (get-buffer "*ranger-prev*")))
 
-        (setq ranger-frames-alist ())
-        (setq ranger-windows-alist ())
+        (setq ranger-f-alist ())
+        (setq ranger-w-alist ())
 
         ;; clear variables
         (setq ranger-preview-buffers ()
@@ -1796,7 +1796,7 @@ fraction of the total frame size"
     (progn
       ;; Try to manage new windows / frames created without killing ranger
       (let* ((ranger-window-props
-              (r--aget ranger-windows-alist
+              (r--aget ranger-w-alist
                        (selected-window)))
              (prev-buffer (car ranger-window-props))
              (ranger-buffer (cdr ranger-window-props))
@@ -1817,12 +1817,12 @@ fraction of the total frame size"
   "Detect when ranger-window is no longer part of ranger-mode"
   (let* ((windows (window-list))
          (ranger-window-props
-          (r--aget ranger-windows-alist
+          (r--aget ranger-w-alist
                    (selected-window)))
          (prev-buffer (car ranger-window-props))
          (ranger-buffer (cdr ranger-window-props))
-         (ranger-windows (r--akeys ranger-windows-alist))
-         (ranger-frames (r--akeys ranger-frames-alist)))
+         (ranger-windows (r--akeys ranger-w-alist))
+         (ranger-frames (r--akeys ranger-f-alist)))
     ;; if all frames and windows are killed, revert buffer settings
     (if (not  (or (ranger-windows-exists-p)
                   (ranger-frame-exists-p)))
@@ -1841,7 +1841,7 @@ fraction of the total frame size"
   "Test if any ranger-windows are live."
   (if (delq nil
             (mapcar 'window-live-p
-                    (r--akeys ranger-windows-alist)))
+                    (r--akeys ranger-w-alist)))
       t
     nil))
 
@@ -1849,7 +1849,7 @@ fraction of the total frame size"
   "Test if any ranger-frames are live."
   (if (delq nil
             (mapcar 'frame-live-p
-                    (r--akeys ranger-frames-alist)))
+                    (r--akeys ranger-f-alist)))
       t
     nil))
 
@@ -1877,10 +1877,10 @@ fraction of the total frame size"
 
 (defun ranger--header-tabs ()
   (let* ((curr ranger-current-tab)
-         (tabs (sort (r--akeys ranger-tabs-alist) '<)))
+         (tabs (sort (r--akeys ranger-t-alist) '<)))
     (mapconcat
      (lambda (key)
-       (let* ((item (r--aget ranger-tabs-alist key))
+       (let* ((item (r--aget ranger-t-alist key))
               (roman (ranger--ar2ro key))
               (value (car-safe item))
               ret)
@@ -1912,7 +1912,7 @@ fraction of the total frame size"
             ;; (if ranger-show-literal "raw" "act")
             ranger-parent-depth)
     'face 'font-lock-comment-face)
-   (when (> (length ranger-tabs-alist) 1)
+   (when (> (length ranger-t-alist) 1)
      (format "| %s"
              (ranger--header-tabs)))))
 
@@ -2073,17 +2073,17 @@ properly provides the modeline in dired mode. "
 
   ;; save window-config for frame unless already
   ;; specified from running `ranger'
-  (ranger-save-window-config)
+  (ranger-save-window-settings)
 
   ;; ranger specific objects
   (setq ranger-buffer (current-buffer))
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
 
-  (r--aput ranger-windows-alist
+  (r--aput ranger-w-alist
            (selected-window)
            (cons
-            (car-safe (r--aget ranger-windows-alist (selected-window)))
+            (car-safe (r--aget ranger-w-alist (selected-window)))
             (current-buffer)))
 
   (setq ranger-preview-window nil)
@@ -2094,9 +2094,6 @@ properly provides the modeline in dired mode. "
   (unless (r--fget ranger-minimal)
     (dired-hide-details-mode -1)
     (delete-other-windows))
-
-  ;; CHANGE - removed
-  ;; (dired-sort-other dired-listing-switches)
 
   ;; consider removing
   (auto-revert-mode)
@@ -2121,7 +2118,7 @@ properly provides the modeline in dired mode. "
   (ranger-hide-dotfiles)
 
   ;; open new tab if ranger is in multiple frames.
-  (if (> (length ranger-frames-alist) 1)
+  (if (> (length ranger-f-alist) 1)
       (ranger-new-tab nil t)
     (ranger-update-tab ranger-current-tab))
 
@@ -2140,8 +2137,7 @@ properly provides the modeline in dired mode. "
   (ranger-show-details)
   (ranger-set-modeline)
   (when (and buffer-read-only ranger-hide-cursor)
-    (setq cursor-type nil))
-  )
+    (setq cursor-type nil)))
 
 (when ranger-override-dired
   (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
@@ -2149,7 +2145,7 @@ properly provides the modeline in dired mode. "
 ;;;###autoload
 (defun ranger-override-dired-fn ()
   "Open dired as deer unless already in ranger-mode"
-  (let ((ranger-windows (r--akeys ranger-windows-alist)))
+  (let ((ranger-windows (r--akeys ranger-w-alist)))
     (unless (memq (selected-window) ranger-windows)
       ;; (message "Override attempted")
       (deer))))
