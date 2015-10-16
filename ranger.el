@@ -1037,7 +1037,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
-            (find-file find-name)
+            (switch-to-buffer
+             (dired-noselect find-name))
             (if minimal
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
