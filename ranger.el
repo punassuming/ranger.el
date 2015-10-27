@@ -2140,6 +2140,7 @@ properly provides the modeline in dired mode. "
   (when (and buffer-read-only ranger-hide-cursor)
     (setq cursor-type nil)))
 
+;;;###autoload
 (when ranger-override-dired
   (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
 
