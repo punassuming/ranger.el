@@ -230,6 +230,7 @@ Outputs a string that will show up on the header-line."
                 (const :tag "Roman numerals" :value roman)
                 (const :tag "Numbers only" :value numbers)))
 
+;;;###autoload
 (defcustom ranger-override-dired nil
   "When non-nil, load `deer' whenever dired is loaded.")
 
