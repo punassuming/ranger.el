@@ -259,7 +259,6 @@ preview window."
 
 (defvar ranger-sorting-switches nil)
 (defvar ranger-override-dired nil)
-(defvar ranger-override-dired nil)
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
@@ -2012,14 +2011,14 @@ properly provides the modeline in dired mode. "
         (set-buffer-modified-p nil)))))
 
 ;;;###autoload
-(defun deer ()
+(defun deer (&optional path)
   "Launch dired in a minimal ranger window."
   (interactive)
-  (let* ((file buffer-file-name)
+  (let* ((file (or path (buffer-file-name)))
          (dir (if file (file-name-directory file) default-directory)))
-    (when dir
-      (r--fset ranger-minimal t)
-      (ranger-find-file dir))))
+         (when dir
+           (r--fset ranger-minimal t)
+           (ranger-find-file dir))))
 
 (defun ranger-minimal-toggle ()
   (interactive)
@@ -2031,10 +2030,10 @@ properly provides the modeline in dired mode. "
       (deer))))
 
 ;;;###autoload
-(defun ranger ()
+(defun ranger (&optional path)
   "Launch dired in ranger-mode."
   (interactive)
-  (let* ((file buffer-file-name)
+  (let* ((file (or path (buffer-file-name)))
          (dir (if file (file-name-directory file) default-directory)))
     (when dir
       (r--fset ranger-minimal nil)
