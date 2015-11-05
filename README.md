@@ -38,8 +38,14 @@ use `package-install` command to install Ranger. The package name is `ranger`.
 ranger mode active
 ![Ranger Mode Active](screenshots/ranger.png)
 
+deer mode (minimal ranger mode)
+![Deer Mode](screenshots/deer.png)
+
 ranger mode with preview enabled
 ![Ranger Mode with Preview](screenshots/ranger-preview.png)
+
+ranger mode showing image
+![Ranger Mode with Image](screenshots/ranger-image.png)
 
 ### Screencast
 
