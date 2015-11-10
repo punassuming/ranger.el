@@ -30,7 +30,7 @@ to display previews for selected files in the primary dired buffer.
 
 ## Installation
 
-Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can
+Once you have setup [Melpa](https://melpa.org/#/getting-started) you can
 use `package-install` command to install Ranger. The package name is `ranger`.
 
 ### Screenshot
