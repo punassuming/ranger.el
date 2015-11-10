@@ -7,7 +7,7 @@
 ;; Version: 0.9.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
-;; Package-Requires: ((emacs "24.4")(cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.4"))
 
 ;; Based on work from
 ;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
@@ -81,14 +81,8 @@
 (require 'bookmark)
 (require 'ring)
 
-(require 'subr-x nil t)
+(require 'subr-x)
 (require 'diminish nil t)
-
-;; include string-join
-(unless (featurep 'subr-x)
-  (defun string-join (strings &optional separator)
-    "Join all STRINGS using SEPARATOR."
-    (mapconcat 'identity strings separator)))
 
 (defgroup ranger ()
   "Modify dired to act like ranger."
