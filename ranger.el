@@ -1197,8 +1197,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
            (filename (file-name-nondirectory entry))
            (fattr (file-attributes entry))
            (fwidth (frame-width))
-           (file-size (concat "File "
-                              (file-size-human-readable (nth 7 fattr))))
+           (file-size (if sizes (concat "File "
+                                        (file-size-human-readable (nth 7 fattr))) "Press \' for size info."))
            (dir-size (if sizes (concat "Dir " (ranger--get-file-sizes
                                                (ranger--get-file-listing
                                                 dired-directory)
@@ -1206,7 +1206,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                                                ))
                        ""))
            (user (nth 2 fattr))
-           (filemount
+           (file-mount
             (if sizes 
                 (or (let ((index 0)
                           size
@@ -1233,25 +1233,26 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                              cur-pos
                              final-pos))
            (footer-spec (ranger--footer-spec))
+           (lhs (format
+                 "%s %s"
+                 (propertize file-date 'face 'font-lock-warning-face)
+                 file-perm))
+           (rhs (format
+                 "%s %s %s %s"
+                 file-size
+                 dir-size
+                 file-mount
+                 position
+                 ))
            (space (- fwidth
-                     (max 8
-                          (length file-size))
-                     (max 8
-                          (length dir-size))
-                     (length position)
-                     (length filemount)
-                     (length file-date)
-                     (length file-perm)))
+                     (length lhs)))
            (message-log-max nil)
            (msg
             (format
-             (format  "%%s %%s %%%ds %%s %%s %%s" space)
-             (propertize file-date 'face 'font-lock-warning-face)
-             file-perm
-             file-size
-             dir-size
-             filemount
-             position
+             ;; "%s"
+             (format  "%%s%%%ds" space)
+             lhs
+             rhs
              )))
       (message "%s" msg))))
 
