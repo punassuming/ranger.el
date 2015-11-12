@@ -193,8 +193,13 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-delay 0.2
-  "Time in seconds to delay running macro defined `-delayed' functions."
+(defcustom ranger-footer-delay 0.2
+  "Time in seconds to delay running footer functions."
+  :group 'ranger
+  :type 'float)
+
+(defcustom ranger-preview-delay 0.040
+  "Time in seconds to delay running preview file functions."
   :group 'ranger
   :type 'float)
 
@@ -678,8 +683,8 @@ the idle timer fires are ignored."
                          (setq ,timer nil)))))))))
 
 ;; define delayed functions
-(ranger-define-delayed ranger-details-message ranger-delay)
-(ranger-define-delayed ranger-setup-preview ranger-delay)
+(ranger-define-delayed ranger-details-message ranger-footer-delay)
+(ranger-define-delayed ranger-setup-preview ranger-preview-delay)
 
 
 ;;tabs
