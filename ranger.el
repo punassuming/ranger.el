@@ -326,7 +326,74 @@ preview window."
                                  ranger-sub-window-setup))
 
 ;; maps
-(defvar ranger-mode-map (make-sparse-keymap))
+;; (defvar ranger-mode-map (make-sparse-keymap))
+(defvar ranger-mode-map
+  (let ((map (make-keymap)))
+    ;; build off of dired commands
+    (set-keymap-parent map dired-mode-map)
+    (define-key map "?"           'ranger-help)
+    (define-key map "'"           'ranger-show-size)
+    (define-key map "!"           'shell-command)
+    (define-key map "B"           'ranger-show-bookmarks)
+    (define-key map "D"           'dired-do-delete)
+    (define-key map "G"           'ranger-goto-bottom)
+    (define-key map "H"           'ranger-prev-history)
+    (define-key map "I"           'ranger-insert-subdir)
+    (define-key map "J"           'ranger-next-subdir)
+    (define-key map "K"           'ranger-prev-subdir)
+    (define-key map "L"           'ranger-next-history)
+    (define-key map "R"           'dired-do-rename)
+    (define-key map "S"           'ranger-pop-eshell)
+    (define-key map "["           'ranger-prev-parent)
+    (define-key map "]"           'ranger-next-parent)
+    (define-key map "f"           'ranger-search-files)
+    (define-key map "gg"          'ranger-goto-top)
+    (define-key map "gh"          'ranger-go-home)
+    (define-key map "h"           'ranger-up-directory)
+    (define-key map "-"           'ranger-up-directory)
+    (define-key map "i"           'ranger-preview-toggle)
+    (define-key map "j"           'ranger-next-file)
+    (define-key map "k"           'ranger-prev-file)
+    (define-key map "l"           'ranger-find-file)
+    (define-key map "m"           'ranger-create-mark)
+    (define-key map "o"           'ranger-sort-criteria)
+    (define-key map "ws"          'ranger-open-file-vertically)
+    (define-key map "wv"          'ranger-open-file-horizontally)
+    (define-key map "wf"          'ranger-open-file-frame)
+    (define-key map "we"          'ranger-open-in-external-app)
+    (define-key map "q"           'ranger-disable)
+    (define-key map "u"           'dired-unmark)
+    (define-key map "v"           'dired-toggle-marks)
+    (define-key map "zz"          'ranger-show-history)
+    ;; copy and paste)
+    (define-key map "yy"          'ranger-copy)
+    (define-key map "dd"          'ranger-cut)
+    (define-key map "pp"          'ranger-paste)
+    (define-key map "po"          'ranger-paste-over)
+    (define-key map "p?"          'ranger-show-copy-contents)
+    ;; settings)
+    (define-key map "z+"          'ranger-more-parents)
+    (define-key map "z-"          'ranger-less-parents)
+    (define-key map "zh"          'ranger-toggle-dotfiles)
+    (define-key map "zi"          'ranger-toggle-literal)
+    (define-key map "zp"          'ranger-minimal-toggle)
+    (define-key map "zf"          'ranger-toggle-scale-images)
+    ;; tabs)
+    (define-key map "gn"          'ranger-new-tab)
+    (define-key map "gT"          'ranger-prev-tab)
+    (define-key map "gt"          'ranger-next-tab)
+    (define-key map "gc"          'ranger-close-tab)
+    (define-key map (kbd "C-r")   'ranger-refresh)
+    (define-key map (kbd "C-SPC") 'ranger-mark)
+    (define-key map (kbd "TAB")   'ranger-mark)
+    (define-key map (kbd "C-j")   'ranger-scroll-page-down)
+    (define-key map (kbd "C-k")   'ranger-scroll-page-up)
+    (define-key map (kbd "RET")   'ranger-find-file)
+    (define-key map (kbd "`")     'ranger-goto-mark)
+    map)
+  "Define mappings for ranger-mode."
+  )
+
 
 
 ;;; frame parameter helpers
@@ -437,96 +504,22 @@ to not replace existing value."
     (evil-define-key 'normal dired-mode-map ranger-key 'ranger-mode))
   (define-key ranger-mode-map ranger-key 'ranger-mode))
 
-(defun ranger-define-maps ()
-  "Define mappings for ranger-mode."
-
-  ;; make sure ranger normalizes current mappings
-  (with-eval-after-load "evil"
-    ;; turn off evilified buffers for evilify usage
-    (when (and (fboundp 'evil-evilified-state-p)
-               (evil-evilified-state-p))
-      (evil-evilified-state -1))
-    (evil-normal-state)
-    (evil-normalize-keymaps)
-    (add-hook 'ranger-mode-hook 'evil-normalize-keymaps)
-
-    ;; some evil specific bindings
-    (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-    (evil-define-key 'normal ranger-mode-map
-      "V"            'evil-visual-line
-      "n"            'evil-search-next
-      "N"            'evil-search-previous))
-
-  (ranger-map
-    "?"           'ranger-help
-    "'"           'ranger-show-size
-    "!"           'shell-command
-    "B"           'ranger-show-bookmarks
-    "D"           'dired-do-delete
-    "G"           'ranger-goto-bottom
-    "H"           'ranger-prev-history
-    "I"           'ranger-insert-subdir
-    "J"           'ranger-next-subdir
-    "K"           'ranger-prev-subdir
-    "L"           'ranger-next-history
-    "R"           'dired-do-rename
-    "S"           'ranger-pop-eshell
-    "["           'ranger-prev-parent
-    "]"           'ranger-next-parent
-    "f"           'ranger-search-files
-    "gg"          'ranger-goto-top
-    "gh"          'ranger-go-home
-    "h"           'ranger-up-directory
-    "-"           'ranger-up-directory
-    "i"           'ranger-preview-toggle
-    "j"           'ranger-next-file
-    "k"           'ranger-prev-file
-    "l"           'ranger-find-file
-    "m"           'ranger-create-mark
-    "o"           'ranger-sort-criteria
-    "ws"          'ranger-open-file-vertically
-    "wv"          'ranger-open-file-horizontally
-    "wf"          'ranger-open-file-frame
-    "we"          'ranger-open-in-external-app
-    "q"           'ranger-disable
-    "u"           'dired-unmark
-    "v"           'dired-toggle-marks
-    "zz"          'ranger-show-history
-    ;; copy and paste
-    "yy"          'ranger-copy
-    "dd"          'ranger-cut
-    "pp"          'ranger-paste
-    "po"          'ranger-paste-over
-    "p?"          'ranger-show-copy-contents
-    ;; settings
-    "z+"          'ranger-more-parents
-    "z-"          'ranger-less-parents
-    "zh"          'ranger-toggle-dotfiles
-    "zi"          'ranger-toggle-literal
-    "zp"          'ranger-minimal-toggle
-    "zf"          'ranger-toggle-scale-images
-    ;; tabs
-    "gn"          'ranger-new-tab
-    "gT"          'ranger-prev-tab
-    "gt"          'ranger-next-tab
-    "gc"          'ranger-close-tab
-    (kbd "C-r")   'ranger-refresh
-    (kbd "C-SPC") 'ranger-mark
-    (kbd "TAB")   'ranger-mark
-    (kbd "C-j")   'ranger-scroll-page-down
-    (kbd "C-k")   'ranger-scroll-page-up
-    (kbd "RET")   'ranger-find-file
-    (kbd "`")     'ranger-goto-mark)
-
-
+(defun ranger-define-additional-maps (&optional mode)
+  "Define mappings for ranger-mode. `MODE' dictates whether to use ranger or
+dired style bindings."
+  ;; some evil specific bindings
+  (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+  (evil-define-key 'normal ranger-mode-map
+    "V"            'evil-visual-line
+    "n"            'evil-search-next
+    "N"            'evil-search-previous)
   ;; and simulating search in standard emacs
-  (define-key ranger-mode-map "/" 'isearch-forward)
-  (define-key ranger-mode-map "n" 'isearch-repeat-forward)
-  (define-key ranger-mode-map "N" 'isearch-repeat-backward)
-
-  ;; make sure isearch is cleared before we delete the buffer on exit
-  (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil)))
-
+  (unless (featurep 'evil)
+    (define-key ranger-mode-map "/" 'isearch-forward)
+    (define-key ranger-mode-map "n" 'isearch-repeat-forward)
+    (define-key ranger-mode-map "N" 'isearch-repeat-backward)
+    ;; make sure isearch is cleared before we delete the buffer on exit
+    (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
   )
 
 
@@ -2056,6 +2049,16 @@ properly provides the modeline in dired mode. "
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
 
+  ;; normalize keymaps to work with evil mode
+  (with-eval-after-load "evil"
+    ;; turn off evilified buffers for evilify usage
+    (when (and (fboundp 'evil-evilified-state-p)
+               (evil-evilified-state-p))
+      (evil-evilified-state -1)
+      (evil-normal-state))
+    (evil-make-intercept-map ranger-mode-map 'normal)
+    (evil-normalize-keymaps))
+
   ;; load bookmarks
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
@@ -2161,14 +2164,12 @@ properly provides the modeline in dired mode. "
   :group 'ranger
   ;; :after-hook 'ranger-mode-hook
 
-  ;; define keymaps
-  (ranger-define-maps)
-
   (if ranger-mode
       (progn
         (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
         (ranger-setup)
-        (add-hook 'window-configuration-change-hook 'ranger-window-check))
+        (add-hook 'window-configuration-change-hook 'ranger-window-check)
+        )
     (ranger-revert)))
 
 (provide 'ranger)
