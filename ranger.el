@@ -183,6 +183,7 @@
   :group 'ranger
   :type 'float)
 
+;;;###autoload
 (defcustom ranger-key [?\C-p]
   "`dired-mode' key used to toggle `ranger-mode'"
   :group 'ranger
@@ -328,7 +329,7 @@ preview window."
 ;; maps
 ;; (defvar ranger-mode-map (make-sparse-keymap))
 (defvar ranger-mode-map
-  (let ((map (make-keymap)))
+  (let ((map (make-sparse-keymap)))
     ;; build off of dired commands
     (set-keymap-parent map dired-mode-map)
     (define-key map "?"           'ranger-help)
@@ -390,7 +391,8 @@ preview window."
     (define-key map (kbd "C-k")   'ranger-scroll-page-up)
     (define-key map (kbd "RET")   'ranger-find-file)
     (define-key map (kbd "`")     'ranger-goto-mark)
-    map)
+    map
+    )
   "Define mappings for ranger-mode."
   )
 
@@ -458,7 +460,6 @@ to not replace existing value."
 (cl-defstruct (ranger-window (:constructor ranger--track-window))
   prev-buffer curr-buffer curr-tab history)
 
-
 (defun ranger-track-window (window &optional prev curr tab)
   (let ((new-win 
          (ranger--track-window
@@ -483,30 +484,18 @@ to not replace existing value."
 
 
 ;; mapping macro
-(defmacro ranger-map (key def &rest bindings)
-  "Define macro to bind evil and emacs state for ranger"
-  (declare (indent defun))
-  `(let* ((key ,key) (def ,def)
-          (bindings (list ,@bindings)) aux)
-     (while key
-       (with-eval-after-load "evil"
-         (setq aux (evil-get-auxiliary-keymap ranger-mode-map 'normal t))
-         (define-key aux key def))
-       (define-key ranger-mode-map key def)
-       (setq key (pop bindings)
-             def (pop bindings)))
-     (with-eval-after-load "evil"
-       (evil-set-keymap-prompt aux (keymap-prompt aux)))))
 
 ;; mappings
+
+;;;###autoload
 (when ranger-key
   (with-eval-after-load "evil"
     (evil-define-key 'normal dired-mode-map ranger-key 'ranger-mode))
   (define-key ranger-mode-map ranger-key 'ranger-mode))
 
 (defun ranger-define-additional-maps (&optional mode)
-  "Define mappings for ranger-mode. `MODE' dictates whether to use ranger or
-dired style bindings."
+  "Define additional mappings for ranger-mode that can't simply be in the defvar (depend on packages)."
+
   ;; some evil specific bindings
   (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
   (evil-define-key 'normal ranger-mode-map
@@ -520,7 +509,16 @@ dired style bindings."
     (define-key ranger-mode-map "N" 'isearch-repeat-backward)
     ;; make sure isearch is cleared before we delete the buffer on exit
     (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
-  )
+
+  ;; normalize keymaps to work with evil mode
+  (with-eval-after-load "evil"
+    ;; turn off evilified buffers for evilify usage
+    (when (and (fboundp 'evil-evilified-state-p)
+               (evil-evilified-state-p))
+      (evil-evilified-state -1)
+      (evil-normal-state))
+    (evil-make-intercept-map ranger-mode-map 'normal)
+    (evil-normalize-keymaps)))
 
 
 ;; copy / paste
@@ -2049,15 +2047,7 @@ properly provides the modeline in dired mode. "
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
 
-  ;; normalize keymaps to work with evil mode
-  (with-eval-after-load "evil"
-    ;; turn off evilified buffers for evilify usage
-    (when (and (fboundp 'evil-evilified-state-p)
-               (evil-evilified-state-p))
-      (evil-evilified-state -1)
-      (evil-normal-state))
-    (evil-make-intercept-map ranger-mode-map 'normal)
-    (evil-normalize-keymaps))
+  (ranger-define-additional-maps)
 
   ;; load bookmarks
   (unless bookmark-alist
