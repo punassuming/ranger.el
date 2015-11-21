@@ -331,7 +331,12 @@ preview window."
 (defvar ranger-mode-map
   (let ((map (make-sparse-keymap)))
     ;; build off of dired commands
-    (set-keymap-parent map dired-mode-map)
+    ;; (set-keymap-parent map dired-mode-map)
+
+    (define-prefix-command 'ranger-dired-map nil "Dired-")
+    (set-keymap-parent ranger-dired-map dired-mode-map)
+    (define-key map ";" 'ranger-dired-map)
+
     (define-key map "?"           'ranger-help)
     (define-key map "'"           'ranger-show-size)
     (define-key map "!"           'shell-command)
