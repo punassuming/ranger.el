@@ -327,11 +327,12 @@ preview window."
                                  ranger-sub-window-setup))
 
 ;; maps
-;; (defvar ranger-mode-map (make-sparse-keymap))
 (defvar ranger-mode-map
   (let ((map (make-sparse-keymap)))
+
     ;; build off of dired commands
     (set-keymap-parent map dired-mode-map)
+
     (define-key map "?"           'ranger-help)
     (define-key map "'"           'ranger-show-size)
     (define-key map "!"           'shell-command)
@@ -351,11 +352,15 @@ preview window."
     (define-key map "gg"          'ranger-goto-top)
     (define-key map "gh"          'ranger-go-home)
     (define-key map "h"           'ranger-up-directory)
+    (define-key map [left]        'ranger-up-directory)
     (define-key map "-"           'ranger-up-directory)
     (define-key map "i"           'ranger-preview-toggle)
     (define-key map "j"           'ranger-next-file)
+    (define-key map [down]        'ranger-next-file)
     (define-key map "k"           'ranger-prev-file)
+    (define-key map [up]          'ranger-prev-file)
     (define-key map "l"           'ranger-find-file)
+    (define-key map [right]       'ranger-find-file)
     (define-key map "m"           'ranger-create-mark)
     (define-key map "o"           'ranger-sort-criteria)
     (define-key map "ws"          'ranger-open-file-vertically)
@@ -391,14 +396,18 @@ preview window."
     (define-key map (kbd "C-k")   'ranger-scroll-page-up)
     (define-key map (kbd "RET")   'ranger-find-file)
     (define-key map (kbd "`")     'ranger-goto-mark)
+
+    ;; define a prefix for all dired commands
+    (define-prefix-command 'ranger-dired-map nil "Dired-prefix")
+    (setq ranger-dired-map (copy-tree dired-mode-map))
+    (define-key map ";" ranger-dired-map)
+
     map
     )
-  "Define mappings for ranger-mode."
-  )
+  "Define mappings for ranger-mode." )
 
 
-
-;;; frame parameter helpers
+;;; frame parameter helpers
 
 (defmacro r--fget (var &optional frame)
   "Return the value of `VAR', looks for buffer local version first."
@@ -489,38 +498,39 @@ to not replace existing value."
 
 ;;;###autoload
 (when ranger-key
-  (with-eval-after-load "evil"
-    (evil-define-key 'normal dired-mode-map ranger-key 'ranger-mode))
-  (define-key ranger-mode-map ranger-key 'ranger-mode))
+  (define-key dired-mode-map ranger-key 'ranger-mode))
 
 (defun ranger-define-additional-maps (&optional mode)
   "Define additional mappings for ranger-mode that can't simply be in the defvar (depend on packages)."
 
-  ;; some evil specific bindings
-  (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-  (evil-define-key 'normal ranger-mode-map
-    "V"            'evil-visual-line
-    "n"            'evil-search-next
-    "N"            'evil-search-previous)
+  ;; custom ranger-key
+  (when ranger-key
+    (define-key ranger-mode-map ranger-key 'ranger-to-dired))
+
+  ;; normalize keymaps to work with evil mode
+  (with-eval-after-load "evil"
+    ;; turn off evilified buffers for evilify usage
+    (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
+    (evil-define-key 'normal ranger-mode-map
+      "V"            'evil-visual-line
+      "n"            'evil-search-next
+      "N"            'evil-search-previous)
+    (when (and (fboundp 'evil-evilified-state-p)
+               (evil-evilified-state-p))
+      (evil-evilified-state -1)
+      (evil-normal-state))
+    (evil-make-intercept-map ranger-mode-map 'normal)
+    (evil-normalize-keymaps))
+
   ;; and simulating search in standard emacs
   (unless (featurep 'evil)
     (define-key ranger-mode-map "/" 'isearch-forward)
     (define-key ranger-mode-map "n" 'isearch-repeat-forward)
     (define-key ranger-mode-map "N" 'isearch-repeat-backward)
     ;; make sure isearch is cleared before we delete the buffer on exit
-    (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
-
-  ;; normalize keymaps to work with evil mode
-  (with-eval-after-load "evil"
-    ;; turn off evilified buffers for evilify usage
-    (when (and (fboundp 'evil-evilified-state-p)
-               (evil-evilified-state-p))
-      (evil-evilified-state -1)
-      (evil-normal-state))
-    (evil-make-intercept-map ranger-mode-map 'normal)
-    (evil-normalize-keymaps)))
-
+    (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil)))))
 
+
 ;; copy / paste
 (defun ranger-show-copy-ring (copy-index)
   "Show copy ring in `ranger-copy-ring', selection inserts at top for use."
@@ -1349,7 +1359,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              (ranger-parent-child-select)
              (when ranger-hide-cursor
                (setq cursor-type nil))
-               )))
+             )))
        nil nil 'nomini))
 
     (select-window ranger-window)
@@ -2022,9 +2032,9 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let* ((file (or path (buffer-file-name)))
          (dir (if file (file-name-directory file) default-directory)))
-         (when dir
-           (r--fset ranger-minimal t)
-           (ranger-find-file dir))))
+    (when dir
+      (r--fset ranger-minimal t)
+      (ranger-find-file dir))))
 
 (defun ranger-minimal-toggle ()
   (interactive)
@@ -2054,6 +2064,13 @@ properly provides the modeline in dired mode. "
   "Interactively disable ranger-mode."
   (interactive)
   (ranger-mode -1))
+
+(defun ranger-to-dired ()
+  "Toggle from ranger to dired in directory."
+  (interactive)
+  (let ((dir default-directory))
+    (ranger-disable)
+    (dired dir)))
 
 (defun ranger-setup ()
   "Setup all associated ranger windows."
