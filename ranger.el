@@ -2063,6 +2063,8 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let ((dir default-directory))
     (ranger-disable)
+    (remove-hook 'dired-mode-hook 'ranger-override-dired-fn)
+    (remove-hook 'window-configuration-change-hook 'ranger-window-check)
     (dired dir)))
 
 (defun ranger-setup ()
