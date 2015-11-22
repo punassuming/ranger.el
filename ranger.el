@@ -327,6 +327,9 @@ preview window."
                                  ranger-sub-window-setup))
 
 ;; maps
+(defvar ranger-dired-map nil
+  "Mapping for dired prefix.")
+
 (defvar ranger-mode-map
   (let ((map (make-sparse-keymap)))
 
@@ -782,16 +785,6 @@ the idle timer fires are ignored."
             when (file-directory-p fname) collect fname into new
             finally return new)
    :test (lambda (x y) (or (null y) (equal x y)))))
-
-(defun ranger-show-bookmarks ()
-  (interactive
-   (list (bookmark-completing-read "Jump to bookmark"
-                                   bookmark-current-bookmark)))
-  (unless bookmark
-    (error "No bookmark specified"))
-  (bookmark-maybe-historicize-string bookmark)
-  (bookmark--jump-via bookmark (or display-func 'switch-to-buffer)))
-
 
 (defun ranger-create-mark (mark)
   "Create new bookmark using internal bookmarks, designating bookmark name as
