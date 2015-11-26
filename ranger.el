@@ -1,7 +1,6 @@
 ;;; ranger.el --- Make dired more like ranger
 
 ;; Copyright (C) 2015  Rich Alesi
-;; Copyright (C) 2014  Adam Sokolnicki (peep-dired)
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
 ;; Version: 0.9.7
@@ -334,7 +333,7 @@ preview window."
   (let ((map (make-sparse-keymap)))
 
     ;; build off of dired commands
-    (set-keymap-parent map dired-mode-map)
+    ;; (set-keymap-parent map dired-mode-map)
 
     (define-key map "?"           'ranger-help)
     (define-key map "'"           'ranger-show-size)
@@ -405,8 +404,7 @@ preview window."
     (setq ranger-dired-map (copy-tree dired-mode-map))
     (define-key map ";" ranger-dired-map)
 
-    map
-    )
+    map)
   "Define mappings for ranger-mode." )
 
 
@@ -775,7 +773,7 @@ the idle timer fires are ignored."
   (interactive)
   (let ((bookmark
          (completing-read "Select from bookmarks: "
-                         (ranger--directory-bookmarks) )))
+                          (ranger--directory-bookmarks) )))
     (when bookmark (ranger-find-file bookmark))))
 
 (defun ranger--directory-bookmarks ()
@@ -1432,7 +1430,9 @@ slot)."
           ;; remove . and .. from directory listing
           (save-excursion
             (while (re-search-forward "total used in directory\\|\\.$" nil t)
-              (kill-whole-line)))
+              ;; (beginning-of-line)
+              (delete-region (progn (forward-line 0) (point))
+                             (progn (forward-line 1) (point)))))
           (current-buffer)))))
 
 (defun ranger-preview-buffer (entry-name)
@@ -2010,7 +2010,8 @@ properly provides the modeline in dired mode. "
             (buffer-read-only))
         (if (and (not ranger-subdir-p)
                  ranger-modify-header)
-            (kill-whole-line)
+            (delete-region (progn (forward-line 0) (point))
+                           (progn (forward-line 1) (point)))
           (forward-line 1))
         ;; check sorting mode and sort with directories first
         (when (and ranger-listing-dir-first
