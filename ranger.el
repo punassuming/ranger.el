@@ -399,6 +399,11 @@ preview window."
     (define-key map (kbd "RET")   'ranger-find-file)
     (define-key map (kbd "`")     'ranger-goto-mark)
 
+    ;; search
+    (define-key map "/" 'ranger-search)
+    (define-key map "n" 'ranger-search-next)
+    (define-key map "N" 'ranger-search-previous)
+
     ;; define a prefix for all dired commands
     (define-prefix-command 'ranger-dired-map nil "Dired-prefix")
     (setq ranger-dired-map (copy-tree dired-mode-map))
@@ -512,11 +517,6 @@ to not replace existing value."
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    (evil-define-key 'visual ranger-mode-map "u" 'dired-unmark)
-    (evil-define-key 'normal ranger-mode-map
-      "V"            'evil-visual-line
-      "n"            'evil-search-next
-      "N"            'evil-search-previous)
     (when (and (fboundp 'evil-evilified-state-p)
                (evil-evilified-state-p))
       (evil-evilified-state -1)
@@ -524,13 +524,8 @@ to not replace existing value."
     (evil-make-intercept-map ranger-mode-map 'normal)
     (evil-normalize-keymaps))
 
-  ;; and simulating search in standard emacs
-  (unless (featurep 'evil)
-    (define-key ranger-mode-map "/" 'isearch-forward)
-    (define-key ranger-mode-map "n" 'isearch-repeat-forward)
-    (define-key ranger-mode-map "N" 'isearch-repeat-backward)
     ;; make sure isearch is cleared before we delete the buffer on exit
-    (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil)))))
+    (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
 
 
 ;; copy / paste
@@ -765,6 +760,31 @@ the idle timer fires are ignored."
     (when tab
       (setq ranger-current-tab index)
       (ranger-find-file (cdr tab)))))
+
+
+;; searching
+
+(defun ranger-search ()
+  (interactive)
+  (call-interactively
+   (if (and (fboundp 'evil-normal-state-p)
+            (evil-normal-state-p))
+       (evil-search)
+     (isearch-forward))))
+
+(defun ranger-search-next ()
+  (interactive)
+  (if (and (fboundp 'evil-normal-state-p)
+           (evil-normal-state-p))
+      (evil-search-next)
+    (isearch-repeat-forward)))
+
+(defun ranger-search-previous ()
+  (interactive)
+  (if (and (fboundp 'evil-normal-state-p)
+           (evil-normal-state-p))
+      (evil-search-previous)
+    (isearch-repeat-backward)))
 
 
 ;; marks
