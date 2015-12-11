@@ -136,7 +136,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-max-preview-size 10
+(defcustom ranger-max-preview-size 2
   "File size in MB to prevent preview of files."
   :group 'ranger
   :type 'integer)
@@ -256,6 +256,8 @@ preview window."
 
 ;; global variables
 
+(defvar ranger-wdired nil)
+
 (defvar ranger-sorting-switches nil)
 (defvar ranger-override-dired nil)
 
@@ -338,6 +340,7 @@ preview window."
     (define-key map "?"           'ranger-help)
     (define-key map "'"           'ranger-show-size)
     (define-key map "!"           'shell-command)
+    (define-key map (kbd "C-c C-e") 'wdired-change-to-wdired-mode)
     (define-key map "B"           'ranger-show-bookmarks)
     (define-key map "D"           'dired-do-delete)
     (define-key map "G"           'ranger-goto-bottom)
@@ -392,7 +395,7 @@ preview window."
     (define-key map "gt"          'ranger-next-tab)
     (define-key map "gc"          'ranger-close-tab)
     (define-key map (kbd "C-r")   'ranger-refresh)
-    (define-key map (kbd "C-SPC") 'ranger-mark)
+    (define-key map (kbd "C-SPC")   'ranger-mark)
     (define-key map (kbd "TAB")   'ranger-mark)
     (define-key map (kbd "C-j")   'ranger-scroll-page-down)
     (define-key map (kbd "C-k")   'ranger-scroll-page-up)
@@ -517,15 +520,34 @@ to not replace existing value."
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    (when (and (fboundp 'evil-evilified-state-p)
-               (evil-evilified-state-p))
-      (evil-evilified-state -1)
-      (evil-normal-state))
-    (evil-make-intercept-map ranger-mode-map 'normal)
-    (evil-normalize-keymaps))
+    ;; (when (and (fboundp 'evil-evilified-state-p)
+    ;;            (evil-evilified-state-p))
+    ;;   (evil-evilified-state -1)
+    ;;   (evil-normal-state)
+    ;;   )
+    ;; (evil-make-overriding-map ranger-mode-map nil)
+    ;; (evil-normalize-keymaps)
+    (evil-set-initial-state 'ranger-mode 'motion)
+    (evil-make-overriding-map ranger-mode-map 'motion)
+    (evil-normalize-keymaps)
+    )
 
     ;; make sure isearch is cleared before we delete the buffer on exit
     (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
+
+;; wdired integration
+(eval-after-load 'wdired
+  '(progn
+     (defadvice wdired-change-to-wdired-mode (before evil activate)
+       (ranger-to-dired))
+     (defadvice wdired-exit (after evil activate)
+       (ranger-mode))
+     (defadvice wdired-abort-changes (after evil activate)
+       (ranger-mode))
+     (defadvice wdired-finish-edit (after evil activate)
+       (ranger-mode))
+     ))
+
 
 
 ;; copy / paste
@@ -767,27 +789,28 @@ the idle timer fires are ignored."
 (defun ranger-search ()
   (interactive)
   (call-interactively
-   (if (and (fboundp 'evil-normal-state-p)
-            (evil-normal-state-p))
-       (evil-search)
+   (if (and (fboundp 'evil-motion-state-p)
+            (evil-motion-state-p))
+       (evil-search-forward)
      (isearch-forward))))
 
 (defun ranger-search-next ()
   (interactive)
-  (if (and (fboundp 'evil-normal-state-p)
-           (evil-normal-state-p))
+  (if (and (fboundp 'evil-motion-state-p)
+           (evil-motion-state-p))
       (evil-search-next)
     (isearch-repeat-forward)))
 
 (defun ranger-search-previous ()
   (interactive)
-  (if (and (fboundp 'evil-normal-state-p)
-           (evil-normal-state-p))
+  (if (and (fboundp 'evil-motion-state-p)
+           (evil-motion-state-p))
       (evil-search-previous)
     (isearch-repeat-backward)))
 
 
 ;; marks
+
 (defun ranger-show-bookmarks ()
   "Show bookmark prompt for all bookmarked directories."
   (interactive)
@@ -834,6 +857,7 @@ ranger-`CHAR'."
 
 
 ;; ring utilities
+
 (defun ranger--ring-elements (ring)
   "Return deduplicated elements of `ring'"
   (delq nil
@@ -850,6 +874,7 @@ ranger-`CHAR'."
 
 
 ;; history
+
 (defun ranger-show-history (history)
   "Show history prompt for recent directories"
   (interactive
@@ -883,6 +908,7 @@ ranger-`CHAR'."
 
 
 ;; primary window functions
+
 (defun ranger-refresh ()
   "Refresh evil ranger buffer."
   (interactive)
@@ -967,6 +993,7 @@ ranger-`CHAR'."
 
 
 ;; preview windows functions
+
 (defun ranger-preview-toggle ()
   "Toggle preview of selected file."
   (interactive)
@@ -1021,6 +1048,7 @@ ranger-`CHAR'."
 
 
 ;; dired navigation
+
 (defun ranger-search-files ()
   "Search for files / directories in folder."
   (interactive)
@@ -1069,7 +1097,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (if minimal
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
-            (ranger-enable))
+            (ranger-mode))
         (find-file find-name)))))
 
 (defun ranger-open-file (&optional mode)
@@ -1712,7 +1740,7 @@ fraction of the total frame size"
   "Delete unmodified buffers and any dired buffer"
   (when
       (and (buffer-live-p buffer)
-           (eq 'dired-mode (buffer-local-value 'major-mode buffer)))
+           (eq 'ranger-mode (buffer-local-value 'major-mode buffer)))
     ;; (not (buffer-modified-p buffer))
     (kill-buffer buffer)))
 
@@ -1815,15 +1843,15 @@ fraction of the total frame size"
         (setq dired-listing-switches ranger-pre-dired-listing)
         (dired-hide-details-mode -1)
         ;; revert ranger-mode
-        (setq ranger-mode nil)
+        ;; (setq ranger-mode nil)
         ;; hide details line at top
         (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
         (revert-buffer)))))
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
-  (if (derived-mode-p 'dired-mode)
-      (ranger-enable)
+  (if (eq major-mode 'dired-mode)
+      (ranger-mode)
     (progn
       ;; Try to manage new windows / frames created without killing ranger
       (let* ((ranger-window-props
@@ -1995,7 +2023,7 @@ fraction of the total frame size"
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
 properly provides the modeline in dired mode. "
-  (when (eq major-mode 'dired-mode)
+  (when (eq major-mode 'ranger-mode)
     (setq mode-name
           (concat
            ;; (if buffer-read-only "<N>" "<I>")
@@ -2015,7 +2043,7 @@ properly provides the modeline in dired mode. "
            (when (string-match "r" dired-actual-switches) " (r)")
            ))
     (with-eval-after-load "diminish"
-      (diminish 'ranger-mode)
+      ;; (diminish 'ranger-mode)
       (diminish 'dired-omit-mode)
       (diminish 'auto-revert-mode))
     (force-mode-line-update)))
@@ -2073,21 +2101,24 @@ properly provides the modeline in dired mode. "
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
   (interactive)
-  (ranger-mode t))
+  (ranger-mode))
 
 (defun ranger-disable ()
   "Interactively disable ranger-mode."
   (interactive)
-  (ranger-mode -1))
+  (ranger-revert))
 
 (defun ranger-to-dired ()
-  "Toggle from ranger to dired in directory."
+  "toggle from ranger to dired in directory."
   (interactive)
   (let ((dir default-directory))
-    (ranger-disable)
+    (ranger-revert-appearance (current-buffer))
+    ;; (ranger-disable)
     (remove-hook 'dired-mode-hook 'ranger-override-dired-fn)
     (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-    (dired dir)))
+    ;; (setq-local ranger-wdired t)
+    (dired-mode)
+    ))
 
 (defun ranger-setup ()
   "Setup all associated ranger windows."
@@ -2194,22 +2225,28 @@ properly provides the modeline in dired mode. "
       ;; (message "Override attempted")
       (deer))))
 
-;;;###autoload
-(define-minor-mode ranger-mode
-  "A convienent way to look up file contents in other window while browsing directory in dired"
-  :init-value nil
-  :lighter " Ranger"
-  :keymap 'ranger-mode-map
-  :group 'ranger
-  ;; :after-hook 'ranger-mode-hook
+;;; preserve this variable when switching from `dired-mode' to another mode
+(put 'dired-subdir-alist 'permanent-local t)
 
-  (if ranger-mode
-      (progn
-        (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
-        (ranger-setup)
-        (add-hook 'window-configuration-change-hook 'ranger-window-check)
-        )
-    (ranger-revert)))
+;;;###autoload
+(define-derived-mode ranger-mode dired-mode "Ranger"
+  "Major mode emulating the ranger file manager in `dired'.
+
+\\{ranger-mode-map}"
+
+  :group 'ranger
+  (setq-local cursor-type nil)
+  (message "Entering ranger-mode")
+  ;; (set-keymap-parent ranger-mode-map dired-mode-map)
+  (use-local-map ranger-mode-map)
+  (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
+  (ranger-setup)
+  (add-hook 'window-configuration-change-hook 'ranger-window-check)
+  (setq mouse-1-click-follows-link nil)
+  (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
+  )
+
+;; (evil-set-initial-state 'ranger-mode 'emacs)
 
 (provide 'ranger)
 
