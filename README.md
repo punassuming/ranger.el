@@ -110,6 +110,8 @@ paste.  The latter binding will overwrite existing files.
  `gg`          | goto first file
  `gh`          | goto home directory
  `B`           | show bookmark prompt
+ `D`           | delete the selected file
+ `R`           | rename/move the selected file
  ````          | goto bookmark
  `m`           | set bookmark
  `[`           | previous parent directory
@@ -124,6 +126,7 @@ paste.  The latter binding will overwrite existing files.
  `ws`          | exit ranger and open selected file in vertical split
  `wv`          | exit ranger and open selected file in horizontal split
  `wf`          | exit ranger and open selected file in new frame
+ `we`          | open the selected file in external app
  `o`           | sort options
  `h`           | go up directory
  `l`           | find file / enter directory
@@ -134,16 +137,23 @@ paste.  The latter binding will overwrite existing files.
  `z+`          | increment number of parents
  `v`           | toggle all marks
  `V`           | visually select lines
+ `u`           | unmark the selected file
  `yy`          | mark files to copy
  `dd`          | mark files to move
  `pp`          | paste files in copy ring
  `po`          | paste files in copy ring and overwrite existing
+ `p?`          | show the copy contents
  `S`           | enter shell
- `C-SPC`       | mark current file
+ `C-SPC`/`TAB` | mark current file
+ `C-r`         | refresh
  `i`           | show preview of current file
  `C-j`         | scroll preview window down
  `C-k`         | scroll preview window up
  `zp`          | toggle between full ranger and deer-mode
+ `gn`          | create a new tab
+ `gT`          | go to previous tab
+ `gt`          | go to next tab
+ `gc`          | close current tab
 
 ## Configuration
 
