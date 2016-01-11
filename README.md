@@ -11,6 +11,7 @@
         - [Screencast](#screencast)
     - [Features](#features)
     - [Todo](#todo)
+    - [Coming from dired](#coming-from-dired)
     - [Minimal Ranger Mode (deer)](#minimal-ranger-mode-deer)
     - [Key bindings](#key-bindings)
     - [Configuration](#configuration)
@@ -76,6 +77,13 @@ ranger screencast
 * Better showing of archive files
 * Set up tabs and navigation between
 * Work with flattened subdirs and tree
+
+## Coming from dired
+
+Ranger works as a replacement to `dired`, but there are a couple of things you have to know:
+* If you don't like seen windows with the parent folders, you can user the minimal `ranger` mode called `deer` (see next section).
+* When you open a file, the `ranger` session gets finalized. If you want to restore it after closing the file, just try opening `ranger` again (it will remember exactly the path where you were before).
+* If you want to execute a shell command just for the marked files, instead of all the files in the current directory, you have to use `dired-do-shell-command` (in `spacemacs` it is bound to `;!`).
 
 ## Minimal Ranger Mode (deer)
 
