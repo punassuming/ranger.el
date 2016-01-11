@@ -11,6 +11,7 @@
         - [Screencast](#screencast)
     - [Features](#features)
     - [Todo](#todo)
+    - [Coming from dired](#coming-from-dired)
     - [Minimal Ranger Mode (deer)](#minimal-ranger-mode-deer)
     - [Key bindings](#key-bindings)
     - [Configuration](#configuration)
@@ -23,14 +24,14 @@
 ## Description
 
 This is a minor mode that runs within dired emulating many of the features of
-ranger. This minor mode shows a stack of the parent directories and updates the
-parent buffers while nvaigating the file system. The preview window takes some
-of the ideas from [Peep-Dired][https://github.com/asok/peep-dired] to display
-previews for selected files in the primary dired buffer.
+[ranger](http://ranger.nongnu.org/). This minor mode shows a stack of the parent
+directories and updates the parent buffers while navigating the file system. The
+preview window takes some of the ideas from [Peep-Dired](https://github.com/asok/peep-dired)
+to display previews for selected files in the primary dired buffer.
 
 ## Installation
 
-Once you have setup [Melpa](http://melpa.milkbox.net/#/getting-started) you can
+Once you have setup [Melpa](https://melpa.org/#/getting-started) you can
 use `package-install` command to install Ranger. The package name is `ranger`.
 
 ### Screenshot
@@ -38,8 +39,14 @@ use `package-install` command to install Ranger. The package name is `ranger`.
 ranger mode active
 ![Ranger Mode Active](screenshots/ranger.png)
 
+deer mode (minimal ranger mode)
+![Deer Mode](screenshots/deer.png)
+
 ranger mode with preview enabled
 ![Ranger Mode with Preview](screenshots/ranger-preview.png)
+
+ranger mode showing image
+![Ranger Mode with Image](screenshots/ranger-image.png)
 
 ### Screencast
 
@@ -60,16 +67,23 @@ ranger screencast
 * Mouse support
 * Emacs bookmarks support
 * Create bindings to go up / down the next directory
-* minimal ranger mode (deer-mode)
+* Minimal ranger mode (deer-mode)
+* Copy / paste functionality
+* Persistent flags showing recently copied items
 
 ## Todo
 
-* Add ranger style copy and pasted
-* Improve headerline display
 * Preview PDFs
 * Better showing of archive files
 * Set up tabs and navigation between
 * Work with flattened subdirs and tree
+
+## Coming from dired
+
+Ranger works as a replacement to `dired`, but there are a couple of things you have to know:
+* If you don't like seen windows with the parent folders, you can user the minimal `ranger` mode called `deer` (see next section).
+* When you open a file, the `ranger` session gets finalized. If you want to restore it after closing the file, just try opening `ranger` again (it will remember exactly the path where you were before).
+* If you want to execute a shell command just for the marked files, instead of all the files in the current directory, you have to use `dired-do-shell-command` (in `spacemacs` it is bound to `;!`).
 
 ## Minimal Ranger Mode (deer)
 
@@ -78,11 +92,24 @@ ranger in a single window without preview or parent directories.  This allows
 all the functionality builtin to ranger without modifying any other buffer
 windows.  Toggle between `ranger` and `deer` with `zp`.
 
+## Copy / Paste
+
+Ranger utilizes a copy ring to save a persistent fileset that can then be
+either moved or copied to a target directory.  This is consistent with the
+way the ranger file manager manages file movement. `yy` specifies to copy the
+marked or currently hovered files.  Additionally a flag denoted as "P" will
+visually indicate what files are marked for movement. `dd` likewise specifies
+that the files will be moved instead of copied.
+
+To paste the files most recently added to the copy ring, use `pp` or `po` to
+paste.  The latter binding will overwrite existing files.
+
 ## Key bindings
 
  Keybinding    | Description
  ------------- | -----------
  `?`           | show ranger help
+ `!`           | run shell command
  `j`           | navigate down
  `k`           | navigate up
  `J`           | next subdir
@@ -91,6 +118,8 @@ windows.  Toggle between `ranger` and `deer` with `zp`.
  `gg`          | goto first file
  `gh`          | goto home directory
  `B`           | show bookmark prompt
+ `D`           | delete the selected file
+ `R`           | rename/move the selected file
  ````          | goto bookmark
  `m`           | set bookmark
  `[`           | previous parent directory
@@ -102,6 +131,10 @@ windows.  Toggle between `ranger` and `deer` with `zp`.
  `zi`          | toggle showing literal / full-text previews
  `zh`          | toggle showing dotfiles
  `zf`          | toggle showing image full-size or fitted to window
+ `ws`          | exit ranger and open selected file in vertical split
+ `wv`          | exit ranger and open selected file in horizontal split
+ `wf`          | exit ranger and open selected file in new frame
+ `we`          | open the selected file in external app
  `o`           | sort options
  `h`           | go up directory
  `l`           | find file / enter directory
@@ -112,12 +145,23 @@ windows.  Toggle between `ranger` and `deer` with `zp`.
  `z+`          | increment number of parents
  `v`           | toggle all marks
  `V`           | visually select lines
+ `u`           | unmark the selected file
+ `yy`          | mark files to copy
+ `dd`          | mark files to move
+ `pp`          | paste files in copy ring
+ `po`          | paste files in copy ring and overwrite existing
+ `p?`          | show the copy contents
  `S`           | enter shell
- `C-SPC`       | mark current file
+ `C-SPC`/`TAB` | mark current file
+ `C-r`         | refresh
  `i`           | show preview of current file
  `C-j`         | scroll preview window down
  `C-k`         | scroll preview window up
  `zp`          | toggle between full ranger and deer-mode
+ `gn`          | create a new tab
+ `gT`          | go to previous tab
+ `gt`          | go to next tab
+ `gc`          | close current tab
 
 ## Configuration
 
@@ -136,7 +180,7 @@ Or you can choose to kill the buffer just after you move to another entry in the
 (setq ranger-cleanup-eagerly t)
 ```
 
-You can choose to show dotfiles at ranger startup, toggled by `zh`
+You can choose to show dotfiles at ranger startup, toggled by `zh`.
 ```el
 (setq ranger-show-dotfiles t)
 ```
@@ -155,12 +199,12 @@ return a string that is placed in the header-line.
 
 ### Parent options
 
-You can set the number of folders to nest to the left, adjusted by `z-` and `z+`
+You can set the number of folders to nest to the left, adjusted by `z-` and `z+`.
 ```el
 (setq ranger-parent-depth 2)
 ```
 
-You can set the size of the parent windows as a fraction of the frame size
+You can set the size of the parent windows as a fraction of the frame size.
 ```el
 (setq ranger-width-parents 0.12)
 ```
@@ -173,12 +217,12 @@ frame size to prevent filling up entire frame with parents.
 
 ### Preview options
 
-You can choose to show previews literally, or through find-file, toggled by `zi`
+You can choose to show previews literally, or through find-file, toggled by `zi`.
 ```el
 (setq ranger-show-literal t)
 ```
 
-You can set the size of the preview windows as a fraction of the frame size
+You can set the size of the preview windows as a fraction of the frame size.
 ```el
 (setq ranger-width-preview 0.55)
 ```
