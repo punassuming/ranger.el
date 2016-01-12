@@ -507,8 +507,9 @@ to not replace existing value."
 
 ;;;###autoload
 (when ranger-key
-  (with-eval-after-load 'dired
-    (define-key dired-mode-map ranger-key 'deer)))
+  (add-hook 'dired-mode-hook
+            (defun ranger-set-dired-key ()
+                (define-key dired-mode-map ranger-key 'deer))))
 
 (defun ranger-define-additional-maps (&optional mode)
   "Define additional mappings for ranger-mode that can't simply be in the defvar (depend on packages)."
