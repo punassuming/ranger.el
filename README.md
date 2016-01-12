@@ -1,4 +1,6 @@
 # Ranger
+
+[![Join the chat at https://gitter.im/ralesi/ranger.el](https://badges.gitter.im/ralesi/ranger.el.svg)](https://gitter.im/ralesi/ranger.el?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![MELPA](http://melpa.org/packages/ranger-badge.svg)](http://melpa.org/#/ranger)
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
