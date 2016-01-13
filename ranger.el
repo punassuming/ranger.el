@@ -656,27 +656,17 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                      ))))
 
 (defun ranger-pop-eshell (&optional arg)
+  "Create an eshell window below selected window, working directory."
   (interactive)
-  (let* ((eshell-buffer-name "*eshell*")
-         (buf
-          (cond
-           ((numberp arg)
-            (get-buffer-create (format "%s<%d>"
-                                       eshell-buffer-name
-                                       arg)))
-           (arg
-            (generate-new-buffer eshell-buffer-name))
-           (t
-            (get-buffer-create eshell-buffer-name)
-            ))))
-    (cl-assert (and buf (buffer-live-p buf)))
-    (split-window-below)
-    (windmove-down)
-    (pop-to-buffer-same-window buf)
-    (unless (derived-mode-p 'eshell-mode)
-      (eshell-mode))
-    buf))
-
+  (let ((buf (get-buffer-create "ranger-eshell")))
+    (if (r--fget ranger-minimal)
+        (display-buffer-below-selected buf '((window-height . 10)))
+    (display-buffer-at-bottom buf '((window-height . 10))))
+    (select-window
+     (get-buffer-window buf))
+    (eshell)
+    (add-hook 'eshell-exit-hook
+              '(lambda () (unless (one-window-p) (delete-window))) nil t)))
 
 
 ;;; delayed function creation
