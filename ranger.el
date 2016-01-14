@@ -530,6 +530,12 @@ to not replace existing value."
     (evil-set-initial-state 'ranger-mode 'motion)
     (evil-make-overriding-map ranger-mode-map 'motion)
     (evil-normalize-keymaps)
+
+    ;; allow cursor to be cleared
+    (when ranger-hide-cursor
+      (defadvice evil-refresh-cursor (around evil activate)
+        (unless (eq (current-buffer) ranger-buffer)
+          ad-do-it)))
     )
 
     ;; make sure isearch is cleared before we delete the buffer on exit
@@ -547,6 +553,8 @@ to not replace existing value."
      (defadvice wdired-finish-edit (after evil activate)
        (ranger-mode))
      ))
+
+
 
 
 
@@ -1387,8 +1395,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
              ;; select-window needed for hl-line
              (select-window window)
              (ranger-parent-child-select)
-             (when ranger-hide-cursor
-               (setq cursor-type nil))
+             (ranger-hide-the-cursor) 
              )))
        nil nil 'nomini))
 
@@ -1458,7 +1465,7 @@ slot)."
           (make-local-variable 'font-lock-defaults)
           (setq font-lock-defaults '((dired-font-lock-keywords) nil t))
           (buffer-disable-undo)
-          (setq cursor-type nil)
+          (setq-local cursor-type nil)
           (erase-buffer)
           (turn-on-font-lock)
           (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
@@ -1482,7 +1489,7 @@ is set, show literally instead of actual buffer."
                              (generate-new-buffer "*ranger-prev*"))))
         (with-current-buffer temp-buffer
           (buffer-disable-undo)
-          (setq cursor-type nil)
+          (setq-local cursor-type nil)
           (erase-buffer)
           (font-lock-mode -1)
           (insert-file-contents entry-name)
@@ -1575,12 +1582,11 @@ is set, show literally instead of actual buffer."
                                                                                 ranger-width-parents)))))))))
 
             (with-current-buffer preview-buffer
-              (setq cursor-type nil)
+              (setq-local cursor-type nil)
               (when ranger-modify-header
                 (setq header-line-format `(:eval (,ranger-preview-header-func)))))
 
-            (when (and buffer-read-only ranger-hide-cursor)
-              (setq cursor-type nil))
+            (ranger-hide-the-cursor)
 
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
@@ -2200,8 +2206,40 @@ properly provides the modeline in dired mode. "
 
   (ranger-show-details)
   (ranger-set-modeline)
+  (ranger-hide-the-cursor)
+
+  ;; recenter focus
+  (when (bobp)
+    (dired-next-line 1))
+  (when (eobp)
+    (dired-next-line -1))
+  )
+
+(defun ranger-hide-the-cursor ()
   (when (and buffer-read-only ranger-hide-cursor)
-    (setq cursor-type nil)))
+    (setq-local cursor-type nil)
+    ))
+
+(defmacro ranger--debug-message (message time &rest body)
+  "Display MESSAGE temporarily for given TIME to help with debugging."
+  (declare (debug t) (indent 1))
+  (let ((current-message (make-symbol "current-message"))
+        (temp-message (make-symbol "with-temp-message")))
+    `(let ((,temp-message ,message)
+           (,current-message))
+       (unwind-protect
+           (progn
+             (when ,temp-message
+               (setq ,current-message (current-message))
+               (message "%s" ,temp-message))
+             ,@body
+             (redisplay)
+             (sleep-for ,time)
+             )
+         (and ,temp-message
+              (if ,current-message
+                  (message "%s" ,current-message)
+                (message nil)))))))
 
 ;;;###autoload
 (when ranger-override-dired
