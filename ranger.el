@@ -1050,9 +1050,11 @@ ranger-`CHAR'."
 (defun ranger-search-files ()
   "Search for files / directories in folder."
   (interactive)
-  (if (featurep 'helm)
-      (call-interactively 'helm-find-files)
-    (call-interactively 'ido-find-file)))
+  (cond
+   ((featurep 'helm)
+    (helm-find-files-1 default-directory))
+   (t
+    (call-interactively 'ido-find-file))))
 
 (defun ranger-up-directory ()
   "Move to parent directory."
