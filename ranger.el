@@ -787,11 +787,10 @@ the idle timer fires are ignored."
 
 (defun ranger-search ()
   (interactive)
-  (call-interactively
-   (if (and (fboundp 'evil-motion-state-p)
-            (evil-motion-state-p))
-       (evil-search-forward)
-     (isearch-forward))))
+  (if (and (fboundp 'evil-motion-state-p)
+           (evil-motion-state-p))
+      (evil-search-forward)
+    (isearch-forward)))
 
 (defun ranger-search-next ()
   (interactive)
