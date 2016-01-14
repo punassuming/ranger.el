@@ -8,8 +8,8 @@
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4"))
 
-;; Based on work from
-;; peep-dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
+;; Inspired by work from
+;; dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
 
 ;;; License:
 
@@ -29,12 +29,12 @@
 ;;; Commentary:
 
 ;; This is a minor mode that runs within dired emulating many of the features of
-;; ranger. This minor mode shows a stack of the parent directories and updates
-;; the parent buffers while nvaigating the file system. The preview window takes
-;; some of the ideas from Peep-Dired <https://github.com/asok/peep-dired> to
-;; display previews for selected files in the primary dired buffer. This package
-;; tries its best to make a seamless user experience from ranger created for
-;; python.
+;; ranger <https://github.com/hut/ranger>. This minor mode shows a stack of the
+;; parent directories and updates the parent buffers while nvaigating the file
+;; system. The preview window takes some of the ideas from Peep-Dired
+;; <https://github.com/asok/peep-dired> to display previews for selected files
+;; in the primary dired buffer. This package tries its best to make a seamless
+;; user experience from ranger created for python.
 
 ;;; FEATURES
 
