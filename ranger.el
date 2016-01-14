@@ -666,13 +666,14 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
 (defun ranger-pop-eshell (&optional arg)
   "Create an eshell window below selected window, working directory."
   (interactive)
-  (let ((buf (get-buffer-create "ranger-eshell")))
+  (let ((tmp (generate-new-buffer "*temp*")))
     (if (r--fget ranger-minimal)
-        (display-buffer-below-selected buf '((window-height . 10)))
-    (display-buffer-at-bottom buf '((window-height . 10))))
+        (display-buffer-below-selected tmp '((window-height . 7)))
+    (display-buffer-at-bottom tmp '((window-height . 7))))
     (select-window
-     (get-buffer-window buf))
+     (get-buffer-window tmp))
     (eshell)
+    (kill-buffer tmp)
     (add-hook 'eshell-exit-hook
               '(lambda () (unless (one-window-p) (delete-window))) nil t)))
 
