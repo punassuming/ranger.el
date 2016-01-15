@@ -800,7 +800,7 @@ the idle timer fires are ignored."
   "Return a list of all bookmarks linking to a directory."
   (cl-remove-duplicates
    (cl-loop for bm in bookmark-alist
-            for fname = (alist-get 'filename bm)
+            for fname = (cdr (assq 'filename bm))
             when (file-directory-p fname) collect fname into new
             finally return new)
    :test (lambda (x y) (or (null y) (equal x y)))))
