@@ -47,20 +47,21 @@
 
 ;;; KNOWN ISSUES
 
-;; - window specific settings neededs
+;; - window specific settings needed
 ;;  - current tab
 ;;  - history
 ;;  - current-file
 
 ;;; HISTORY
 
-;; version 0.9.1, 2015-07-19 changed package to ranger
-;; version 0.9.2, 2015-07-26 improve exit from ranger, bookmark support
-;; version 0.9.4, 2015-07-31 deer mode, history navigation
-;; version 0.9.5, 2015-08-20 fixed most bugs when reverting from ranger
-;; version 0.9.6, 2015-09-11 delete all accessed buffers, add details to echo
-;; version 0.9.7, 2015-09-13 copy and paste functionality added
-;; version 0.9.8, 2015-10-04 multiple ranger window support, override dired
+;; version 0.9.1,   2015-07-19 changed package to ranger
+;; version 0.9.2,   2015-07-26 improve exit from ranger, bookmark support
+;; version 0.9.4,   2015-07-31 deer mode, history navigation
+;; version 0.9.5,   2015-08-20 fixed most bugs when reverting from ranger
+;; version 0.9.6,   2015-09-11 delete all accessed buffers, add details to echo
+;; version 0.9.7,   2015-09-13 copy and paste functionality added
+;; version 0.9.8,   2015-10-04 multiple ranger window support, override dired
+;; version 0.9.8.1, 2015-10-04 ranger is now a major mode
 
 ;;; Code:
 
