@@ -107,9 +107,9 @@ its previous state.
 
 The window on the right side is designated as the preview window. The visibility
 of the preview window can be toggled with the `ranger-preview-file` setting and
-the keybinding `zi`. Files will be previewed in the preview window when
+the keybinding `i`. Files will be previewed in the preview window when
 selected. A raw preview of the file is set by default with the
-`ranger-show-literal` setting, but can be toggled by `zf`, at which case a fully
+`ranger-show-literal` setting, but can be toggled by `zi`, at which case a fully
 formatted preview of the file will be shown. Additionally, when
 `ranger-show-literal` is disabled, images and archive contents will be shown in
 the preview window when selected. When a directory is selected in the ranger
