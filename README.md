@@ -15,6 +15,7 @@
     - [Todo](#todo)
     - [Window conventions for Ranger](#window-conventions-for-ranger)
         - [Standard Ranger Bindings](#standard-ranger-bindings)
+    - [Coming from dired](#coming-from-dired)
     - [Minimal Ranger Mode (deer)](#minimal-ranger-mode-deer)
     - [Setting as Default Directory Handler](#setting-as-default-directory-handler)
     - [Bookmark Navigation](#bookmark-navigation)
@@ -154,6 +155,13 @@ window, a file listing of the subdirectory will be shown.
  `K`           | previous subdir
  `C-j`         | scroll preview window down
  `C-k`         | scroll preview window up
+
+## Coming from dired
+
+Ranger works as a replacement to `dired`, but there are a couple of things you have to know:
+* If you don't like seen windows with the parent folders, you can user the minimal `ranger` mode called `deer` (see next section).
+* When you open a file, the `ranger` session gets finalized. If you want to restore it after closing the file, just try opening `ranger` again (it will remember exactly the path where you were before).
+* If you want to execute a shell command just for the marked files, instead of all the files in the current directory, you have to use `dired-do-shell-command` (in `spacemacs` it is bound to `;!`).
 
 ## Minimal Ranger Mode (deer)
 
