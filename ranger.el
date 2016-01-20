@@ -247,6 +247,7 @@ preview window."
 
 
 ;; declare used variables
+(defvar ranger-was-ranger)
 (defvar ranger-mode)
 (defvar dired-omit-verbose)
 (defvar dired-omit-mode)
@@ -536,7 +537,7 @@ to not replace existing value."
     ;; allow cursor to be cleared
     (when ranger-hide-cursor
       (defadvice evil-refresh-cursor (around evil activate)
-        (unless (eq (current-buffer) ranger-buffer)
+        (unless (eq major-mode 'ranger-mode)
           ad-do-it)))
     )
 
@@ -547,13 +548,18 @@ to not replace existing value."
 (eval-after-load 'wdired
   '(progn
      (defadvice wdired-change-to-wdired-mode (before evil activate)
-       (ranger-to-dired))
+       (setq ranger-was-ranger (eq major-mode 'ranger-mode))
+       (when ranger-was-ranger
+         (ranger-to-dired)))
      (defadvice wdired-exit (after evil activate)
-       (ranger-mode))
+       (when ranger-was-ranger
+         (ranger-mode)))
      (defadvice wdired-abort-changes (after evil activate)
-       (ranger-mode))
+       (when ranger-was-ranger
+         (ranger-mode)))
      (defadvice wdired-finish-edit (after evil activate)
-       (ranger-mode))
+       (when ranger-was-ranger
+         (ranger-mode)))
      ))
 
 
