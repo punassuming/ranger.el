@@ -341,7 +341,7 @@ preview window."
 
     (define-key map "?"           'ranger-help)
     (define-key map "'"           'ranger-show-size)
-    (define-key map "!"           'shell-command)
+    (define-key map "!"           'dired-do-shell-command)
     (define-key map (kbd "C-c C-e") 'wdired-change-to-wdired-mode)
     (define-key map "B"           'ranger-show-bookmarks)
     (define-key map "D"           'dired-do-delete)

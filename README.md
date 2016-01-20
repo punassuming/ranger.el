@@ -148,7 +148,8 @@ window, a file listing of the subdirectory will be shown.
  `z+`          | increment number of parents
  `zp`          | toggle between full ranger and deer-mode
  `S`           | eshell popup window
- `!`           | run shell command
+ `!`           | run shell command on file
+ `&`           | run async shell command on file
  `[`           | previous parent directory
  `]`           | next parent directory
  `J`           | next subdir
@@ -161,7 +162,6 @@ window, a file listing of the subdirectory will be shown.
 Ranger works as a replacement to `dired`, but there are a couple of things you have to know:
 * If you don't like seen windows with the parent folders, you can user the minimal `ranger` mode called `deer` (see next section).
 * When you open a file, the `ranger` session gets finalized. If you want to restore it after closing the file, just try opening `ranger` again (it will remember exactly the path where you were before).
-* If you want to execute a shell command just for the marked files, instead of all the files in the current directory, you have to use `dired-do-shell-command` (in `spacemacs` it is bound to `;!`).
 
 ## Minimal Ranger Mode (deer)
 
