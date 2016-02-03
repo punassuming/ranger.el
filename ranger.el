@@ -511,7 +511,7 @@ to not replace existing value."
 (when ranger-key
   (add-hook 'dired-mode-hook
             (defun ranger-set-dired-key ()
-                (define-key dired-mode-map ranger-key 'deer))))
+                (define-key dired-mode-map ranger-key 'deer-from-dired))))
 
 (defun ranger-define-additional-maps (&optional mode)
   "Define additional mappings for ranger-mode that can't simply be in the defvar (depend on packages)."
@@ -2084,6 +2084,12 @@ properly provides the modeline in dired mode. "
     (when dir
       (r--fset ranger-minimal t)
       (ranger-find-file dir))))
+
+(defun deer-from-dired ()
+  (interactive)
+  (when ranger-override-dired
+    (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
+  (deer))
 
 (defun ranger-minimal-toggle ()
   (interactive)
