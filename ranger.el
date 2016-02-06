@@ -9,7 +9,7 @@
 ;; Package-Requires: ((emacs "24.4"))
 
 ;; Inspired by work from
-;; dired - Author: Adam Sokolnicki <adam.sokolnicki@gmail.com>
+;; peep-dired - Author: Adam Sokolnicki
 
 ;;; License:
 
@@ -28,7 +28,7 @@
 
 ;;; Commentary:
 
-;; This is a minor mode that runs within dired emulating many of the features of
+;; This is a derived major mode that runs within dired emulating many of the features of
 ;; ranger <https://github.com/hut/ranger>. This minor mode shows a stack of the
 ;; parent directories and updates the parent buffers while nvaigating the file
 ;; system. The preview window takes some of the ideas from Peep-Dired
@@ -621,13 +621,6 @@ to not replace existing value."
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    ;; (when (and (fboundp 'evil-evilified-state-p)
-    ;;            (evil-evilified-state-p))
-    ;;   (evil-evilified-state -1)
-    ;;   (evil-normal-state)
-    ;;   )
-    ;; (evil-make-overriding-map ranger-mode-map nil)
-    ;; (evil-normalize-keymaps)
     (evil-set-initial-state 'ranger-mode 'motion)
     (evil-make-overriding-map ranger-mode-map 'motion)
     (evil-normalize-keymaps)
@@ -636,8 +629,7 @@ to not replace existing value."
     (when ranger-hide-cursor
       (defadvice evil-refresh-cursor (around evil activate)
         (unless (eq major-mode 'ranger-mode)
-          ad-do-it)))
-    )
+          ad-do-it))))
 
   ;; make sure isearch is cleared before we delete the buffer on exit
   (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
@@ -657,9 +649,7 @@ to not replace existing value."
          (ranger-mode)))
      (defadvice wdired-finish-edit (after evil activate)
        (when ranger-was-ranger
-         (ranger-mode)))
-     ))
-
+         (ranger-mode)))))
 
 
 
@@ -1195,6 +1185,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (when find-name
       (if (file-directory-p find-name)
           (progn
+            (message "Opening directory in ranger")
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
@@ -1204,7 +1195,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-mode))
-        (find-file find-name)))))
+        (progn
+          (message "Opening file in ranger")
+        (find-file find-name))))))
 
 (defun ranger-open-file (&optional mode)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
@@ -1526,6 +1519,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Make parent window.  `PARENT' is a construct with ((current . parent) .
 slot)."
   (let* ((parent-name (cdar parent))
+         (window-configuration-change-hook nil)
          (current-name (caar parent))
          (slot (cdr parent))
          (parent-buffer (ranger-dir-buffer parent-name nil))
@@ -1667,6 +1661,7 @@ is set, show literally instead of actual buffer."
 (defun ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
+         (window-configuration-change-hook nil)
          (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
@@ -1976,27 +1971,31 @@ fraction of the total frame size"
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
-  (if (eq major-mode 'dired-mode)
-      (ranger-mode)
-    (progn
-      ;; Try to manage new windows / frames created without killing ranger
-      (let* ((ranger-window-props
-              (r--aget ranger-w-alist
-                       (selected-window)))
-             (prev-buffer (car ranger-window-props))
-             (ranger-buffer (cdr ranger-window-props))
-             (current (current-buffer))
-             (buffer-fn (buffer-file-name (current-buffer))))
-        (if buffer-fn
-            (progn
-              (message "File opened, exiting ranger")
-              (ranger-disable)
-              (find-file buffer-fn))
-          (progn
-            (message "Redirecting window to new frame")
-            (set-window-buffer nil ranger-buffer)
-            (when current
-              (display-buffer-other-frame current))))))))
+  ;; (message "Major mode was %s in window %s" major-mode (selected-window))
+  ;; TODO Try to manage new windows / frames created without killing ranger
+  (let* ((ranger-window-props
+          (r--aget ranger-w-alist
+                   (selected-window)))
+         (prev-buffer (car ranger-window-props))
+         (ranger-buffer (cdr ranger-window-props))
+         (current (current-buffer))
+         (buffer-fn (buffer-file-name (current-buffer))))
+    (cond
+     ;; ((and )
+     ;;  (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+     ;;  (message "should close ranger : %s" (selected-window)))
+     ((and buffer-fn (not (eq  current ranger-buffer)))
+      (message "File opened, exiting ranger")
+      (ranger-disable)
+      (find-file buffer-fn))
+     ((and (not buffer-fn) (not (eq major-mode 'dired-mode)))
+      (message "Ranger window was overwritten. Redirecting window to new frame")
+      (set-window-buffer nil ranger-buffer)
+      (when current
+          (display-buffer-other-frame current)))
+     (t ;; (message "Don't know what to do")
+        ))
+    ))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
@@ -2005,10 +2004,17 @@ fraction of the total frame size"
           (r--aget ranger-w-alist
                    (selected-window)))
          (prev-buffer (car ranger-window-props))
-         (ranger-buffer (cdr ranger-window-props))
          (ranger-windows (r--akeys ranger-w-alist))
+         (ranger-buffer (cdr ranger-window-props))
          (ranger-frames (r--akeys ranger-f-alist)))
     ;; if all frames and windows are killed, revert buffer settings
+    ;; (redisplay)
+    ;; (message "Checking Window \n** mode: %s \n** buffer - %s\n** window - %s"
+    ;;          major-mode
+    ;;          (current-buffer)
+    ;;          (frame-selected-window)
+    ;;          ;; (selected-window)
+    ;;          )
     (if (not  (or (ranger-windows-exists-p)
                   (ranger-frame-exists-p)))
         (progn
@@ -2017,9 +2023,13 @@ fraction of the total frame size"
       ;; when still in ranger's window, make sure ranger's primary window and buffer are still here.
       (when ranger-window-props
         ;; Unless selected window does not have ranger buffer
-        (unless (and (memq (selected-window) ranger-windows)
-                     (eq (current-buffer) ranger-buffer))
-          (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+        (when (and  (memq (selected-window) ranger-windows)
+                    (not (eq major-mode 'ranger-mode)))
+          ;; (message "Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
+          ;;          (current-buffer)
+          ;;          major-mode 
+          ;;          (selected-window)
+          ;;          (memq (selected-window) ranger-windows) )
           (ranger-still-dired))))))
 
 (defun ranger-windows-exists-p ()
@@ -2428,7 +2438,7 @@ properly provides the modeline in dired mode. "
 
   :group 'ranger
   (setq-local cursor-type nil)
-  (message "Entering ranger-mode")
+  ;; (message "Entering ranger-mode")
   ;; (set-keymap-parent ranger-mode-map dired-mode-map)
   (use-local-map ranger-mode-map)
   (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
@@ -2436,6 +2446,7 @@ properly provides the modeline in dired mode. "
   (add-hook 'window-configuration-change-hook 'ranger-window-check)
   (setq mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
+  ;; (message "Major mode is %s" major-mode)
   )
 
 ;; (evil-set-initial-state 'ranger-mode 'emacs)
