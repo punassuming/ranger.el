@@ -505,13 +505,17 @@ preview window."
         (define-key map "wv"            'ranger-open-file-horizontally)
         (define-key map "wf"            'ranger-open-file-frame)
         (define-key map "we"            'ranger-open-in-external-app)
+
+        ;; mouse
+        (define-key map (kbd  "<mouse-1>") 'ranger-find-file)
+        (define-key map (kbd  "<mouse-3>") 'ranger-up-directory)
+
         ))
      )
     ;; define a prefix for all dired commands
     (define-prefix-command 'ranger-dired-map nil "Dired-prefix")
     (setq ranger-dired-map (copy-tree dired-mode-map))
     (define-key map ";" ranger-dired-map)
-
     map)
   "Define mappings for ranger-mode." )
 
@@ -1588,6 +1592,7 @@ slot)."
           (goto-char (point-min))
           ;; truncate lines in directory buffer
           (setq truncate-lines t)
+          ;; (visual-line-mode nil)
           ;; remove . and .. from directory listing
           (save-excursion
             (while (re-search-forward "total used in directory\\|\\.$" nil t)
@@ -1947,7 +1952,7 @@ fraction of the total frame size"
       (message "%s" ""))))
 
 (defun ranger-revert-appearance (buffer)
-  "Revert the `BUFFER' to pre-ranger defaults"
+  "Revert the `BUFFER' to pre-ranger defaults without closing ranger session."
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       ;; revert buffer local modes used in ranger
@@ -1967,7 +1972,9 @@ fraction of the total frame size"
         ;; (setq ranger-mode nil)
         ;; hide details line at top
         (funcall 'remove-from-invisibility-spec 'dired-hide-details-information)
-        (revert-buffer)))))
+        ;; sort dired with previous listing options
+        (dired-sort-other dired-listing-switches)
+        ))))
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
@@ -2444,8 +2451,7 @@ properly provides the modeline in dired mode. "
   (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
   (ranger-setup)
   (add-hook 'window-configuration-change-hook 'ranger-window-check)
-  (setq mouse-1-click-follows-link nil)
-  (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
+  (setq-local mouse-1-click-follows-link nil)
   ;; (message "Major mode is %s" major-mode)
   )
 
