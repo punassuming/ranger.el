@@ -408,6 +408,9 @@ preview window."
         ;; TODO traverse - }
         (define-key map "f"             'ranger-search-files)
         (define-key map "gh"            'ranger-go-home)
+        (when (eq system-type 'windows-nt)
+          (define-key map "gD"          'ranger-show-drives))
+
         ;; TODO map ge cd /etc
         ;; TODO map gu cd /usr
         ;; TODO map gd cd /dev
@@ -422,7 +425,6 @@ preview window."
         ;; TODO map gR eval fm.cd(ranger.RANGERDIR)
         ;; TODO map g/ cd /
         ;; TODO map g? cd /usr/share/doc/ranger
-
 
         ;; history
         (define-key map "zz"            'ranger-show-history)
@@ -1161,9 +1163,12 @@ ranger-`CHAR'."
   (interactive)
   (let ((current default-directory)
         (parent (ranger-parent-directory default-directory)))
-    (when parent
-      (ranger-find-file parent)
-      (dired-goto-file current))))
+    (if (string= parent current)
+        (when (eq system-type 'windows-nt)
+          (ranger-show-drives))
+      (progn
+        (ranger-find-file parent)
+        (dired-goto-file current)))))
 
 (defun ranger-save-window-settings (&optional overwrite)
   (let ((frame (window-frame))
@@ -1198,7 +1203,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (if minimal
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
-            (ranger-mode))
+            (ranger-parent-child-select)
+            (ranger-mode)
+            )
         (progn
           (message "Opening file in ranger")
         (find-file find-name))))))
@@ -1733,8 +1740,22 @@ is set, show literally instead of actual buffer."
 ;;   (with-selected-window window
 ;;     (setq-local window-size-fixed 'width)))
 
+(defun ranger-show-drives ()
+  "Show drive prompt."
+  (interactive)
+  (when (eq system-type 'windows-nt)
+    (let ((drive
+           (completing-read "Select drive: "
+                            (ranger--get-windows-drives))))
+      (when drive (ranger-find-file drive)))))
+
+(defun ranger--get-windows-drives ()
+  "Return list of drives in MS Windows."
+  (if (executable-find "wmic")
+      (cdr (split-string (shell-command-to-string "wmic logicaldisk get name")))))
+
 (defun ranger--get-file-sizes (fileset)
-  "Determine file size of provided list of files in `FILESET'."
+  "determine file size of provided list of files in `fileset'."
   (if (and
        fileset
        (executable-find "du"))
@@ -1742,7 +1763,7 @@ is set, show literally instead of actual buffer."
         (apply 'call-process "du" nil t nil "-sch" fileset)
         (format "%s"
                 (progn
-                  (re-search-backward "\\(^[0-9.,]+[A-Za-z]+\\).*total$")
+                  (re-search-backward "\\(^[0-9.,]+[a-za-z]+\\).*total$")
                   (match-string 1)))) ""))
 
 (defun ranger--get-mount-partitions (mode)
@@ -1913,6 +1934,7 @@ fraction of the total frame size"
                      (ranger-frame-exists-p)))
 
         (message "Reverting all buffers")
+
         ;; remove all hooks and advices
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
@@ -2121,11 +2143,14 @@ fraction of the total frame size"
 
 (defun ranger--header-lhs ()
   "Setup header-line for ranger buffer."
-  (let* ((user (user-login-name))
-         (current-file (or (r--fget ranger-current-file) ""))
+  (let* ((current-file (or (r--fget ranger-current-file) ""))
          (file-path (file-name-directory current-file))
          (file-name (file-name-nondirectory current-file)))
-    (format " %s%s"
+    (format " %s : %s%s"
+            (propertize (concat
+                         (user-login-name)
+                         "@"
+                         system-name) 'face 'font-lock-keyword-face)
             file-path
             (propertize file-name 'face 'font-lock-constant-face))))
 
@@ -2172,7 +2197,7 @@ fraction of the total frame size"
     (walk-window-tree
      (lambda (window)
        (push
-        (cons window (window-width window))
+        (cons window (- (window-width window) 1))
         info)) nil nil))
     (nreverse info)))
 
@@ -2182,7 +2207,7 @@ fraction of the total frame size"
   (let* ((coords (ranger-parse-coords))
          (lm (car coords))
          (num (cdr coords)))
-    (substring (ranger--header-string) (+ lm (* 3 num)))))
+    (substring (ranger--header-string) (+ lm 1 (* 3 num)))))
 
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
@@ -2312,8 +2337,6 @@ properly provides the modeline in dired mode. "
 
   (require 'dired-x)
 
-  (run-hooks 'ranger-mode-load-hook)
-
   ;; store previous settings
   (unless ranger-pre-saved
     (setq ranger-pre-hl-mode hl-line-mode)
@@ -2388,6 +2411,8 @@ properly provides the modeline in dired mode. "
   (ranger-show-details)
   (ranger-set-modeline)
   (ranger-hide-the-cursor)
+
+  (run-hooks 'ranger-mode-load-hook)
 
   ;; recenter focus
   (when (bobp)
