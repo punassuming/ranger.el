@@ -206,7 +206,7 @@
   :group 'ranger
   :type 'float)
 
-(defcustom ranger-preview-delay 0.040
+(defcustom ranger-preview-delay 0.1
   "Time in seconds to delay running preview file functions."
   :group 'ranger
   :type 'float)
@@ -353,10 +353,11 @@ preview window."
     ;; basics
     (define-key map "?"             'ranger-help)
     (define-key map "du"            'ranger-show-size)
-    ;; TODO ranger-q should close current tab first then exit
     ;; TODO quit with ZZ and ZQ also
     (define-key map "q"             'ranger-close)
+    (define-key map "ZZ"             'ranger-close)
     (define-key map "Q"             'ranger-disable)
+    (define-key map "ZQ"             'ranger-disable)
     (define-key map (kbd "C-r")     'ranger-refresh)
 
     ;; bookmarks
@@ -364,21 +365,21 @@ preview window."
     (define-key map (kbd "'")       'ranger-goto-mark)
     (define-key map "B"             'ranger-show-bookmarks)
     (define-key map "m"             'ranger-create-mark)
-    ;; TODO unset mark - um
+    (define-key map "um"            'ranger-remove-mark)
 
     ;; marking
-    (define-key map "u"             'dired-unmark)
-    (define-key map "v"             'dired-toggle-marks)
-    (define-key map (kbd "C-SPC")   'ranger-mark)
-    (define-key map (kbd "TAB")     'ranger-mark)
-    ;; TODO toggle mark - t
-    ;; TODO regexp toggle - "
-    ;; TODO unmark all files - uv
+    (define-key map "v"           'dired-toggle-marks)
+    (define-key map (kbd "C-SPC") 'ranger-mark)
+    (define-key map (kbd "TAB")   'ranger-mark)
+    (define-key map (kbd "\"")    'dired-mark-files-regexp)
+    (define-key map (kbd "uv")    'dired-unmark-all-files)
+    (define-key map (kbd "t")     'dired-toggle-marks)
+    (define-key map "t"           'ranger-toggle-mark)
 
     ;; dired commands
-    (define-key map "!"             'dired-do-shell-command)
-    (define-key map "D"             'dired-do-delete)
-    (define-key map "R"             'dired-do-rename)
+    (define-key map "!"           'dired-do-shell-command)
+    (define-key map "D"           'dired-do-delete)
+    (define-key map "R"           'dired-do-rename)
 
     ;; navigation
     (define-key map "-"             'ranger-up-directory)
@@ -388,12 +389,12 @@ preview window."
     (define-key map "j"             'ranger-next-file)
     (define-key map "k"             'ranger-prev-file)
     (define-key map "l"             'ranger-find-file)
-    (define-key map (kbd "C-f")             'ranger-page-down)
-    (define-key map (kbd "C-b")             'ranger-page-up)
+    (define-key map (kbd "C-f")     'ranger-page-down)
+    (define-key map (kbd "C-b")     'ranger-page-up)
     (define-key map "J"             'ranger-half-page-down)
     (define-key map "K"             'ranger-half-page-up)
-    ;; TODO page up / page down - C-f / C-b
-    ;; TODO half page up / down - J / K and C-d / C-u
+    (define-key map (kbd "C-d")     'ranger-half-page-down)
+    (define-key map (kbd "C-u")     'ranger-half-page-up)
     (define-key map [left]          'ranger-up-directory)
     (define-key map [down]          'ranger-next-file)
     (define-key map [up]            'ranger-prev-file)
@@ -403,8 +404,11 @@ preview window."
     ;; jumping around
     (define-key map "["             'ranger-prev-parent)
     (define-key map "]"             'ranger-next-parent)
-    ;; TODO traverse - }
+    (define-key map "}"             'ranger-find-file)
     (define-key map "f"             'ranger-search-files)
+
+
+    ;; going 
     (define-key map "gh"            'ranger-go-home)
     (when (eq system-type 'windows-nt)
       (define-key map "gD"          'ranger-show-drives))
@@ -431,8 +435,8 @@ preview window."
 
     ;; subtrees
     (define-key map "I"             'ranger-insert-subdir)
-    (define-key map "J"             'ranger-next-subdir)
-    (define-key map "K"             'ranger-prev-subdir)
+    (define-key map "gj"             'ranger-next-subdir)
+    (define-key map "gk"             'ranger-prev-subdir)
 
     ;; preview windows
     (define-key map "i"             'ranger-preview-toggle)
@@ -442,11 +446,11 @@ preview window."
     ;; copy and paste
     (define-key map "yy"            'ranger-copy)
     ;; TODO undo copy - uy
-    ;; TODO add to copy - ya
+    (define-key map "ya"            'ranger-copy-append)
     ;; TODO remove from copy - yr
     (define-key map "dd"            'ranger-cut)
     ;; TODO undo cut - ud
-    ;; TODO add to cut - da
+    (define-key map "da"            'ranger-cut-append)
     ;; TODO remove from cut - dr
     (define-key map "pp"            'ranger-paste)
     (define-key map "po"            'ranger-paste-over)
@@ -508,9 +512,10 @@ preview window."
 
     ;; mouse
     (define-key map (kbd  "<mouse-1>") 'ranger-find-file)
+    (define-key map (kbd  "<mouse-3>") 'ranger-up-directory)
 
     map)
-  "Ranger mode map style using standard bindings.")
+  "Ranger mode map style using ranger style bindings.")
 
 (defvar ranger-mode-map
   (let ((map (make-sparse-keymap)))
@@ -696,6 +701,18 @@ be moved. `APPEND' will add files to current ring."
                      (if move "cut" "copy")
                      (length (cdr (ring-ref ranger-copy-ring 0)))))))
 
+(defun ranger-toggle-mark ()
+  "Toggle mark on current line."
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (let ((inhibit-read-only t))
+          (apply 'subst-char-in-region
+                 (point) (1+ (point))
+                 (if (eq ?\040 (following-char)) ; SPC
+                     (list ?\040 dired-marker-char)
+                   (list dired-marker-char ?\040))))))
+
 (defun ranger-mark (arg &optional interactive)
   "Mark the file at point in the Dired buffer.
 If the region is active, mark all files in the region.
@@ -717,11 +734,21 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
        (prefix-numeric-value arg)
        (function (lambda () (delete-char 1) (insert dired-marker-char))))))))
 
+(defun ranger-copy-append ()
+  "Place selected files in the copy ring and mark to be copied.
+`universal-argument' can be used to append to current copy ring."
+  (interactive)
+  (ranger-update-copy-ring nil t))
+
 (defun ranger-copy (&optional append)
   "Place selected files in the copy ring and mark to be copied.
 `universal-argument' can be used to append to current copy ring."
   (interactive "P")
   (ranger-update-copy-ring nil append))
+
+(defun ranger-cut-append ()
+  (interactive)
+  (ranger-update-copy-ring t t))
 
 (defun ranger-cut (&optional append)
   "Place selected files in the copy ring and mark to be moved.
@@ -942,24 +969,36 @@ ranger-`CHAR'."
     (message "Bookmarked directory %s as `ranger-%s'"
              default-directory mark-letter)))
 
+(defun ranger-remove-mark ()
+  (interactive)
+  (let* ((mark
+          (read-key (ranger--marks)))
+         (mark-letter (char-to-string mark))
+         (bookmark-name (concat "ranger-" mark-letter))
+         (bookmark-path (bookmark-location bookmark-name)))
+    (when (and bookmark-path (file-directory-p bookmark-path))
+      (bookmark-delete bookmark-name))))
+
 (defun ranger-goto-mark ()
   "Go to bookmarks specified from `ranger-create-mark'."
   (interactive)
   (let* ((mark
-          (read-key
-           (mapconcat
-            #'(lambda (bm)
-                (when (and
-                       (string-match "ranger-" (car  bm))
-                       (file-directory-p (cdr (cadr bm))))
-                  (replace-regexp-in-string "ranger-" "" (car bm))))
-            bookmark-alist " ")))
+          (read-key (ranger--marks)))
          (mark-letter (char-to-string mark))
          (bookmark-name (concat "ranger-" mark-letter))
          (bookmark-path (bookmark-location bookmark-name)))
-    (when (file-directory-p bookmark-path)
+    (when (and bookmark-path (file-directory-p bookmark-path))
       (ranger-find-file bookmark-path))))
 
+(defun ranger--marks ()
+  "Concatenated list of bookmarks."
+  (mapconcat
+   #'(lambda (bm)
+       (when (and
+              (string-match "ranger-" (car  bm))
+              (file-directory-p (cdr (cadr bm))))
+         (replace-regexp-in-string "ranger-" "" (car bm))))
+   bookmark-alist " "))
 
 ;; ring utilities
 
@@ -1546,6 +1585,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-make-parent (parent)
   "Make parent window.  `PARENT' is a construct with ((current . parent) .
 slot)."
+  (set (make-local-variable 'window-configuration-change-hook) nil)
   (let* ((parent-name (cdar parent))
          (window-configuration-change-hook nil)
          (current-name (caar parent))
@@ -1690,7 +1730,7 @@ is set, show literally instead of actual buffer."
 (defun ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
-         (window-configuration-change-hook nil)
+         ;; (window-configuration-change-hook nil)
          (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
@@ -2481,7 +2521,6 @@ properly provides the modeline in dired mode. "
   "Major mode emulating the ranger file manager in `dired'.
 
 \\{ranger-mode-map}"
-
   :group 'ranger
   (setq-local cursor-type nil)
   ;; (message "Entering ranger-mode")
