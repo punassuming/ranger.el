@@ -2290,7 +2290,9 @@ properly provides the modeline in dired mode. "
     (setq mode-name
           (concat
            ;; (if buffer-read-only "<N>" "<I>")
-           "Ranger:"
+           (if (r--fget ranger-minimal)
+               "Deer:"
+               "Ranger:")
            (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
                   "mtime")
                  ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
