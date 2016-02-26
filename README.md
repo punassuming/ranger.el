@@ -147,6 +147,7 @@ window, a file listing of the subdirectory will be shown.
  `z-`          | reduce number of parents
  `z+`          | increment number of parents
  `zp`          | toggle between full ranger and deer-mode
+ `zd`          | toggle showing file details in deer-mode
  `S`           | eshell popup window
  `!`           | run shell command on file
  `&`           | run async shell command on file
