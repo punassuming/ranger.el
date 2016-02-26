@@ -174,6 +174,11 @@
   :group 'ranger
   :type 'boolean)
 
+(defcustom ranger-deer-show-details t
+  "When t show details in minimal ranger mode."
+  :group 'ranger
+  :type 'boolean)
+
 (defcustom ranger-width-preview 0.65
   "Fraction of frame width taken by preview window."
   :group 'ranger
@@ -465,6 +470,7 @@ preview window."
     (define-key map "zi"            'ranger-toggle-literal)
     (define-key map "zp"            'ranger-minimal-toggle)
     (define-key map "zf"            'ranger-toggle-scale-images)
+    (define-key map "zd"            'ranger-toggle-details)
     ;; TODO map zf   regexp filter
 
     ;; TODO map zc    toggle_option collapse_preview
@@ -1084,6 +1090,18 @@ ranger-`CHAR'."
       ))
   (ranger-setup)
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
+
+(defun ranger-toggle-details ()
+  "Show/hide dot-files."
+  (interactive)
+  (if ranger-deer-show-details ; if currently showing
+        (setq ranger-deer-show-details nil)
+    (progn
+      (setq ranger-deer-show-details t)
+      (revert-buffer) ; otherwise just revert to re-show
+      ))
+  (ranger-setup)
+  (message (format "Show file details: %s"  ranger-deer-show-details)))
 
 (defun ranger-hide-dotfiles ()
   "Hide dotfiles in directory. TODO add variable for files to hide."
@@ -2421,9 +2439,13 @@ properly provides the modeline in dired mode. "
   ;; hide groups, show human readable file sizes
   (setq dired-listing-switches ranger-listing-switches)
 
-  (unless (r--fget ranger-minimal)
-    (dired-hide-details-mode -1)
-    (delete-other-windows))
+  (if (r--fget ranger-minimal)
+      (if ranger-deer-show-details
+          (dired-hide-details-mode -1)
+        (dired-hide-details-mode t))
+      (progn
+        (dired-hide-details-mode -1)
+        (delete-other-windows)))
 
   ;; consider removing
   ;; (auto-revert-mode)
