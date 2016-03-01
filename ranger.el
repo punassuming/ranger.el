@@ -557,18 +557,12 @@ non-nil, set buffer local variable as well."
        (when ,buffer-local
          (set (make-local-variable (quote ,parameter)) ,val))
        (modify-frame-parameters ,frame (list (cons (quote  ,parameter) ,val)))
-       ;; (message "%s" (frame-parameter nil ,parameter))
+       ;; (ranger--message "Frame parameter set: %s" (frame-parameter nil (quote ,parameter)))
        )))
 
 (defmacro r--fclear (parameter)
   `(r--fset ,parameter nil))
 
-;; (message "%s:%s:%s:%s:%s"
-;;          (r--fget ranger-minimal)
-;;          (r--fget ranger-current-file)
-;;          (frame-parameter nil 'ranger-minimal)
-;;          (buffer-local-value ranger-minimal (current-buffer))
-;;          ranger-minimal)
 
 ;;; alist helpers
 
@@ -866,7 +860,7 @@ the idle timer fires are ignored."
                     (and available-tabs
                          (apply 'min available-tabs))
                     ranger-current-tab)))
-    ;; (message (format "%s" index))
+    (ranger--message "tab index : %s" index)
     (when (and index (<= index ranger-max-tabs))
       (setq ranger-current-tab index)
       (ranger-update-tab index)
@@ -1062,6 +1056,7 @@ ranger-`CHAR'."
 (defun ranger-refresh ()
   "Refresh evil ranger buffer."
   (interactive)
+  (ranger--message "Refreshing buffer")
   ;; make sure cursor is visible on screen
   (scroll-right)
   ;; reset dired trees
@@ -1106,6 +1101,7 @@ ranger-`CHAR'."
 (defun ranger-hide-dotfiles ()
   "Hide dotfiles in directory. TODO add variable for files to hide."
   (unless ranger-show-dotfiles
+    (ranger--message "Hiding dotfiles")
     (dired-mark-if
      (and (not (looking-at-p dired-re-dot))
           (not (eolp))			; empty line
@@ -1140,6 +1136,7 @@ ranger-`CHAR'."
 
 (defun ranger-omit ()
   "Quietly omit files in dired."
+  (ranger--message "Omitting")
   (setq-local dired-omit-verbose nil)
   ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$\\|^\\.")
   (dired-omit-mode t))
@@ -1147,6 +1144,7 @@ ranger-`CHAR'."
 (defun ranger-sort (&optional force)
   "Perform current sort on directory. Specify `FORCE' to sort even when
 `ranger-persistent-sort' is nil."
+  (ranger--message "Sorting")
   (dired-sort-other
    (concat dired-listing-switches
            (when (or force
@@ -2029,7 +2027,7 @@ fraction of the total frame size"
                  (list ranger-buffer))
                 :test (lambda (x y) (or (null y) (eq x y)))
                 )))
-          ;; (message (format "all buffers : %s" all-ranger-buffers))
+          (ranger--message "Cleaning all buffers : %s" all-ranger-buffers)
 
           (if ranger-cleanup-on-disable
               (mapc 'ranger-kill-buffer all-ranger-buffers)
@@ -2055,7 +2053,7 @@ fraction of the total frame size"
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       ;; revert buffer local modes used in ranger
-      ;; (message (format "reverting : %s" buffer))
+      (ranger--message "Reverting appearance to buffer : %s" buffer)
 
       (unless ranger-pre-hl-mode
         (hl-line-mode -1))
@@ -2077,7 +2075,7 @@ fraction of the total frame size"
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
-  ;; (message "Major mode was %s in window %s" major-mode (selected-window))
+  (ranger--message "Major mode was %s in window %s" major-mode (selected-window))
   ;; TODO Try to manage new windows / frames created without killing ranger
   (let* ((ranger-window-props
           (r--aget ranger-w-alist
@@ -2087,9 +2085,6 @@ fraction of the total frame size"
          (current (current-buffer))
          (buffer-fn (buffer-file-name (current-buffer))))
     (cond
-     ;; ((and )
-     ;;  (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-     ;;  (message "should close ranger : %s" (selected-window)))
      ((and buffer-fn (not (eq  current ranger-buffer)))
       (message "File opened, exiting ranger")
       (ranger-disable)
@@ -2098,10 +2093,9 @@ fraction of the total frame size"
       (message "Ranger window was overwritten. Redirecting window to new frame")
       (set-window-buffer nil ranger-buffer)
       (when current
-          (display-buffer-other-frame current)))
-     (t ;; (message "Don't know what to do")
-        ))
-    ))
+        (display-buffer-other-frame current)))
+     (t
+      (message "Don't know what to do")))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
@@ -2114,13 +2108,10 @@ fraction of the total frame size"
          (ranger-buffer (cdr ranger-window-props))
          (ranger-frames (r--akeys ranger-f-alist)))
     ;; if all frames and windows are killed, revert buffer settings
-    ;; (redisplay)
-    ;; (message "Checking Window \n** mode: %s \n** buffer - %s\n** window - %s"
-    ;;          major-mode
-    ;;          (current-buffer)
-    ;;          (frame-selected-window)
-    ;;          ;; (selected-window)
-    ;;          )
+    (ranger--message "Window Check \n** mode: %s \n** buffer - %s\n** window - %s"
+      major-mode
+      (current-buffer)
+      (selected-window))
     (if (not  (or (ranger-windows-exists-p)
                   (ranger-frame-exists-p)))
         (progn
@@ -2131,28 +2122,23 @@ fraction of the total frame size"
         ;; Unless selected window does not have ranger buffer
         (when (and  (memq (selected-window) ranger-windows)
                     (not (eq major-mode 'ranger-mode)))
-          ;; (message "Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
-          ;;          (current-buffer)
-          ;;          major-mode 
-          ;;          (selected-window)
-          ;;          (memq (selected-window) ranger-windows) )
+          (ranger--message
+              "Window Check : Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
+            (current-buffer)
+            major-mode 
+            (selected-window)
+            (memq (selected-window) ranger-windows) )
           (ranger-still-dired))))))
 
 (defun ranger-windows-exists-p ()
   "Test if any ranger-windows are live."
-  (if (delq nil
-            (mapcar 'window-live-p
-                    (r--akeys ranger-w-alist)))
-      t
-    nil))
+  (mapcar 'window-live-p
+          (r--akeys ranger-w-alist)))
 
 (defun ranger-frame-exists-p ()
   "Test if any ranger-frames are live."
-  (if (delq nil
-            (mapcar 'frame-live-p
-                    (r--akeys ranger-f-alist)))
-      t
-    nil))
+  (mapcar 'frame-live-p
+          (r--akeys ranger-f-alist)))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
@@ -2182,18 +2168,33 @@ fraction of the total frame size"
     (mapconcat
      (lambda (key)
        (let* ((item (r--aget ranger-t-alist key))
+              (index (car (assoc key ranger-t-alist)))
               (roman (ranger--ar2ro key))
               (value (car-safe item))
               ret)
+         (ranger--message "tab: %s - %s" item index)
          (setq ret (cl-case ranger-tabs-style
                      ('normal (format "%s" value))
                      ('roman (format "%s" roman))
                      ('number (format "%s" key))))
          (if (equal key curr)
              (propertize ret 'face 'font-lock-builtin-face)
-           (propertize ret 'face 'font-lock-comment-face)
-           ret)))
+           (propertize ret
+                       'face 'font-lock-comment-face
+                       'pointer 'hand
+                       'local-map (eval `(ranger-make-header-keymap ,index))
+                       )
+           )))
      tabs " ")))
+
+(defun ranger-make-header-keymap (index)
+  "Return a keymap that call CALLBACK on mouse events.
+CALLBACK is passed the received mouse event."
+  (let ((keymap (make-sparse-keymap)))
+    ;; Pass mouse-1, mouse-2 and mouse-3 events to CALLBACK.
+    (define-key keymap [header-line down-mouse-1] 'ignore)
+    (define-key keymap [header-line mouse-1] `(lambda () (interactive) (ranger-goto-tab ,index)))
+    keymap))
 
 (defun ranger--ar2ro (AN)
   "translate from arabic number AN to roman number,
@@ -2224,10 +2225,9 @@ fraction of the total frame size"
          (file-path (file-name-directory current-file))
          (file-name (file-name-nondirectory current-file)))
     (format " %s : %s%s"
-            (propertize (concat
-                         (user-login-name)
-                         "@"
-                         system-name) 'face 'font-lock-keyword-face)
+            (propertize
+             (format "%s@%s" (user-login-name) (system-name))
+             'face 'font-lock-keyword-face)
             file-path
             (propertize file-name 'face 'font-lock-constant-face))))
 
@@ -2245,23 +2245,17 @@ fraction of the total frame size"
 
 (defun ranger-parse-coords ()
   (interactive)
-  (let* (
-         (window (selected-window))
+  (let* ((window (selected-window))
          (frame (window-frame))
          (coords (ranger-get-window-coords))
          (window-list (mapcar 'car coords))
          (width-list (mapcar 'cdr coords))
-         (winidx (position window window-list))
-         ;; (current-width (nth winidx width-list))
-         ;; (framew (frame-width frame))
-         (left-margin (apply '+ (subseq width-list 0 winidx)))
-         )
-    ;; (message "%s : %s : %s + %s / %s" window winidx left-margin current-width framew)
-    ;; (redisplay)
-    ;; (sleep-for 2)
-    (cons left-margin winidx)
-    )
-  )
+         (winidx (cl-position window window-list))
+         (current-width (nth winidx width-list))
+         (framew (frame-width frame))
+         (left-margin (apply '+ (cl-subseq width-list 0 winidx))))
+    ;; (ranger--message "Coord calculation - %s : %s : %s + %s / %s" window winidx left-margin current-width framew)
+    (cons left-margin winidx)))
 
 (defun ranger-get-window-coords ()
   (interactive)
@@ -2354,7 +2348,6 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let ((minimal (r--fget ranger-minimal)))
     (ranger-revert)
-    ;; (message "%s" minimal)
     (if minimal
         (ranger)
       (deer))))
@@ -2503,29 +2496,20 @@ properly provides the modeline in dired mode. "
 
 (defun ranger-hide-the-cursor ()
   (when (and buffer-read-only ranger-hide-cursor)
-    (setq-local cursor-type nil)
-    ))
+    (setq-local cursor-type nil)))
 
-(defmacro ranger--debug-message (message time &rest body)
-  "Display MESSAGE temporarily for given TIME to help with debugging."
-  (declare (debug t) (indent 1))
-  (let ((current-message (make-symbol "current-message"))
-        (temp-message (make-symbol "with-temp-message")))
-    `(let ((,temp-message ,message)
-           (,current-message))
-       (unwind-protect
-           (progn
-             (when ,temp-message
-               (setq ,current-message (current-message))
-               (message "%s" ,temp-message))
-             ,@body
-             (redisplay)
-             (sleep-for ,time)
-             )
-         (and ,temp-message
-              (if ,current-message
-                  (message "%s" ,current-message)
-                (message nil)))))))
+(defvar ranger--debug nil)
+(defvar ranger--debug-period 0.5)
+
+(defun ranger--message (format &rest args)
+  (when ranger--debug
+    (let (current-mes (curr))
+      (setq format (concat "ranger: " format))
+      (apply 'message format args)
+      (redisplay)
+      (sleep-for ranger--debug-period)
+      (when curr
+        (message curr)))))
 
 ;;;###autoload
 (when ranger-override-dired
@@ -2536,7 +2520,7 @@ properly provides the modeline in dired mode. "
   "Open dired as deer unless already in ranger-mode"
   (let ((ranger-windows (r--akeys ranger-w-alist)))
     (unless (memq (selected-window) ranger-windows)
-      ;; (message "Override attempted")
+      (ranger--message "Override attempted")
       (deer))))
 
 ;;; preserve this variable when switching from `dired-mode' to another mode
@@ -2549,17 +2533,12 @@ properly provides the modeline in dired mode. "
 \\{ranger-mode-map}"
   :group 'ranger
   (setq-local cursor-type nil)
-  ;; (message "Entering ranger-mode")
-  ;; (set-keymap-parent ranger-mode-map dired-mode-map)
   (use-local-map ranger-mode-map)
   (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
   (ranger-setup)
   (add-hook 'window-configuration-change-hook 'ranger-window-check)
   (setq-local mouse-1-click-follows-link nil)
-  ;; (message "Major mode is %s" major-mode)
   )
-
-;; (evil-set-initial-state 'ranger-mode 'emacs)
 
 (provide 'ranger)
 
