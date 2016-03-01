@@ -1254,7 +1254,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (message "Opening directory in ranger")
+            (ranger--message "Opening directory in ranger")
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
@@ -1264,10 +1264,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-parent-child-select)
-            (ranger-mode)
-            )
+            (ranger-mode))
         (progn
-          (message "Opening file in ranger")
+          (ranger--message "Opening file in ranger")
           (find-file find-name)
           (ranger-still-dired)
           )))))
@@ -1552,7 +1551,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 (defun ranger-setup-parents ()
   "Setup all parent directories."
   (let ((parent-name (ranger-parent-directory default-directory))
-        (current-name default-directory)
+        (current-name (expand-file-name default-directory))
         (i 0)
         (unused-windows ()))
 
@@ -1808,7 +1807,7 @@ is set, show literally instead of actual buffer."
 ;; utilities
 (defun ranger-parent-directory (entry)
   "Find the parent directory of `ENTRY'."
-  (file-name-directory (directory-file-name entry)))
+  (file-name-directory (directory-file-name (expand-file-name entry))))
 
 ;; (defun ranger-fix-width (window)
 ;;   "Fix the width of `WINDOW'."
@@ -2095,7 +2094,8 @@ fraction of the total frame size"
       (when current
         (display-buffer-other-frame current)))
      (t
-      (message "Don't know what to do")))))
+      ;; "Didn't meet any criteria."
+               ))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
@@ -2154,7 +2154,7 @@ fraction of the total frame size"
 ;; header / mode line
 (defun ranger--dir-relative ()
   "Return the topmost directory name in path"
-  (let* ((current-name default-directory)
+  (let* ((current-name (expand-file-name default-directory))
          (parent-name (ranger-parent-directory default-directory))
          (relative
           (if (string-equal current-name parent-name)
