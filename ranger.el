@@ -1223,8 +1223,8 @@ ranger-`CHAR'."
 (defun ranger-up-directory ()
   "Move to parent directory."
   (interactive)
-  (let ((current default-directory)
-        (parent (ranger-parent-directory default-directory)))
+  (let* ((current (expand-file-name default-directory))
+         (parent (ranger-parent-directory current)))
     (if (string= parent current)
         (when (eq system-type 'windows-nt)
           (ranger-show-drives))
