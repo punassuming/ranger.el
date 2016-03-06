@@ -357,7 +357,7 @@ frame size to prevent filling up entire frame with parents.
 
 Set the default preference to preview selected file. 
 ```el
-(setq ranger-preview-file t
+(setq ranger-preview-file t)
 ```
 
 You can choose to show previews literally, or through find-file, toggled by `zi`.
