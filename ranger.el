@@ -206,7 +206,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-footer-delay 0.2
+(defcustom ranger-footer-delay 0.05
   "Time in seconds to delay running footer functions."
   :group 'ranger
   :type 'float)
@@ -695,11 +695,11 @@ be moved. `APPEND' will add files to current ring."
                             :test (lambda (x y) (or (null y) (equal x y)))
                             )))))
     (ranger-show-flags)
-    (message (format "%s %d item(s) to %s ring [total:%d]"
+    (message "%s %d item(s) to %s ring [total:%d]"
                      (if append "Added" "Copied")
                      (length marked-files)
                      (if move "cut" "copy")
-                     (length (cdr (ring-ref ranger-copy-ring 0)))))))
+                     (length (cdr (ring-ref ranger-copy-ring 0))))))
 
 (defun ranger-toggle-mark ()
   "Toggle mark on current line."
@@ -774,11 +774,11 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
                (setq filenum (+ filenum 1))))
     ;; show immediate changes in buffer
     (revert-buffer)
-    (message (format "%s %d/%d item(s) from the copy ring."
+    (message "%s %d/%d item(s) from the copy ring."
                      (if move "Moved" "Copied")
                      filenum
                      (length fileset)
-                     ))))
+                     )))
 
 (defun ranger-paste-over ()
   "Paste and overwrite copied files when same file names exist."
@@ -791,11 +791,11 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   (let* ((current (ring-ref ranger-copy-ring 0))
          (move (if (car current) "Move" "Copy"))
          (fileset (cdr current)))
-    (message (format "%s - total size: %s\n%s"
+    (message "%s - total size: %s\n%s"
                      (propertize move 'face 'font-lock-builtin-face)
                      (ranger--get-file-sizes fileset)
                      (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
-                     ))))
+                     )))
 
 (defun ranger-pop-eshell (&optional arg)
   "Create an eshell window below selected window, working directory."
@@ -1035,7 +1035,7 @@ ranger-`CHAR'."
                     (max 0 (+ curr-index jump))
                     (- (ring-length ring) 1)))
          (jump-history (ring-ref ring goto-idx)))
-    (message (format "ranger-history : %i/%i" (+ 1 goto-idx) (ring-length ranger-history-ring)))
+    (message "ranger-history : %i/%i" (+ 1 goto-idx) (ring-length ranger-history-ring))
     (when jump-history
       (setq ranger-history-index goto-idx)
       (ranger-find-file jump-history t))))
@@ -1158,8 +1158,7 @@ ranger-`CHAR'."
   "Toggle preview of selected file."
   (interactive)
   (if (r--fget ranger-minimal)
-      (message
-       "Currently in deer mode. Previews are disabled.")
+      (message "Currently in deer mode. Previews are disabled.")
     (if ranger-preview-file
         (progn
           (when (and ranger-preview-window
@@ -1184,7 +1183,7 @@ ranger-`CHAR'."
     (setq ranger-image-fit-window t))
   (when ranger-preview-file
     (ranger-setup-preview))
-  (message (format "Fit Images to Window: %s"  ranger-image-fit-window)))
+  (message "Fit Images to Window: %s"  ranger-image-fit-window))
 
 (defun ranger-toggle-literal ()
   "Toggle showing literal / actual preview of file."
@@ -1194,7 +1193,7 @@ ranger-`CHAR'."
     (setq ranger-show-literal t))
   (when ranger-preview-file
     (ranger-setup-preview))
-  (message (format "Literal Preview: %s"  ranger-show-literal)))
+  (message "Literal Preview: %s"  ranger-show-literal))
 
 (defun ranger-scroll-page-down ()
   "Scroll preview window up."
