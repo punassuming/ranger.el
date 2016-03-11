@@ -211,7 +211,7 @@
   :group 'ranger
   :type 'float)
 
-(defcustom ranger-preview-delay 0.1
+(defcustom ranger-preview-delay 0.05
   "Time in seconds to delay running preview file functions."
   :group 'ranger
   :type 'float)
