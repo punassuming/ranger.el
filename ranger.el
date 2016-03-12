@@ -328,8 +328,8 @@ preview window."
 
 ;; hooks
 (defvar ranger-mode-load-hook nil)
-(defvar ranger-preview-dir-hook '(ranger-to-dired
-                                  revert-buffer
+(defvar ranger-preview-dir-hook '(;; ranger-to-dired
+                                  ;; revert-buffer
                                   ranger-sort
                                   ranger-hide-dotfiles
                                   ranger-omit
@@ -343,13 +343,15 @@ preview window."
 (defun ranger-truncate ()
   (setq truncate-lines t))
 
-(defvar ranger-parent-dir-hook '(ranger-to-dired
-                                 revert-buffer
+(defvar ranger-parent-dir-hook '(;; ranger-to-dired
+                                 ;; revert-buffer
                                  dired-hide-details-mode
                                  ranger-sort
                                  ranger-hide-dotfiles
                                  ranger-omit
-                                 ranger-sub-window-setup))
+                                 ranger-sub-window-setup
+                                 ))
+
 ;; TODO combine all dired appearance and sorting functions together
 ;; TODO add persistent hide-details setting
 
@@ -1036,7 +1038,7 @@ ranger-`CHAR'."
                     (- (ring-length ring) 1)))
          (jump-history (ring-ref ring goto-idx)))
     (message "ranger-history : %i/%i" (+ 1 goto-idx) (ring-length ranger-history-ring))
-    (when jump-history
+    (when (and (not (= goto-idx curr-index)) jump-history)
       (setq ranger-history-index goto-idx)
       (ranger-find-file jump-history t))))
 
@@ -1138,6 +1140,7 @@ ranger-`CHAR'."
   "Quietly omit files in dired."
   (ranger--message "Omitting")
   (setq-local dired-omit-verbose nil)
+  ;; TODO get this to include ranger-hide-dotfiles
   ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$\\|^\\.")
   (dired-omit-mode t))
 
@@ -1145,6 +1148,8 @@ ranger-`CHAR'."
   "Perform current sort on directory. Specify `FORCE' to sort even when
 `ranger-persistent-sort' is nil."
   (ranger--message "Sorting")
+  ;; TODO dired-sort-other only does this:
+  ;;   (setq dired-actual-switches switches)
   (dired-sort-other
    (concat dired-listing-switches
            (when (or force
@@ -1258,7 +1263,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (unless ignore-history
               (ranger-update-history find-name))
             (switch-to-buffer
-             (dired-noselect find-name))
+             (or (car (or (dired-buffers-for-dir find-name) ()))
+                 (dired-noselect find-name)))
             (if minimal
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
@@ -1648,8 +1654,7 @@ slot)."
 (defun ranger-dir-buffer (entry preview)
   "Open `ENTRY' in dired buffer. Run `PREVIEW' or parent hooks."
   ;; (ignore-errors
-  (with-current-buffer (or
-                        (car (or (dired-buffers-for-dir entry) ()))
+  (with-current-buffer (or (car (or (dired-buffers-for-dir entry) ()))
                         (dired-noselect entry))
     (if preview
         (run-hooks 'ranger-preview-dir-hook)
@@ -2094,7 +2099,7 @@ fraction of the total frame size"
         (display-buffer-other-frame current)))
      (t
       ;; "Didn't meet any criteria."
-               ))))
+      ))))
 
 (defun ranger-window-check ()
   "Detect when ranger-window is no longer part of ranger-mode"
