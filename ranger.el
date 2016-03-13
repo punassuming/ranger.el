@@ -2279,7 +2279,14 @@ CALLBACK is passed the received mouse event."
   (let* ((coords (ranger-parse-coords))
          (lm (car coords))
          (num (cdr coords)))
-    (substring (ranger--header-string) (+ lm 1 (* 3 num)))))
+    (substring (ranger--header-string)
+               ;; the left margin
+               (+ lm 1
+                  ;; account for scroll bar
+                  (* num 
+                     (if scroll-bar-mode 3 0))
+                  ;; account for graphical margin
+                  (* 3 num)))))
 
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
