@@ -529,10 +529,10 @@ preview window."
   (let ((map (make-sparse-keymap)))
     ;; define bindings based on
     (cl-case ranger-map-style
-     ('ranger
-      (set-keymap-parent map ranger-normal-mode-map))
-     ('emacs
-      (set-keymap-parent map ranger-normal-mode-map)))
+      ('ranger
+       (set-keymap-parent map ranger-normal-mode-map))
+      ('emacs
+       (set-keymap-parent map ranger-normal-mode-map)))
     ;; define a prefix for all dired commands
     (define-prefix-command 'ranger-dired-map nil "Dired-prefix")
     (setq ranger-dired-map (copy-tree dired-mode-map))
@@ -627,7 +627,7 @@ to not replace existing value."
 (when ranger-key
   (add-hook 'dired-mode-hook
             (defun ranger-set-dired-key ()
-                (define-key dired-mode-map ranger-key 'deer-from-dired))))
+              (define-key dired-mode-map ranger-key 'deer-from-dired))))
 
 (defun ranger-define-additional-maps (&optional mode)
   "Define additional mappings for ranger-mode that can't simply be in the defvar (depend on packages)."
@@ -698,10 +698,10 @@ be moved. `APPEND' will add files to current ring."
                             )))))
     (ranger-show-flags)
     (message "%s %d item(s) to %s ring [total:%d]"
-                     (if append "Added" "Copied")
-                     (length marked-files)
-                     (if move "cut" "copy")
-                     (length (cdr (ring-ref ranger-copy-ring 0))))))
+             (if append "Added" "Copied")
+             (length marked-files)
+             (if move "cut" "copy")
+             (length (cdr (ring-ref ranger-copy-ring 0))))))
 
 (defun ranger-toggle-mark ()
   "Toggle mark on current line."
@@ -709,11 +709,11 @@ be moved. `APPEND' will add files to current ring."
   (save-excursion
     (beginning-of-line)
     (let ((inhibit-read-only t))
-          (apply 'subst-char-in-region
-                 (point) (1+ (point))
-                 (if (eq ?\040 (following-char)) ; SPC
-                     (list ?\040 dired-marker-char)
-                   (list dired-marker-char ?\040))))))
+      (apply 'subst-char-in-region
+             (point) (1+ (point))
+             (if (eq ?\040 (following-char)) ; SPC
+                 (list ?\040 dired-marker-char)
+               (list dired-marker-char ?\040))))))
 
 (defun ranger-mark (arg &optional interactive)
   "Mark the file at point in the Dired buffer.
@@ -777,10 +777,10 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
     ;; show immediate changes in buffer
     (revert-buffer)
     (message "%s %d/%d item(s) from the copy ring."
-                     (if move "Moved" "Copied")
-                     filenum
-                     (length fileset)
-                     )))
+             (if move "Moved" "Copied")
+             filenum
+             (length fileset)
+             )))
 
 (defun ranger-paste-over ()
   "Paste and overwrite copied files when same file names exist."
@@ -794,10 +794,10 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
          (move (if (car current) "Move" "Copy"))
          (fileset (cdr current)))
     (message "%s - total size: %s\n%s"
-                     (propertize move 'face 'font-lock-builtin-face)
-                     (ranger--get-file-sizes fileset)
-                     (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
-                     )))
+             (propertize move 'face 'font-lock-builtin-face)
+             (ranger--get-file-sizes fileset)
+             (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
+             )))
 
 (defun ranger-pop-eshell (&optional arg)
   "Create an eshell window below selected window, working directory."
@@ -1092,7 +1092,7 @@ ranger-`CHAR'."
   "Show/hide dot-files."
   (interactive)
   (if ranger-deer-show-details ; if currently showing
-        (setq ranger-deer-show-details nil)
+      (setq ranger-deer-show-details nil)
     (progn
       (setq ranger-deer-show-details t)
       (revert-buffer) ; otherwise just revert to re-show
@@ -1657,7 +1657,7 @@ slot)."
   "Open `ENTRY' in dired buffer. Run `PREVIEW' or parent hooks."
   ;; (ignore-errors
   (with-current-buffer (or (car (or (dired-buffers-for-dir entry) ()))
-                        (dired-noselect entry))
+                           (dired-noselect entry))
     (if preview
         (run-hooks 'ranger-preview-dir-hook)
       (run-hooks 'ranger-parent-dir-hook))
@@ -2115,9 +2115,9 @@ fraction of the total frame size"
          (ranger-frames (r--akeys ranger-f-alist)))
     ;; if all frames and windows are killed, revert buffer settings
     (ranger--message "Window Check \n** mode: %s \n** buffer - %s\n** window - %s"
-      major-mode
-      (current-buffer)
-      (selected-window))
+                     major-mode
+                     (current-buffer)
+                     (selected-window))
     (if (not  (or (ranger-windows-exists-p)
                   (ranger-frame-exists-p)))
         (progn
@@ -2129,11 +2129,11 @@ fraction of the total frame size"
         (when (and  (memq (selected-window) ranger-windows)
                     (not (eq major-mode 'ranger-mode)))
           (ranger--message
-              "Window Check : Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
-            (current-buffer)
-            major-mode 
-            (selected-window)
-            (memq (selected-window) ranger-windows) )
+           "Window Check : Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
+           (current-buffer)
+           major-mode 
+           (selected-window)
+           (memq (selected-window) ranger-windows) )
           (ranger-still-dired))))))
 
 (defun ranger-windows-exists-p ()
@@ -2169,8 +2169,10 @@ fraction of the total frame size"
     relative))
 
 (defun ranger--header-new-tab ()
-  (propertize "+"
-              'face 'font-lock-warning-face
+  (propertize " + "
+              'face '((t (:inherit 'font-lock-builtin-face
+                                   :background "#787878"
+                                   :foreground "black")))
               'pointer 'hand
               'local-map (let ((keymap (make-sparse-keymap)))
                            (define-key keymap [header-line down-mouse-1] 'ignore)
@@ -2189,18 +2191,19 @@ fraction of the total frame size"
               ret)
          (ranger--message "tab: %s - %s" item index)
          (setq ret (cl-case ranger-tabs-style
-                     ('normal (format "%s" value))
-                     ('roman (format "%s" roman))
-                     ('number (format "%s" key))))
+                     ('normal (format " %s " value))
+                     ('roman (format " %s " roman))
+                     ('number (format " %s " key))))
          (if (equal key curr)
-             (propertize ret 'face 'font-lock-builtin-face)
+             (propertize ret 
+                         'face '((t (:inherit 'font-lock-builtin-face
+                                              :background "#323232"))))
            (propertize ret
-                       'face 'font-lock-comment-face
+                       'face '((t (:inherit 'font-lock-comment-face)))
                        'pointer 'hand
                        'local-map (eval `(ranger-make-header-keymap ,index))
-                       )
-           )))
-     tabs " ")))
+                       ))))
+     tabs "")))
 
 (defun ranger-make-header-keymap (index)
   "Return a keymap that call CALLBACK on mouse events.
@@ -2279,11 +2282,11 @@ CALLBACK is passed the received mouse event."
   (let (info)
     (if (r--fget ranger-minimal)
         (push (cons (selected-window) (window-width)) info)
-    (walk-window-tree
-     (lambda (window)
-       (push
-        (cons window (- (window-width window) 1))
-        info)) nil nil))
+      (walk-window-tree
+       (lambda (window)
+         (push
+          (cons window (- (window-width window) 1))
+          info)) nil nil))
     (nreverse info)))
 
 (defun ranger-header-line ()
@@ -2310,7 +2313,7 @@ properly provides the modeline in dired mode. "
            ;; (if buffer-read-only "<N>" "<I>")
            (if (r--fget ranger-minimal)
                "Deer:"
-               "Ranger:")
+             "Ranger:")
            (cond ((string-match "^-[^t]*t[^t]*$" dired-actual-switches)
                   "mtime")
                  ((string-match "^-[^c]*c[^c]*$" dired-actual-switches)
@@ -2462,9 +2465,9 @@ properly provides the modeline in dired mode. "
       (if ranger-deer-show-details
           (dired-hide-details-mode -1)
         (dired-hide-details-mode t))
-      (progn
-        (dired-hide-details-mode -1)
-        (delete-other-windows)))
+    (progn
+      (dired-hide-details-mode -1)
+      (delete-other-windows)))
 
   ;; consider removing
   ;; (auto-revert-mode)
