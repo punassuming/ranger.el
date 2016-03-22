@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015  Rich Alesi
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.8.1
+;; Version: 0.9.8.2
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4"))
@@ -2267,9 +2267,9 @@ CALLBACK is passed the received mouse event."
          (minimal (r--fget ranger-minimal))
          (used-length (+ (length rhs) (length lhs)))
          (fringe-gap (if (eq fringe-mode 0) 2 0))
-         (total-window-width (if minimal
-                                 (window-width ranger-window)
-                               (+ (- (frame-width) fringe-gap) 3)))
+         (total-window-width (+ 3 (if minimal
+                                      (window-width ranger-window)
+                                    (- (frame-width) fringe-gap))))
          (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
     (concat lhs filler rhs)))
 
