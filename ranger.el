@@ -2168,6 +2168,15 @@ fraction of the total frame size"
             (file-relative-name current-name parent-name))))
     relative))
 
+(defun ranger--header-new-tab ()
+  (propertize "+"
+              'face 'font-lock-warning-face
+              'pointer 'hand
+              'local-map (let ((keymap (make-sparse-keymap)))
+                           (define-key keymap [header-line down-mouse-1] 'ignore)
+                           (define-key keymap [header-line mouse-1] #'ranger-new-tab)
+                           keymap)))
+
 (defun ranger--header-tabs ()
   (let* ((curr ranger-current-tab)
          (tabs (sort (r--akeys ranger-t-alist) '<)))
@@ -2216,14 +2225,14 @@ CALLBACK is passed the received mouse event."
 (defun ranger--header-rhs ()
   (concat
    (propertize
-    (format "%s / %s "
+    (format "%s / %s"
             (if ranger-show-dotfiles ".." "")
             ;; (if ranger-show-literal "raw" "act")
             ranger-parent-depth)
     'face 'font-lock-comment-face)
    (when (> (length ranger-t-alist) 1)
-     (format "| %s"
-             (ranger--header-tabs)))))
+     (format " %s" (ranger--header-tabs)))
+   (format " %s " (ranger--header-new-tab))))
 
 (defun ranger--header-lhs ()
   "Setup header-line for ranger buffer."
@@ -2243,10 +2252,10 @@ CALLBACK is passed the received mouse event."
          (rhs (ranger--header-rhs))
          (minimal (r--fget ranger-minimal))
          (used-length (+ (length rhs) (length lhs)))
-         (total-window-width (+ (if minimal
-                                    (window-width ranger-window)
-                                  (frame-width))
-                                3))
+         (fringe-gap (if (eq fringe-mode 0) 2 0))
+         (total-window-width (if minimal
+                                 (window-width ranger-window)
+                               (+ (- (frame-width) fringe-gap) 3)))
          (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
     (concat lhs filler rhs)))
 
@@ -2281,7 +2290,6 @@ CALLBACK is passed the received mouse event."
   "Setup header-line for ranger windows."
   (let* ((coords (ranger-parse-coords))
          (lm (car coords))
-         (fringe-gap )
          (num (cdr coords)))
     (substring (ranger--header-string)
                ;; the left margin
