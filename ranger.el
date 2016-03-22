@@ -1495,7 +1495,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                              final-pos))
            (footer-spec (ranger--footer-spec))
            (lhs (format
-                 "%s %s"
+                 " %s %s"
                  (propertize file-date 'face 'font-lock-warning-face)
                  file-perm))
            (rhs (format
@@ -1505,7 +1505,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                  file-mount
                  position
                  ))
+           (fringe-gap (if (eq fringe-mode 0) 1 0))
            (space (- fwidth
+                     fringe-gap
                      (length lhs)))
            (message-log-max nil)
            (msg
@@ -2242,8 +2244,9 @@ CALLBACK is passed the received mouse event."
          (minimal (r--fget ranger-minimal))
          (used-length (+ (length rhs) (length lhs)))
          (total-window-width (+ (if minimal
-                                     (window-width ranger-window)
-                                 (frame-width)) 2))
+                                    (window-width ranger-window)
+                                  (frame-width))
+                                3))
          (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
     (concat lhs filler rhs)))
 
@@ -2262,6 +2265,7 @@ CALLBACK is passed the received mouse event."
     (cons left-margin winidx)))
 
 (defun ranger-get-window-coords ()
+  "Get the coordinates for each ranger window to setup headerline."
   (interactive)
   (let (info)
     (if (r--fget ranger-minimal)
@@ -2273,20 +2277,21 @@ CALLBACK is passed the received mouse event."
         info)) nil nil))
     (nreverse info)))
 
-;; TODO determine if header shows CWD or current file
 (defun ranger-header-line ()
-  "Setup header-line for ranger parent buffer."
+  "Setup header-line for ranger windows."
   (let* ((coords (ranger-parse-coords))
          (lm (car coords))
+         (fringe-gap )
          (num (cdr coords)))
     (substring (ranger--header-string)
                ;; the left margin
                (+ lm 1
-                  ;; account for scroll bar
-                  (* num 
-                     (if scroll-bar-mode 3 0))
-                  ;; account for graphical margin
-                  (* 3 num)))))
+                  (* num (+
+                          ;; account for graphical margin
+                          3
+                          ;; account for scroll bar and fringe
+                          (if (eq fringe-mode 0) -2 0)
+                          (if scroll-bar-mode 3 0)))))))
 
 (defun ranger-set-modeline ()
   "This is a redefinition of the fn from `dired.el'. This one
