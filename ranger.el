@@ -758,7 +758,7 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
   (interactive "P")
   (ranger-update-copy-ring t append))
 
-(defun ranger-paste (&optional overwrite link)
+(defun ranger-paste (&optional overwrite)
   "Paste copied files from topmost copy ring."
   (interactive)
   (let* ((current (ring-ref ranger-copy-ring 0))
@@ -768,19 +768,34 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
          (filenum 0))
     (cl-loop for file in fileset do
              (when (file-exists-p file)
-               (if move
-                   (rename-file file target overwrite)
-                 (if (file-directory-p file)
-                     (copy-directory file target)
-                   (copy-file file target overwrite)))
+               (let* ((from-name (file-name-nondirectory file))
+                      (base-target
+                       (concat (file-name-directory target)
+                               from-name))
+                      (new-target base-target)
+                      (suffix 1))
+                 (ranger--message "New file would be: %s" new-target)
+                 (while (file-exists-p new-target)
+                   (setq new-target
+                         (concat base-target "~"
+                                 (number-to-string suffix)))
+                   (setq suffix (+ 1 suffix))
+                   (ranger--message "Renamed file would be: %s" new-target))
+                 (if overwrite
+                     (if move
+                         (dired-rename-file file target overwrite)
+                       (dired-copy-file file target overwrite))
+                   (if move
+                       (unless (string= base-target file)
+                         (dired-rename-file file new-target overwrite))
+                     (dired-copy-file file new-target overwrite))))
                (setq filenum (+ filenum 1))))
     ;; show immediate changes in buffer
-    (revert-buffer)
+    (ranger-refresh)
     (message "%s %d/%d item(s) from the copy ring."
              (if move "Moved" "Copied")
              filenum
-             (length fileset)
-             )))
+             (length fileset))))
 
 (defun ranger-paste-over ()
   "Paste and overwrite copied files when same file names exist."
