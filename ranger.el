@@ -360,7 +360,6 @@ preview window."
     ;; basics
     (define-key map "?"             'ranger-help)
     (define-key map "du"            'ranger-show-size)
-    ;; TODO quit with ZZ and ZQ also
     (define-key map "q"             'ranger-close)
     (define-key map "ZZ"             'ranger-close)
     (define-key map "Q"             'ranger-disable)
@@ -414,12 +413,10 @@ preview window."
     (define-key map "}"             'ranger-find-file)
     (define-key map "f"             'ranger-search-files)
 
-
-    ;; going 
+    ;; going
     (define-key map "gh"            'ranger-go-home)
     (when (eq system-type 'windows-nt)
       (define-key map "gD"          'ranger-show-drives))
-
     ;; TODO map ge cd /etc
     ;; TODO map gu cd /usr
     ;; TODO map gd cd /dev
@@ -449,6 +446,11 @@ preview window."
     (define-key map "i"             'ranger-preview-toggle)
     (define-key map (kbd "C-j")     'ranger-scroll-page-down)
     (define-key map (kbd "C-k")     'ranger-scroll-page-up)
+    ;; TODO map zc    toggle_option collapse_preview
+    ;; TODO map zi    toggle_option preview_images
+    ;; TODO map zp    toggle_option preview_files
+    (define-key map "zi"            'ranger-toggle-literal)
+    (define-key map "zf"            'ranger-toggle-scale-images)
 
     ;; copy and paste
     (define-key map "yy"            'ranger-copy)
@@ -469,25 +471,19 @@ preview window."
     (define-key map "z+"            'ranger-more-parents)
     (define-key map "z-"            'ranger-less-parents)
     (define-key map "zh"            'ranger-toggle-dotfiles)
-    (define-key map "zi"            'ranger-toggle-literal)
+    (define-key map (kbd "C-h")     'ranger-toggle-dotfiles)
     (define-key map "zp"            'ranger-minimal-toggle)
-    (define-key map "zf"            'ranger-toggle-scale-images)
     (define-key map "zd"            'ranger-toggle-details)
-    ;; TODO map zf   regexp filter
-
-    ;; TODO map zc    toggle_option collapse_preview
     ;; TODO map zd    toggle_option sort_directories_first
-    ;; TODO map <C-h> toggle_option show_hidden
-    ;; TODO map zi    toggle_option preview_images
-    ;; TODO map zp    toggle_option preview_files
+    ;; TODO map zf   regexp filter
 
     ;; tabs
     (define-key map "gn"            'ranger-new-tab)
+    (define-key map (kbd "C-n") 'ranger-new-tab)
     (define-key map "gT"            'ranger-prev-tab)
     (define-key map "gt"            'ranger-next-tab)
     (define-key map "gc"            'ranger-close-tab)
-    ;; TODO map <C-n>     tab_new ~
-    ;; TODO map <C-w>     tab_close
+    (define-key map (kbd "C-w") 'ranger-close-tab)
     ;; TODO map <TAB>     tab_move 1
     ;; TODO map <S-TAB>   tab_move -1
     ;; TODO map <A-Right> tab_move 1
