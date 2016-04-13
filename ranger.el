@@ -411,7 +411,7 @@ preview window."
     (define-key map "["             'ranger-prev-parent)
     (define-key map "]"             'ranger-next-parent)
     (define-key map "}"             'ranger-find-file)
-    (define-key map "f"             'ranger-search-files)
+    (define-key map "f"             'ranger-travel)
 
     ;; going
     (define-key map "gh"            'ranger-go-home)
@@ -1224,8 +1224,8 @@ ranger-`CHAR'."
 
 ;; dired navigation
 
-(defun ranger-search-files ()
-  "Search for files / directories in folder."
+(defun ranger-travel ()
+  "Open a file or go to a directory in current buffer."
   (interactive)
   (cond
    ((featurep 'helm)
