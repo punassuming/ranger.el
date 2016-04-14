@@ -1269,7 +1269,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (ranger--message "Opening directory in ranger")
+            (ranger--message "Opening directory in ranger: %s" find-name)
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
@@ -1280,9 +1280,11 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-parent-child-select)
-            (ranger-mode))
+            (ranger-mode)
+            ;; (dired-unadvertise find-name)
+            )
         (progn
-          (ranger--message "Opening file in ranger")
+          (ranger--message "Opening file in ranger: %s" find-name)
           (find-file find-name)
           (ranger-still-dired)
           )))))
@@ -1636,6 +1638,7 @@ slot)."
                                                                 (/ ranger-max-parent-width
                                                                    (length ranger-parent-dirs))
                                                                 ranger-width-parents)))))))
+    (ranger--message "making parent: %s" parent-buffer)
     (with-current-buffer parent-buffer
       (setq ranger-child-name (directory-file-name current-name)))
 
@@ -1667,8 +1670,9 @@ slot)."
 (defun ranger-dir-buffer (entry preview)
   "Open `ENTRY' in dired buffer. Run `PREVIEW' or parent hooks."
   ;; (ignore-errors
-  (with-current-buffer (or (car (or (dired-buffers-for-dir entry) ()))
-                           (dired-noselect entry))
+  (with-current-buffer
+      (or (car (or (dired-buffers-for-dir entry) ()))
+          (dired-noselect entry))
     (if preview
         (run-hooks 'ranger-preview-dir-hook)
       (run-hooks 'ranger-parent-dir-hook))
@@ -1774,6 +1778,8 @@ is set, show literally instead of actual buffer."
     (when (and ranger-preview-window
                (window-live-p ranger-preview-window))
       (ignore-errors (delete-window ranger-preview-window)))
+
+
     (when (and (not (r--fget ranger-minimal))
                entry-name
                ranger-preview-file)
@@ -1802,6 +1808,8 @@ is set, show literally instead of actual buffer."
                                                                                 ranger-width-parents)
                                                                              (* (- ranger-parent-depth 1)
                                                                                 ranger-width-parents)))))))))
+
+            (ranger--message "making preview: %s" preview-buffer)
 
             (with-current-buffer preview-buffer
               (setq-local cursor-type nil)
