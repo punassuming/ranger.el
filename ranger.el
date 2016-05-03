@@ -969,7 +969,7 @@ the idle timer fires are ignored."
   (cl-remove-duplicates
    (cl-loop for bm in bookmark-alist
             for fname = (cdr-safe (assq 'filename bm))
-            when (file-directory-p fname) collect fname into new
+            when (and fname (file-directory-p fname)) collect fname into new
             finally return new)
    :test (lambda (x y) (or (null y) (equal x y)))))
 
