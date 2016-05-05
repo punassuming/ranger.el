@@ -1518,7 +1518,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                  file-mount
                  position
                  ))
-           (fringe-gap (if (eq fringe-mode 0) 1 0))
+           (fringe-gap (if (or (eq fringe-mode 0)
+                               (eq (cdr-safe fringe-mode) 0)
+                               (eq (car-safe fringe-mode) 0)) 1 0))
            (space (- fwidth
                      fringe-gap
                      (length lhs)))
