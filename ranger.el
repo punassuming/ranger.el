@@ -2027,6 +2027,7 @@ fraction of the total frame size"
       (ranger-revert-appearance (or buffer (current-buffer)))
       (ranger-revert-appearance ranger-buffer)
       (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
+      (setq ranger-pre-saved nil)
 
       ;; if no more ranger frames
       (when (not (or (ranger-windows-exists-p)
@@ -2083,7 +2084,7 @@ fraction of the total frame size"
         (hl-line-mode -1))
       (unless ranger-pre-arev-mode
         (auto-revert-mode -1))
-      (setq header-line-format nil)
+      (setq header-line-format ranger-pre-header-format)
       (when (derived-mode-p 'dired-mode)
         (unless ranger-pre-omit-mode
           (dired-omit-mode -1))
@@ -2112,7 +2113,8 @@ fraction of the total frame size"
      ((and buffer-fn (not (eq  current ranger-buffer)))
       (message "File opened, exiting ranger")
       (ranger-disable)
-      (find-file buffer-fn))
+      (find-file buffer-fn)
+      (setq header-line-format ranger-pre-header-format))
      ((and (not buffer-fn) (not (eq major-mode 'dired-mode)))
       (message "Ranger window was overwritten. Redirecting window to new frame")
       (set-window-buffer nil ranger-buffer)
@@ -2454,6 +2456,7 @@ properly provides the modeline in dired mode. "
 
   ;; store previous settings
   (unless ranger-pre-saved
+    (setq ranger-pre-header-format header-line-format)
     (setq ranger-pre-hl-mode hl-line-mode)
     (setq ranger-pre-arev-mode auto-revert-mode)
     (setq ranger-pre-omit-mode dired-omit-mode)
