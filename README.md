@@ -23,6 +23,8 @@
     - [Copy and Paste Functionality](#copy-and-paste-functionality)
     - [Selected File Actions](#selected-file-actions)
     - [File Sorting and Listing](#file-sorting-and-listing)
+    - [Troubleshooting and Package Workarounds](#troubleshooting-and-package-workarounds)
+        - [helm-descbinds](#helm-descbinds)
     - [Configuration](#configuration)
         - [Buffer Management](#buffer-management)
         - [Directory Listing](#directory-listing)
@@ -32,6 +34,7 @@
         - [Preview Window Options](#preview-window-options)
 
 <!-- markdown-toc end -->
+
 
 ## Description
 
@@ -190,7 +193,7 @@ Ranger makes use of the built-in bookmark functionality in Emacs by creating
 bookmarks with the name `ranger-?` where ? can be any single key.  This allows
 fast navigation to predefined directories that are persistent across sessions.
 A new mark can be set with `m` and can be accessed with the tilde key.  A prompt
-of all directory bookmarks can be accessed with `B`. 
+of all directory bookmarks can be accessed with `B`.
 
  Keybinding    | Description
  ------------- | -----------
@@ -268,11 +271,23 @@ will show these parameters.
 
 Additionally, the dired buffer is modified to sort directories to the top.  If
 this is not the desired functionality, the user can change
-`ranger-listing-dir-first`.  
+`ranger-listing-dir-first`.
 
 The `o` key provides sorting options for the current buffer.  In cases when the
 variable `ranger-persistent-sort` is set, this sorting method is used for all
 other ranger buffers.
+
+## Troubleshooting and Package Workarounds
+
+Ranger.el needs to control all window placement when open to ensure the parent / primary / preview windows are placed properly and updated upon file movement.  As such, there are some known issues with certain packages when they attempt to control window placement while `ranger` is initialized.
+
+### helm-descbinds
+
+This package defaults to opening a helm window with all available bindings in one-window.  This causes conflicts with ranger, but there is a workaround.
+
+```el
+(setq helm-descbinds-window-style 'same-window)
+```
 
 ## Configuration
 
@@ -355,7 +370,7 @@ frame size to prevent filling up entire frame with parents.
 
 ### Preview Window Options
 
-Set the default preference to preview selected file. 
+Set the default preference to preview selected file.
 ```el
 (setq ranger-preview-file t)
 ```
@@ -383,8 +398,8 @@ To set the max files size (in MB), set the following parameter:
 ```
 
 The preview function is also able to determine if the file selected is a binary
-file.  If set to t, these files will not be previewed. 
+file.  If set to t, these files will not be previewed.
 
 ```el
-(setq ranger-dont-show-binary t) 
+(setq ranger-dont-show-binary t)
 ```
