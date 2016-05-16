@@ -1424,32 +1424,26 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (goto-char (point-max))
   (ranger-find-file "~/"))
 
-(defun ranger-next-file ()
-  "Move to next file in ranger."
-  (interactive)
-  (dired-next-line 1)
-  (when (eobp)
-    (dired-next-line -1))
-  (ranger-show-file-details)
-  (when ranger-preview-file
-    (when (get-buffer "*ranger-prev*")
-      (with-current-buffer "*ranger-prev*"
-        (erase-buffer)))
-    (ranger-setup-preview-delayed)))
+(defun ranger-next-file (arg)
+  "Move lines in ranger and initiate updates to preview window."
+  (interactive "^p")
+  (let ((cur (point)))
+    (dired-next-line arg)
+    (when (or (eobp) (bobp))
+      (goto-char cur))
+    ;; don't change preview window if no change
+    (when (not (eq (point) cur))
+      (ranger-show-file-details)
+      (when (and (not (r--fget ranger-minimal))
+                 ranger-preview-file)
+        (when (get-buffer "*ranger-prev*")
+          (with-current-buffer "*ranger-prev*"
+            (erase-buffer)))
+        (ranger-setup-preview-delayed)))))
 
-(defun ranger-prev-file ()
-  "Move to previous file in ranger."
-  (interactive)
-  (dired-previous-line 1)
-  (when (bobp)
-    (dired-next-line
-     (if ranger-modify-header 0 1)))
-  (ranger-show-file-details)
-  (when ranger-preview-file
-    (when (get-buffer "*ranger-prev*")
-      (with-current-buffer "*ranger-prev*"
-        (erase-buffer)))
-    (ranger-setup-preview-delayed)))
+(defun ranger-prev-file (arg)
+  (interactive "^p")
+  (ranger-next-file (- 0 arg)))
 
 (defun ranger--footer-spec ())
 
