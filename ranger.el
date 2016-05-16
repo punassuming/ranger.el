@@ -206,7 +206,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-footer-delay 0.05
+(defcustom ranger-footer-delay 0
   "Time in seconds to delay running footer functions."
   :group 'ranger
   :type 'float)
