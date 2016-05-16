@@ -2434,10 +2434,13 @@ properly provides the modeline in dired mode. "
   "Launch dired in ranger-mode."
   (interactive)
   (let* ((file (or path (buffer-file-name)))
-         (dir (if file (file-name-directory file) default-directory)))
+         (dir (if file (file-name-directory file) default-directory))
+         (bname (buffer-file-name (current-buffer))))
     (when dir
       (r--fset ranger-minimal nil)
-      (ranger-find-file dir))))
+      (ranger-find-file dir)
+      (when (file-exists-p bname)
+        (dired-goto-file bname)))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
