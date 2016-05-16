@@ -1149,7 +1149,7 @@ ranger-`CHAR'."
 
 (defun ranger-omit ()
   "Quietly omit files in dired."
-  (ranger--message "Omitting")
+  (ranger--message "Omitting files")
   (setq-local dired-omit-verbose nil)
   ;; TODO get this to include ranger-hide-dotfiles
   ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$\\|^\\.")
@@ -1249,6 +1249,7 @@ ranger-`CHAR'."
   (let ((frame (window-frame))
         (window (selected-window))
         (minimal (r--fget ranger-minimal)))
+    (ranger--message "Saving window configuration.")
     (unless minimal
       (r--aput ranger-f-alist
                frame
@@ -1269,7 +1270,8 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (ranger--message "Opening directory in ranger: %s" find-name)
+            (ranger--message "
+Opening directory in ranger: %s" find-name)
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
@@ -1571,6 +1573,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
         (i 0)
         (unused-windows ()))
 
+    (ranger--message "Parent: setting up parents.")
     (setq ranger-buffer (current-buffer))
 
     (setq ranger-window (get-buffer-window (current-buffer)))
@@ -1634,7 +1637,7 @@ slot)."
                                                                 (/ ranger-max-parent-width
                                                                    (length ranger-parent-dirs))
                                                                 ranger-width-parents)))))))
-    (ranger--message "making parent: %s" parent-buffer)
+    (ranger--message "Modifying parent: %s" parent-buffer)
     (with-current-buffer parent-buffer
       (setq ranger-child-name (directory-file-name current-name)))
 
@@ -1669,6 +1672,8 @@ slot)."
   (with-current-buffer
       (or (car (or (dired-buffers-for-dir entry) ()))
           (dired-noselect entry))
+    (when preview
+      (ranger--message "Showing dir preview."))
     (if preview
         (run-hooks 'ranger-preview-dir-hook)
       (run-hooks 'ranger-parent-dir-hook))
@@ -1715,6 +1720,7 @@ is set, show literally instead of actual buffer."
           (current-buffer)))
     ;; show file
     ;; (if (image-type-from-file-header entry-name)
+    (ranger--message "Showing file preview.")
     (if (and (image-type-from-file-header entry-name)
              (not (eq (image-type-from-file-header entry-name) 'gif))
              ranger-image-fit-window)
@@ -1764,7 +1770,6 @@ is set, show literally instead of actual buffer."
 (defun ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
-         ;; (window-configuration-change-hook nil)
          (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
@@ -1773,9 +1778,9 @@ is set, show literally instead of actual buffer."
     ;; delete existing preview window
     (when (and ranger-preview-window
                (window-live-p ranger-preview-window))
+      (ranger--message "Preview: Deleting existing preview window.")
       (ignore-errors (delete-window ranger-preview-window)))
-
-
+    (ranger--message "Preview: Setting up preview window.")
     (when (and (not (r--fget ranger-minimal))
                entry-name
                ranger-preview-file)
@@ -1791,6 +1796,10 @@ is set, show literally instead of actual buffer."
                                    ;; (ranger-dir-contents entry-name)
                                    (ranger-preview-buffer entry-name)))
                  preview-window)
+            (ranger--message "Created preview buffer : %s
+win configs: "
+                             preview-buffer
+                             window-configuration-change-hook)
             (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
               (setq preview-window
                     (display-buffer
@@ -1804,9 +1813,7 @@ is set, show literally instead of actual buffer."
                                                                                 ranger-width-parents)
                                                                              (* (- ranger-parent-depth 1)
                                                                                 ranger-width-parents)))))))))
-
-            (ranger--message "making preview: %s" preview-buffer)
-
+            (ranger--message "Modifying preview: %s" preview-buffer)
             (with-current-buffer preview-buffer
               (setq-local cursor-type nil)
               (setq mouse-1-click-follows-link nil)
@@ -1815,11 +1822,9 @@ is set, show literally instead of actual buffer."
                                                     (select-window ranger-window)
                                                     (call-interactively
                                                      'ranger-find-file)))
-
               (when ranger-modify-header
                 (setq header-line-format `(:eval (,ranger-header-func))))
               (ranger-hide-the-cursor))
-
             (add-to-list 'ranger-preview-buffers preview-buffer)
             (setq ranger-preview-window preview-window)
             (dired-hide-details-mode t)))))))
@@ -1927,16 +1932,21 @@ fraction of the total frame size"
     ;;       (window--display-buffer
     ;;        buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
     ;;       )
-    (progn
+      (ranger--message "creating display buffer")
+      ;; (remove-hook 'window-configuration-change-hook 'ranger-window-check)
       (setq new-window (split-window current-window window-size side))
+
       (set-window-parameter new-window 'window-slot slot)
+      (ranger--message "displaying buffer")
       (window--display-buffer
-       buffer new-window 'window alist display-buffer-mark-dedicated))
+       buffer new-window 'window alist display-buffer-mark-dedicated)
+      ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
     ;; )
     ))
 
 (defun ranger-show-flags ()
   "Show copy / paste flags in ranger buffer."
+  (ranger--message "Updating dired flags")
   (when (not (ring-empty-p ranger-copy-ring))
     (ranger-clear-flags ?P)
     (ranger-clear-flags ?M)
@@ -1975,6 +1985,7 @@ fraction of the total frame size"
 ;; cleanup and reversion
 (defun ranger-preview-cleanup ()
   "Cleanup all old buffers and windows used by ranger."
+  (ranger--message "Cleaning up old buffers")
   (mapc 'ranger-kill-buffer ranger-preview-buffers)
   (setq ranger-preview-buffers ()))
 
@@ -2001,12 +2012,12 @@ fraction of the total frame size"
          (config
           (r--aget ranger-f-alist
                    (window-frame))))
-
     (when (or config
               prev-buffer)
-
+      (ranger--message "Removing window from ranger-windows.")
       (r--aremove ranger-w-alist (selected-window))
 
+      (ranger--message "Restoring window setup")
       (if minimal
           (when (and prev-buffer
                      (buffer-live-p prev-buffer))
@@ -2034,6 +2045,10 @@ fraction of the total frame size"
         ;; remove all hooks and advices
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+
+        (ranger--message "window-check active: %s"
+                         (and (memq 'ranger-window-check
+                               window-configuration-change-hook) t))
 
         ;; revert setting for minimal
         (r--fset ranger-minimal nil)
@@ -2096,7 +2111,12 @@ fraction of the total frame size"
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
-  (ranger--message "Major mode was %s in window %s" major-mode (selected-window))
+  (ranger--message "
+** ranger-still-dired
+Major mode was %s
+Window %s"
+                   major-mode
+                   (selected-window))
   ;; TODO Try to manage new windows / frames created without killing ranger
   (let* ((ranger-window-props
           (r--aget ranger-w-alist
@@ -2131,10 +2151,15 @@ fraction of the total frame size"
          (ranger-buffer (cdr ranger-window-props))
          (ranger-frames (r--akeys ranger-f-alist)))
     ;; if all frames and windows are killed, revert buffer settings
-    (ranger--message "Window Check \n** mode: %s \n** buffer - %s\n** window - %s"
+    (ranger--message "Window Check (%s) : %s
+        buffer: %s
+        w:%s f:%s "
                      major-mode
+                     last-command
                      (current-buffer)
-                     (selected-window))
+                     (and (memq (selected-window) ranger-windows) t)
+                     (and (memq (selected-frame) ranger-frames) t))
+    ;; TODO deal with new-frame command
     (if (not  (or (ranger-windows-exists-p)
                   (ranger-frame-exists-p)))
         (progn
@@ -2146,7 +2171,9 @@ fraction of the total frame size"
         (when (and  (memq (selected-window) ranger-windows)
                     (not (eq major-mode 'ranger-mode)))
           (ranger--message
-           "Window Check : Ranger window is not the selected window \n** buffer: %s: %s \n** window: %s: %s"
+           "Window Check : Ranger window is not the selected window
+** buffer: %s: %s
+** window: %s: %s"
            (current-buffer)
            major-mode
            (selected-window)
@@ -2186,6 +2213,7 @@ fraction of the total frame size"
     relative))
 
 (defun ranger--header-new-tab ()
+  (ranger--message "Header-new-tab")
   (propertize " + "
               'face '((t (:inherit 'font-lock-builtin-face
                                    :background "#787878"
@@ -2197,6 +2225,7 @@ fraction of the total frame size"
                            keymap)))
 
 (defun ranger--header-tabs ()
+  (ranger--message "Header-header-tabs")
   (let* ((curr ranger-current-tab)
          (tabs (sort (r--akeys ranger-t-alist) '<)))
     (mapconcat
@@ -2353,6 +2382,7 @@ properly provides the modeline in dired mode. "
 
 (defun ranger-setup-dired-buffer ()
   "Setup the dired buffer by removing the header and sorting folders directory first."
+  (ranger--message "Making dired buffer look like ranger.")
   (when (eq (window-frame) ranger-frame)
     (save-excursion
       (let ((switches (concat
@@ -2449,6 +2479,9 @@ properly provides the modeline in dired mode. "
     (bookmark-maybe-load-default-file))
 
   (require 'dired-x)
+  (ranger--message "
+
+Setting up primary window")
 
   ;; store previous settings
   (unless ranger-pre-saved
@@ -2468,6 +2501,7 @@ properly provides the modeline in dired mode. "
   (setq ranger-window (get-buffer-window (current-buffer)))
   (setq ranger-frame (window-frame ranger-window))
 
+  ;; update with current settings
   (r--aput ranger-w-alist
            (selected-window)
            (cons
@@ -2479,6 +2513,7 @@ properly provides the modeline in dired mode. "
   ;; hide groups, show human readable file sizes
   (setq dired-listing-switches ranger-listing-switches)
 
+  (ranger--message "Hiding dired details")
   (if (r--fget ranger-minimal)
       (if ranger-deer-show-details
           (dired-hide-details-mode -1)
@@ -2517,18 +2552,27 @@ properly provides the modeline in dired mode. "
   (ranger-setup-parents)
   (ranger-setup-preview)
 
+  (ranger--message "subwindows set up")
+
   ;; scroll back to left in case new windows affected primary buffer
   (set-window-hscroll ranger-window 0)
 
   ;; reset subdir optiona
   (setq ranger-subdir-p nil)
+  (ranger--message "applying header")
 
   (when ranger-modify-header
     (setq header-line-format `(:eval (,ranger-header-func))))
 
+  (ranger--message "showing details")
+
   (ranger-show-file-details)
+
+  (ranger--message "setting modeline")
   (ranger-set-modeline)
+  (ranger--message "hiding cursor")
   (ranger-hide-the-cursor)
+  (ranger--message "running hooks")
 
   (run-hooks 'ranger-mode-load-hook)
 
@@ -2537,6 +2581,8 @@ properly provides the modeline in dired mode. "
     (ranger-next-file))
   (when (eobp)
     (ranger-next-file))
+
+  (ranger--message "Ranger loaded")
   )
 
 (defun ranger-hide-the-cursor ()
