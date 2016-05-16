@@ -1389,37 +1389,37 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Move to top of file list"
   (interactive)
   (goto-char (point-min))
-  (ranger-prev-file))
+  (dired-next-line 1)
+  (ranger-prev-file 1))
 
 (defun ranger-page-down ()
   "Move to top of file list"
   (interactive)
   (dired-next-line (window-height))
-  (ranger-prev-file))
+  (ranger-next-file 1))
 
 (defun ranger-half-page-down ()
   "Move to top of file list"
   (interactive)
-  (dired-next-line (/ (window-height) 2))
-  (ranger-prev-file))
+  (ranger-next-file (/ (window-height) 2)))
 
 (defun ranger-goto-bottom ()
   "Move to top of file list"
   (interactive)
   (goto-char (point-max))
-  (ranger-next-file))
+  (dired-previous-line 1)
+  (ranger-next-file 1))
 
 (defun ranger-page-up ()
   "Move to top of file list"
   (interactive)
   (dired-previous-line (window-height))
-  (ranger-prev-file))
+  (ranger-next-file 1))
 
 (defun ranger-half-page-up ()
   "Move to top of file list"
   (interactive)
-  (dired-previous-line (/ (window-height) 2))
-  (ranger-prev-file))
+  (ranger-prev-file (/ (window-height) 2)))
 
 (defun ranger-go-home ()
   "Move to top of file list"
@@ -1914,6 +1914,7 @@ fraction of the total frame size"
          (window-size (ceiling  (* (frame-width) window-width)))
          (split-width-threshold 0)
          (current-window ranger-window)
+         (window-configuration-change-hook nil)
          new-window
          reuse-window)
 
@@ -2216,7 +2217,6 @@ Window %s"
     relative))
 
 (defun ranger--header-new-tab ()
-  (ranger--message "Header-new-tab")
   (propertize " + "
               'face '(:inherit font-lock-builtin-face
                       :background "#787878"
@@ -2228,7 +2228,6 @@ Window %s"
                            keymap)))
 
 (defun ranger--header-tabs ()
-  (ranger--message "Header-header-tabs")
   (let* ((curr ranger-current-tab)
          (tabs (sort (r--akeys ranger-t-alist) '<)))
     (mapconcat
