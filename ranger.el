@@ -1254,7 +1254,8 @@ ranger-`CHAR'."
       (r--aput ranger-f-alist
                frame
                (current-window-configuration)
-               (null overwrite)))
+               (null overwrite))
+      (delete-other-windows))
     (r--aput ranger-w-alist
              window
              (cons (current-buffer) nil)
@@ -2519,8 +2520,7 @@ Setting up primary window")
           (dired-hide-details-mode -1)
         (dired-hide-details-mode t))
     (progn
-      (dired-hide-details-mode -1)
-      (delete-other-windows)))
+      (dired-hide-details-mode -1)))
 
   ;; consider removing
   ;; (auto-revert-mode)
