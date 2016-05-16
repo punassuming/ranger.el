@@ -2216,9 +2216,9 @@ Window %s"
 (defun ranger--header-new-tab ()
   (ranger--message "Header-new-tab")
   (propertize " + "
-              'face '((t (:inherit 'font-lock-builtin-face
-                                   :background "#787878"
-                                   :foreground "black")))
+              'face '(:inherit font-lock-builtin-face
+                      :background "#787878"
+                      :foreground "black")
               'pointer 'hand
               'local-map (let ((keymap (make-sparse-keymap)))
                            (define-key keymap [header-line down-mouse-1] 'ignore)
@@ -2243,10 +2243,10 @@ Window %s"
                      ('number (format " %s " key))))
          (if (equal key curr)
              (propertize ret
-                         'face '((t (:inherit 'font-lock-builtin-face
-                                              :background "#323232"))))
+                         'face '(:inherit font-lock-builtin-face)
+                                     :background "#323232")
            (propertize ret
-                       'face '((t (:inherit 'font-lock-comment-face)))
+                       'face 'font-lock-comment-face
                        'pointer 'hand
                        'local-map (eval `(ranger-make-header-keymap ,index))
                        ))))
