@@ -1672,15 +1672,16 @@ slot)."
 (defun ranger-dir-buffer (entry preview)
   "Open `ENTRY' in dired buffer. Run `PREVIEW' or parent hooks."
   ;; (ignore-errors
-  (with-current-buffer
-      (or (car (or (dired-buffers-for-dir entry) ()))
-          (dired-noselect entry))
-    (when preview
-      (ranger--message "Showing dir preview."))
-    (if preview
-        (run-hooks 'ranger-preview-dir-hook)
-      (run-hooks 'ranger-parent-dir-hook))
-    (current-buffer)))
+  (let ((window-configuration-change-hook nil))
+    (with-current-buffer
+        (or (car (or (dired-buffers-for-dir entry) ()))
+            (dired-noselect entry))
+      (when preview
+        (ranger--message "Showing dir preview."))
+      (if preview
+          (run-hooks 'ranger-preview-dir-hook)
+        (run-hooks 'ranger-parent-dir-hook))
+      (current-buffer))))
 
 (defun ranger-dir-contents (entry)
   "Open `ENTRY' in dired buffer."
@@ -1773,6 +1774,7 @@ is set, show literally instead of actual buffer."
 (defun ranger-setup-preview ()
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
+         (window-configuration-change-hook nil)
          (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
