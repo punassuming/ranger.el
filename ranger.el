@@ -1585,44 +1585,46 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq ranger-parent-windows ())
     (setq ranger-parent-dirs ())
 
-    (while (and parent-name
-                (not (r--fget ranger-minimal))
-                (file-directory-p parent-name)
-                (< i ranger-parent-depth))
-      (setq i (+ i 1))
-      (unless (string-equal current-name parent-name)
-        ;; (walk-window-tree
-        ;;  (lambda (window)
-        ;;    (when (eq (window-parameter window 'window-slot) (- 0 i))
-        ;;      (setq unused-window window)
-        ;;      ))
-        ;;  nil nil 'nomini)
-        (progn
-          (add-to-list 'ranger-parent-dirs (cons (cons current-name parent-name) i))
-          (setq current-name (ranger-parent-directory current-name))
-          (setq parent-name (ranger-parent-directory parent-name)))))
-    (mapc 'ranger-make-parent ranger-parent-dirs)
+    (unless (r--fget ranger-minimal)
+      (while (and parent-name
+                  (file-directory-p parent-name)
+                  (< i ranger-parent-depth))
+        (setq i (+ i 1))
+        (unless (string-equal current-name parent-name)
+          ;; (walk-window-tree
+          ;;  (lambda (window)
+          ;;    (when (eq (window-parameter window 'window-slot) (- 0 i))
+          ;;      (setq unused-window window)
+          ;;      ))
+          ;;  nil nil 'nomini)
+          (progn
+            (add-to-list 'ranger-parent-dirs (cons (cons current-name parent-name) i))
+            (setq current-name (ranger-parent-directory current-name))
+            (setq parent-name (ranger-parent-directory parent-name)))))
+      (mapc 'ranger-make-parent ranger-parent-dirs)
 
-    ;; select child folder in each parent
-    (save-excursion
-      (walk-window-tree
-       (lambda (window)
-         (progn
-           (when (member window ranger-parent-windows)
-             ;; select-window needed for hl-line
-             (select-window window)
-             (ranger-parent-child-select)
-             (ranger-hide-the-cursor)
-             )))
-       nil nil 'nomini))
+      ;; select child folder in each parent
+      (save-excursion
+        (walk-window-tree
+         (lambda (window)
+           (progn
+             (when (member window ranger-parent-windows)
+               ;; select-window needed for hl-line
+               (select-window window)
+               (ranger--message "Selecing child file")
+               (ranger-parent-child-select)
+               (ranger-hide-the-cursor)
+               )))
+         nil nil 'nomini))
 
-    (select-window ranger-window)
-    ))
+      (select-window ranger-window)
+      )))
 
 (defun ranger-make-parent (parent)
   "Make parent window.  `PARENT' is a construct with ((current . parent) .
 slot)."
-  (set (make-local-variable 'window-configuration-change-hook) nil)
+  ;; (set (make-local-variable 'window-configuration-change-hook) nil)
+  (ranger--message "Creating parent buffer")
   (let* ((parent-name (cdar parent))
          (window-configuration-change-hook nil)
          (current-name (caar parent))
