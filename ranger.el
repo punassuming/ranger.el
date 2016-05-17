@@ -634,6 +634,7 @@ to not replace existing value."
   (when ranger-key
     (define-key ranger-mode-map ranger-key 'ranger-to-dired))
 
+  ;; TODO visual mode bindings don't seem to work
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
@@ -1180,6 +1181,7 @@ ranger-`CHAR'."
     (if ranger-preview-file
         (progn
           (when (and ranger-preview-window
+                     (eq (selected-frame) (window-frame ranger-preview-window))
                      (window-live-p ranger-preview-window)
                      (window-at-side-p ranger-preview-window 'right))
             (ignore-errors
@@ -1780,10 +1782,10 @@ is set, show literally instead of actual buffer."
     (when ranger-cleanup-eagerly
       (ranger-preview-cleanup))
     ;; delete existing preview window
-    (when (and ranger-preview-window
-               (window-live-p ranger-preview-window))
-      (ranger--message "Preview: Deleting existing preview window.")
-      (ignore-errors (delete-window ranger-preview-window)))
+    ;; (when (and ranger-preview-window
+    ;;            (window-live-p ranger-preview-window))
+    ;;   (ranger--message "Preview: Deleting existing preview window.")
+    ;;   (ignore-errors (delete-window ranger-preview-window)))
     (ranger--message "Preview: Setting up preview window.")
     (when (and (not (r--fget ranger-minimal))
                entry-name
@@ -1799,11 +1801,19 @@ is set, show literally instead of actual buffer."
                                      (ranger-dir-buffer entry-name t)
                                    ;; (ranger-dir-contents entry-name)
                                    (ranger-preview-buffer entry-name)))
-                 preview-window)
+                 ;; check for existance of *ranger-prev* buffer
+                 (preview-window (and (window-live-p ranger-preview-window)
+                                      (eq (selected-frame) (window-frame ranger-preview-window))
+                                      ranger-preview-window))
+                 )
             (ranger--message "Created preview buffer : %s
 win configs: "
                              preview-buffer
                              window-configuration-change-hook)
+            (if preview-window
+                (with-selected-window preview-window
+                  (ranger--message "Reusing preview window")
+                  (switch-to-buffer preview-buffer))
             (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
               (setq preview-window
                     (display-buffer
@@ -1817,6 +1827,7 @@ win configs: "
                                                                                 ranger-width-parents)
                                                                              (* (- ranger-parent-depth 1)
                                                                                 ranger-width-parents)))))))))
+            )
             (ranger--message "Modifying preview: %s" preview-buffer)
             (with-current-buffer preview-buffer
               (setq-local cursor-type nil)
