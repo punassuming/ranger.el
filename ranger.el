@@ -338,9 +338,11 @@ preview window."
                                   ))
 
 (defun ranger-show-details ()
+  "Show details."
   (dired-hide-details-mode -1))
 
 (defun ranger-truncate ()
+  "Truncate lines."
   (setq truncate-lines t))
 
 (defvar ranger-parent-dir-hook '(;; ranger-to-dired
@@ -1389,14 +1391,12 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Move to top of file list"
   (interactive)
   (goto-char (point-min))
-  (dired-next-line 1)
   (ranger-prev-file 1))
 
 (defun ranger-page-down ()
   "Move to top of file list"
   (interactive)
-  (dired-next-line (window-height))
-  (ranger-next-file 1))
+  (ranger-next-file (window-height)))
 
 (defun ranger-half-page-down ()
   "Move to top of file list"
@@ -1407,14 +1407,12 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   "Move to top of file list"
   (interactive)
   (goto-char (point-max))
-  (dired-previous-line 1)
   (ranger-next-file 1))
 
 (defun ranger-page-up ()
   "Move to top of file list"
   (interactive)
-  (dired-previous-line (window-height))
-  (ranger-next-file 1))
+  (ranger-prev-file (window-height)))
 
 (defun ranger-half-page-up ()
   "Move to top of file list"
@@ -1432,11 +1430,12 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive "^p")
   (let ((cur (point)))
     (dired-next-line arg)
-    (when (or (eobp) (bobp))
-      (goto-char cur))
+    (cond
+     ((eobp) (dired-next-line -1))
+     ((bobp) (dired-next-line 0)))
+    (ranger-show-file-details)
     ;; don't change preview window if no change
     (when (not (eq (point) cur))
-      (ranger-show-file-details)
       (when (and (not (r--fget ranger-minimal))
                  ranger-preview-file)
         (when (get-buffer "*ranger-prev*")
@@ -1698,7 +1697,7 @@ slot)."
           (insert-directory entry (concat dired-listing-switches ranger-sorting-switches) nil t)
           (goto-char (point-min))
           ;; truncate lines in directory buffer
-          (setq truncate-lines t)
+          (ranger-truncate)
           ;; (visual-line-mode nil)
           ;; remove . and .. from directory listing
           (save-excursion
@@ -2534,7 +2533,7 @@ Setting up primary window")
   ;; set hl-line-mode for ranger usage
   (hl-line-mode t)
   ;; truncate lines for primary window
-  (setq truncate-lines t)
+  (ranger-truncate)
 
   ;; clear out everything if not in deer mode
 
