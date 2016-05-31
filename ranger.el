@@ -2594,9 +2594,9 @@ Setting up primary window")
 
   ;; recenter focus
   (when (bobp)
-    (ranger-next-file))
+    (ranger-next-file 1))
   (when (eobp)
-    (ranger-next-file))
+    (ranger-prev-file 1))
 
   (ranger--message "Ranger loaded")
   )
