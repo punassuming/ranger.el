@@ -2421,10 +2421,13 @@ properly provides the modeline in dired mode. "
   "Launch dired in a minimal ranger window."
   (interactive)
   (let* ((file (or path (buffer-file-name)))
-         (dir (if file (file-name-directory file) default-directory)))
-    (when dir
-      (r--fset ranger-minimal t)
-      (ranger-find-file dir))))
+         (dir (if file (file-name-directory file) default-directory))
+         (bname (buffer-file-name (current-buffer))))
+     (when dir
+       (r--fset ranger-minimal t)
+       (ranger-find-file dir)
+       (when (file-exists-p bname)
+         (dired-goto-file bname)))))
 
 (defun deer-from-dired ()
   (interactive)
