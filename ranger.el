@@ -1729,11 +1729,15 @@ is set, show literally instead of actual buffer."
              (not (eq (image-type-from-file-header entry-name) 'gif))
              ranger-image-fit-window)
         (ranger-setup-image-preview entry-name)
-      (with-current-buffer
-          (or
-           (find-buffer-visiting entry-name)
-           (find-file-noselect entry-name nil ranger-show-literal))
-        (current-buffer)))))
+      (let ((inhibit-modification-hooks t)
+            (auto-save-default nil)
+            ;; (inhibit-message t)
+            )
+        (with-current-buffer
+            (or
+             (find-buffer-visiting entry-name)
+             (find-file-noselect entry-name t ranger-show-literal))
+          (current-buffer))))))
 
 (defun ranger-setup-image-preview (entry-name)
   "Setup and maybe resize image"
