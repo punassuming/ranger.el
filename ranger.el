@@ -617,10 +617,9 @@ to not replace existing value."
 ;; (ranger-make-tab 2 "hsello" "d:/tabs")
 
 
-;; mapping macro
-
 ;; mappings
 
+;; what does this try to accomplish?
 ;;;###autoload
 (when ranger-key
   (add-hook 'dired-mode-hook
@@ -1228,6 +1227,7 @@ ranger-`CHAR'."
 
 ;; dired navigation
 
+;; TODO reenter deer if navigating to  directory.
 (defun ranger-travel ()
   "Open a file or go to a directory in current buffer."
   (interactive)
@@ -2437,10 +2437,17 @@ properly provides the modeline in dired mode. "
       (r--fset ranger-minimal t)
       (ranger-find-file dir))))
 
+;;;###autoload
+(define-minor-mode ranger-override-dired-mode
+  "Toggle ranger to override dired using `ranger-override-dired-fn'."
+  :group 'ranger :global t
+  (if ranger-override-dired-mode
+      (add-hook 'dired-mode-hook 'ranger-override-dired-fn)
+    (remove-hook 'dired-mode-hook 'ranger-override-dired-fn)))
+
 (defun deer-from-dired ()
   (interactive)
-  (when ranger-override-dired
-    (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
+  (ranger-override-dired-mode t)
   (deer))
 
 (defun ranger-minimal-toggle ()
@@ -2626,7 +2633,7 @@ Setting up primary window")
 
 ;;;###autoload
 (when ranger-override-dired
-  (add-hook 'dired-mode-hook 'ranger-override-dired-fn))
+  (ranger-override-dired-mode t))
 
 ;;;###autoload
 (defun ranger-override-dired-fn ()
