@@ -1271,18 +1271,22 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (let ((find-name (or entry
                        (dired-get-filename nil t)))
-        (minimal (r--fget ranger-minimal)))
+        (minimal (r--fget ranger-minimal))
+        (bname (buffer-file-name (current-buffer))))
     (when find-name
       (if (file-directory-p find-name)
           (progn
-            (ranger--message "
-Opening directory in ranger: %s" find-name)
+            (ranger--message "opening directory: %s" find-name)
             (ranger-save-window-settings)
             (unless ignore-history
               (ranger-update-history find-name))
             (switch-to-buffer
              (or (car (or (dired-buffers-for-dir find-name) ()))
                  (dired-noselect find-name)))
+            ;; select origination file
+            (when (and bname (file-exists-p bname))
+              (dired-goto-file bname))
+            ;; reset minimal setting
             (if minimal
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
@@ -1291,7 +1295,7 @@ Opening directory in ranger: %s" find-name)
             ;; (dired-unadvertise find-name)
             )
         (progn
-          (ranger--message "Opening file in ranger: %s" find-name)
+          (ranger--message "opening file: %s" find-name)
           (find-file find-name)
           (ranger-still-dired)
           )))))
@@ -1741,12 +1745,14 @@ is set, show literally instead of actual buffer."
 
 (defun ranger-setup-image-preview (entry-name)
   "Setup and maybe resize image"
+  (when ranger-image-fit-window
+    (require 'image-dired))
   (let* ((new-file (expand-file-name image-dired-temp-image-file))
          (file (expand-file-name entry-name))
-         ret success
          (width (* ranger-width-preview ranger-image-scale-ratio (image-dired-display-window-width)))
          (height (image-dired-display-window-height))
-         (image-type 'jpeg) command)
+         (image-type 'jpeg)
+         command ret success)
     (if (and (not (eq (image-type-from-file-header entry-name) 'gif))
              ranger-image-fit-window)
         (progn
@@ -2428,13 +2434,10 @@ properly provides the modeline in dired mode. "
   "Launch dired in a minimal ranger window."
   (interactive)
   (let* ((file (or path (buffer-file-name)))
-         (dir (if file (file-name-directory file) default-directory))
-         (bname (buffer-file-name (current-buffer))))
+         (dir (if file (file-name-directory file) default-directory)))
     (when dir
       (r--fset ranger-minimal t)
-      (ranger-find-file dir)
-      (when (file-exists-p bname)
-        (dired-goto-file bname)))))
+      (ranger-find-file dir))))
 
 (defun deer-from-dired ()
   (interactive)
@@ -2455,13 +2458,10 @@ properly provides the modeline in dired mode. "
   "Launch dired in ranger-mode."
   (interactive)
   (let* ((file (or path (buffer-file-name)))
-         (dir (if file (file-name-directory file) default-directory))
-         (bname (buffer-file-name (current-buffer))))
+         (dir (if file (file-name-directory file) default-directory)))
     (when dir
       (r--fset ranger-minimal nil)
-      (ranger-find-file dir)
-      (when (file-exists-p bname)
-        (dired-goto-file bname)))))
+      (ranger-find-file dir))))
 
 (defun ranger-enable ()
   "Interactively enable ranger-mode."
