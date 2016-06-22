@@ -1775,11 +1775,15 @@ is set, show literally instead of actual buffer."
   "Setup ranger preview window."
   (let* ((entry-name (dired-get-filename nil t))
          (window-configuration-change-hook nil)
+         (original-buffer-list (buffer-list))
          (inhibit-modification-hooks t)
          (fsize
           (nth 7 (file-attributes entry-name))))
     (when ranger-cleanup-eagerly
-      (ranger-preview-cleanup))
+      (ranger--message "Cleaning up old buffers")
+      (mapc 'ranger-kill-buffer
+            (remove (current-buffer) ranger-preview-buffers))
+      (setq ranger-preview-buffers (delq nil ranger-preview-buffers)))
     ;; delete existing preview window
     ;; (when (and ranger-preview-window
     ;;            (window-live-p ranger-preview-window))
@@ -1839,7 +1843,8 @@ win configs: "
               (when ranger-modify-header
                 (setq header-line-format `(:eval (,ranger-header-func))))
               (ranger-hide-the-cursor))
-            (add-to-list 'ranger-preview-buffers preview-buffer)
+            (when (not (memq preview-buffer original-buffer-list))
+              (add-to-list 'ranger-preview-buffers preview-buffer))
             (setq ranger-preview-window preview-window)
             (dired-hide-details-mode t)))))))
 
@@ -1998,17 +2003,14 @@ fraction of the total frame size"
 
 
 ;; cleanup and reversion
-(defun ranger-preview-cleanup ()
-  "Cleanup all old buffers and windows used by ranger."
-  (ranger--message "Cleaning up old buffers")
-  (mapc 'ranger-kill-buffer ranger-preview-buffers)
-  (setq ranger-preview-buffers ()))
 
 (defun ranger-kill-buffer (buffer)
   "Delete unmodified buffers and any dired buffer"
   (when
-      (and (buffer-live-p buffer)
-           (eq 'ranger-mode (buffer-local-value 'major-mode buffer)))
+      ;; (and
+       (buffer-live-p buffer)
+           ;; (eq 'ranger-mode (buffer-local-value 'major-mode buffer))
+           ;; )
     ;; (not (buffer-modified-p buffer))
     (kill-buffer buffer)))
 
