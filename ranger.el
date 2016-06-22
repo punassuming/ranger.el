@@ -1300,6 +1300,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
           (ranger-still-dired)
           )))))
 
+;; TODO closing one deer window disables both
 (defun ranger-open-file (&optional mode)
   "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
@@ -2054,6 +2055,7 @@ fraction of the total frame size"
           (set-window-configuration config)
           (r--aremove ranger-f-alist (window-frame))))
 
+      ;; TODO make separate tabs for each ranger window
       ;; (r--aremove ranger-t-alist ranger-current-tab)
 
       ;; revert appearance
@@ -2066,17 +2068,13 @@ fraction of the total frame size"
       ;; if no more ranger frames
       (when (not (or (ranger-windows-exists-p)
                      (ranger-frame-exists-p)))
-
         (message "Reverting all buffers")
-
         ;; remove all hooks and advices
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-
         (ranger--message "window-check active: %s"
-                         (and (memq 'ranger-window-check
-                                    window-configuration-change-hook) t))
-
+                         (memq 'ranger-window-check
+                                    window-configuration-change-hook))
         ;; revert setting for minimal
         (r--fset ranger-minimal nil)
 
