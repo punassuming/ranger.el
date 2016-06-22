@@ -2127,10 +2127,7 @@ fraction of the total frame size"
 
 (defun ranger-still-dired ()
   "Enable or disable ranger based on current mode"
-  (ranger--message "
-** ranger-still-dired
-Major mode was %s
-Window %s"
+  (ranger--message "ranger-still-dired : mode %s : window : %s"
                    major-mode
                    (selected-window))
   ;; TODO Try to manage new windows / frames created without killing ranger
@@ -2138,6 +2135,7 @@ Window %s"
           (r--aget ranger-w-alist
                    (selected-window)))
          (prev-buffer (car ranger-window-props))
+         (minimal (r--fget ranger-minimal))
          (ranger-buffer (cdr ranger-window-props))
          (current (current-buffer))
          (buffer-fn (buffer-file-name (current-buffer))))
@@ -2147,13 +2145,17 @@ Window %s"
       (ranger-disable)
       (find-file buffer-fn)
       (setq header-line-format ranger-pre-header-format))
-     ((and (not buffer-fn) (not (eq major-mode 'dired-mode)))
+     ((eq major-mode 'dired-mode)
+      (if minimal
+          (deer)
+        (ranger)))
+     ((not buffer-fn)
       (message "Ranger window was overwritten. Redirecting window to new frame")
       (set-window-buffer nil ranger-buffer)
       (when current
         (display-buffer-other-frame current)))
      (t
-      ;; "Didn't meet any criteria."
+      ;; nothing else to do
       ))))
 
 (defun ranger-window-check ()
@@ -2474,7 +2476,7 @@ properly provides the modeline in dired mode. "
   (ranger-revert))
 
 (defun ranger-to-dired ()
-  "toggle from ranger to dired in directory."
+  "toggle from ranger to dired in directory." ;
   (interactive)
   (let ((dir default-directory))
     (ranger-revert-appearance (current-buffer))
@@ -2614,7 +2616,7 @@ Setting up primary window")
 (defun ranger--message (format &rest args)
   (when ranger--debug
     (let (current-mes (curr))
-      (setq format (concat "ranger: " format))
+      (setq format (concat "(ranger): " format))
       (apply 'message format args)
       (redisplay)
       (sleep-for ranger--debug-period)
