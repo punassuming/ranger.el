@@ -1552,9 +1552,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
     (setq header-line-format `(:eval (,ranger-header-func)))))
 
 (defun ranger-parent-child-select ()
+  "Select the current child file in the parent directory."
   (when ranger-child-name
-    (dired-goto-file ranger-child-name)
-    (hl-line-mode t)))
+    (dired-goto-file ranger-child-name)))
 
 (defun ranger-less-parents ()
   "Reduce number of ranger parents."
@@ -1610,15 +1610,14 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
          (lambda (window)
            (progn
              (when (member window ranger-parent-windows)
-               ;; select-window needed for hl-line
-               (select-window window)
-               (ranger--message "Selecing child file")
-               (ranger-parent-child-select)
-               (ranger-hide-the-cursor)
-               )))
+               (with-selected-window window
+                 (ranger--message "Selecing child file")
+                 (ranger-parent-child-select)
+                 (ranger-hide-the-cursor)
+                 ))))
          nil nil 'nomini))
 
-      (select-window ranger-window)
+      ;; (select-window ranger-window)
       )))
 
 (defun ranger-make-parent (parent)
@@ -1636,7 +1635,7 @@ slot)."
            parent-buffer
            `(ranger-display-buffer-at-side . ((side . left)
                                               (slot . ,(- 0 slot))
-                                              (inhibit-same-window . t)
+                                              ;; (inhibit-same-window . t)
                                               (window-width . ,(min
                                                                 (/ ranger-max-parent-width
                                                                    (length ranger-parent-dirs))
@@ -1814,20 +1813,20 @@ win configs: "
                 (with-selected-window preview-window
                   (ranger--message "Reusing preview window")
                   (switch-to-buffer preview-buffer))
-            (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
-              (setq preview-window
-                    (display-buffer
-                     preview-buffer
-                     `(ranger-display-buffer-at-side . ((side . right)
-                                                        (slot . 1)
-                                                        ;; (inhibit-same-window . t)
-                                                        (window-width . ,(- ranger-width-preview
-                                                                            (min
-                                                                             (- ranger-max-parent-width
-                                                                                ranger-width-parents)
-                                                                             (* (- ranger-parent-depth 1)
-                                                                                ranger-width-parents)))))))))
-            )
+              (unless (and (not dir) ranger-dont-show-binary (ranger--prev-binary-p))
+                (setq preview-window
+                      (display-buffer
+                       preview-buffer
+                       `(ranger-display-buffer-at-side . ((side . right)
+                                                          (slot . 1)
+                                                          ;; (inhibit-same-window . t)
+                                                          (window-width . ,(- ranger-width-preview
+                                                                              (min
+                                                                               (- ranger-max-parent-width
+                                                                                  ranger-width-parents)
+                                                                               (* (- ranger-parent-depth 1)
+                                                                                  ranger-width-parents)))))))))
+              )
             (ranger--message "Modifying preview: %s" preview-buffer)
             (with-current-buffer preview-buffer
               (setq-local cursor-type nil)
@@ -1948,15 +1947,15 @@ fraction of the total frame size"
     ;;       (window--display-buffer
     ;;        buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
     ;;       )
-      (ranger--message "creating display buffer")
-      ;; (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-      (setq new-window (split-window current-window window-size side))
+    (ranger--message "creating display buffer")
+    ;; (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+    (setq new-window (split-window current-window window-size side))
 
-      (set-window-parameter new-window 'window-slot slot)
-      (ranger--message "displaying buffer")
-      (window--display-buffer
-       buffer new-window 'window alist display-buffer-mark-dedicated)
-      ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
+    (set-window-parameter new-window 'window-slot slot)
+    (ranger--message "displaying buffer")
+    (window--display-buffer
+     buffer new-window 'window alist display-buffer-mark-dedicated)
+    ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
     ;; )
     ))
 
@@ -2064,7 +2063,7 @@ fraction of the total frame size"
 
         (ranger--message "window-check active: %s"
                          (and (memq 'ranger-window-check
-                               window-configuration-change-hook) t))
+                                    window-configuration-change-hook) t))
 
         ;; revert setting for minimal
         (r--fset ranger-minimal nil)
@@ -2425,11 +2424,11 @@ properly provides the modeline in dired mode. "
   (let* ((file (or path (buffer-file-name)))
          (dir (if file (file-name-directory file) default-directory))
          (bname (buffer-file-name (current-buffer))))
-     (when dir
-       (r--fset ranger-minimal t)
-       (ranger-find-file dir)
-       (when (file-exists-p bname)
-         (dired-goto-file bname)))))
+    (when dir
+      (r--fset ranger-minimal t)
+      (ranger-find-file dir)
+      (when (file-exists-p bname)
+        (dired-goto-file bname)))))
 
 (defun deer-from-dired ()
   (interactive)
@@ -2546,8 +2545,6 @@ Setting up primary window")
   ;; consider removing
   ;; (auto-revert-mode)
 
-  ;; set hl-line-mode for ranger usage
-  (hl-line-mode t)
   ;; truncate lines for primary window
   (ranger-truncate)
 
@@ -2598,17 +2595,17 @@ Setting up primary window")
   (run-hooks 'ranger-mode-load-hook)
 
   ;; recenter focus
-  (when (bobp)
-    (ranger-next-file 1))
-  (when (eobp)
-    (ranger-prev-file 1))
+  ;; (when (bobp)
+  ;;   (ranger-next-file 1))
+  ;; (when (eobp)
+  ;;   (ranger-prev-file 1))
 
-  (ranger--message "Ranger loaded")
-  )
+  (ranger--message "Ranger loaded"))
 
 (defun ranger-hide-the-cursor ()
   (when (and buffer-read-only ranger-hide-cursor)
-    (setq-local cursor-type nil)))
+    (setq-local cursor-type nil))
+  (hl-line-mode t))
 
 (defvar ranger--debug nil)
 (defvar ranger--debug-period 0.5)
