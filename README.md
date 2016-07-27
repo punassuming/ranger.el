@@ -141,7 +141,6 @@ window, a file listing of the subdirectory will be shown.
  `v`           | toggle all marks
  `t`           | toggle mark current file
  `V`           | visually select lines
- `u`           | unmark the selected file
  `D`           | delete the selected file
  `R`           | rename/move the selected file
  `o`           | show sort dialog
