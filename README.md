@@ -139,6 +139,7 @@ window, a file listing of the subdirectory will be shown.
  `gh`          | goto home directory
  `C-SPC`/`TAB` | mark current file
  `v`           | toggle all marks
+ `t`           | toggle mark current file
  `V`           | visually select lines
  `u`           | unmark the selected file
  `D`           | delete the selected file
