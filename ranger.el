@@ -239,7 +239,11 @@ Outputs a string that will show up on the header-line."
 
 ;;;###autoload
 (defcustom ranger-override-dired nil
-  "When non-nil, load `deer' whenever dired is loaded.")
+  "When non-nil, load `deer' whenever dired is loaded."
+  :group 'ranger
+  :type '(radio (const :tag "Deer" :value t)
+                (const :tag "Ranger" :value ranger)
+                (const :tag "Don't Override" :value nil)))
 
 (defcustom ranger-dont-show-binary t
   "When non-nil, detect binary files and don't show them in the
@@ -268,7 +272,6 @@ preview window."
 (defvar ranger-wdired nil)
 
 (defvar ranger-sorting-switches nil)
-(defvar ranger-override-dired nil)
 
 (defvar ranger-window nil)
 (defvar ranger-buffer nil)
@@ -2638,9 +2641,10 @@ Setting up primary window")
 ;;;###autoload
 (defun ranger-override-dired-fn ()
   "Open dired as deer unless already in ranger-mode"
-  (let ((ranger-windows (r--akeys ranger-w-alist)))
-    (unless (memq (selected-window) ranger-windows)
-      (ranger--message "Override attempted")
+  (unless (eq major-mode 'ranger-mode)
+    (ranger--message "Override attempted")
+    (if (eq ranger-override-dired 'ranger)
+        (ranger)
       (deer))))
 
 ;;; preserve this variable when switching from `dired-mode' to another mode
