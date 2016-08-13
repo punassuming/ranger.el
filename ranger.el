@@ -647,7 +647,8 @@ to not replace existing value."
     ;; allow cursor to be cleared
     (when ranger-hide-cursor
       (defadvice evil-refresh-cursor (around evil activate)
-        (unless (eq major-mode 'ranger-mode)
+        (unless (or (eq major-mode 'ranger-mode)
+                    (memq (current-buffer) ranger-parent-buffers))
           ad-do-it))))
 
   ;; make sure isearch is cleared before we delete the buffer on exit
