@@ -1844,7 +1844,6 @@ win configs: "
               )
             (ranger--message "Modifying preview: %s" preview-buffer)
             (with-current-buffer preview-buffer
-              (setq-local cursor-type nil)
               (setq mouse-1-click-follows-link nil)
               (local-set-key (kbd  "<mouse-1>") #'(lambda ()
                                                     (interactive)
