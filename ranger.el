@@ -2156,6 +2156,7 @@ fraction of the total frame size"
       (message "File opened, exiting ranger")
       (ranger-disable)
       (find-file buffer-fn)
+      (setq-local cursor-type t)
       (setq header-line-format ranger-pre-header-format))
      ((eq major-mode 'dired-mode)
       (if minimal
