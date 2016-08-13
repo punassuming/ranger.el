@@ -2642,11 +2642,12 @@ Setting up primary window")
 ;;;###autoload
 (defun ranger-override-dired-fn ()
   "Open dired as deer unless already in ranger-mode"
-  (unless (eq major-mode 'ranger-mode)
-    (ranger--message "Override attempted")
-    (if (eq ranger-override-dired 'ranger)
-        (ranger)
-      (deer))))
+  (let ((ranger-windows (r--akeys ranger-w-alist)))
+    (unless (memq (selected-window) ranger-windows)
+      (ranger--message "Override attempted")
+      (if (eq ranger-override-dired 'ranger)
+          (ranger)
+        (deer)))))
 
 ;;; preserve this variable when switching from `dired-mode' to another mode
 (put 'dired-subdir-alist 'permanent-local t)
