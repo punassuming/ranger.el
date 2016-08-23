@@ -180,11 +180,11 @@ deer mode (minimal ranger mode)
 ## Setting as Default Directory Handler
 
 Ranger has the ability to be used as the default directory handler when Emacs
-identifies a directory is opened.  To make `deer` the default handler, set
-`ranger-override-dired` and restart.
+identifies a directory is opened.  To make `deer` the default handler, set the override minor mode
+`ranger-override-dired-mode`. Set to nil to disable this feature to open standard `dired`.
 
 ```el
-(setq ranger-override-dired t)
+(ranger-override-dired-mode t)
 ```
 
 ## Bookmark Navigation

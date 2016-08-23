@@ -62,7 +62,7 @@
 ;; version 0.9.7,   2015-09-13 copy and paste functionality added
 ;; version 0.9.8,   2015-10-04 multiple ranger window support, override dired
 ;; version 0.9.8.1, 2015-10-04 ranger is now a major mode
-;; version 0.9.8.3, 2016-08-23 ranger-override-minor-mode
+;; version 0.9.8.3, 2016-08-23 ranger-override-dired-mode
 
 ;;; Code:
 
