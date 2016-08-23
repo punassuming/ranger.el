@@ -2443,6 +2443,20 @@ properly provides the modeline in dired mode. "
       (r--fset ranger-minimal t)
       (ranger-find-file dir))))
 
+(defun deer-jump-other-window (&optional path)
+  "Launch dired in a minimal ranger window in other window."
+  (interactive)
+  (switch-to-buffer-other-window (current-buffer))
+  (deer path))
+
+(defun deer-dual-pane (&optional left right)
+  "Launch dired in a minimal ranger window in other window."
+  (interactive)
+  (delete-other-windows)
+  (deer left)
+  (split-window-horizontally)
+  (deer right))
+
 ;;;###autoload
 (define-minor-mode ranger-override-dired-mode
   "Toggle ranger to override dired using `ranger-override-dired-fn'."
