@@ -1442,9 +1442,10 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (let ((cur (point)))
     (dired-next-line arg)
     (cond
-     ((eobp) (dired-next-line -1))
+     ((eobp) (progn (forward-line -1)
+                    (dired-next-line 0)))
      ((bobp) (dired-next-line 0)))
-    (ranger-show-file-details)
+   (ranger-show-file-details)
     ;; don't change preview window if no change
     (when (not (eq (point) cur))
       (when (and (not (r--fget ranger-minimal))
