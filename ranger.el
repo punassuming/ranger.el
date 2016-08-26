@@ -1734,7 +1734,9 @@ is set, show literally instead of actual buffer."
         (with-current-buffer
             (or
              (find-buffer-visiting entry-name)
-             (find-file-noselect entry-name t ranger-show-literal))
+             (let ((delay-mode-hooks t)
+                   (enable-local-variables nil))
+               (find-file-noselect entry-name t ranger-show-literal)))
           (current-buffer))))))
 
 (defun ranger-setup-image-preview (entry-name)
@@ -2047,7 +2049,7 @@ fraction of the total frame size"
         ;; remove all hooks and advices
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
-        
+
         ;; revert setting for minimal
         (r--fset ranger-minimal nil)
 
@@ -2495,6 +2497,9 @@ properly provides the modeline in dired mode. "
   ;; load bookmarks
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
+
+  ;; disable projectile caching
+  (remove-hook 'dired-before-readin-hook #'projectile-cache-projects-find-file-hook t)
 
   (require 'dired-x)
 
