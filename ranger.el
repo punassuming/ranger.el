@@ -207,7 +207,7 @@
   :group 'ranger
   :type 'integer)
 
-(defcustom ranger-footer-delay 0
+(defcustom ranger-footer-delay 0.01
   "Time in seconds to delay running footer functions."
   :group 'ranger
   :type 'float)
@@ -448,6 +448,9 @@ preview window."
     (define-key map "gj"             'ranger-next-subdir)
     (define-key map "gk"             'ranger-prev-subdir)
 
+    (define-key map ">" 'dired-next-dirline)
+    (define-key map "<" 'dired-prev-dirline)
+
     ;; preview windows
     (define-key map "i"             'ranger-preview-toggle)
     (define-key map (kbd "C-j")     'ranger-scroll-page-down)
@@ -622,7 +625,6 @@ to not replace existing value."
 
 ;; mappings
 
-;; what does this try to accomplish?
 ;;;###autoload
 (when ranger-key
   (add-hook 'dired-mode-hook
@@ -1280,6 +1282,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (unless ignore-history
               (ranger-update-history find-name))
             (switch-to-buffer
+             ;; TODO make separate buffer of directory if more than one already exists.
              (or (car (or (dired-buffers-for-dir find-name) ()))
                  (dired-noselect find-name)))
             ;; select origination file
@@ -2258,6 +2261,7 @@ CALLBACK is passed the received mouse event."
     ;; Pass mouse-1, mouse-2 and mouse-3 events to CALLBACK.
     (define-key keymap [header-line down-mouse-1] 'ignore)
     (define-key keymap [header-line mouse-1] `(lambda () (interactive) (ranger-goto-tab ,index)))
+    (define-key keymap [header-line mouse-3] 'ranger-close-tab)
     keymap))
 
 (defun ranger--ar2ro (AN)
