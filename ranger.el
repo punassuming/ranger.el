@@ -1235,7 +1235,7 @@ ranger-`CHAR'."
   (interactive)
   (cond
    ((featurep 'helm)
-    (helm-find-files-1 default-directory))
+    (helm-find-files-1 (file-truename default-directory)))
    (t
     (call-interactively 'ido-find-file))))
 
