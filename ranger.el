@@ -1732,13 +1732,14 @@ is set, show literally instead of actual buffer."
         (ranger-setup-image-preview entry-name)
       (let ((inhibit-modification-hooks t)
             (auto-save-default nil)
-            ;; (inhibit-message t)
-            )
+            (inhibit-message t))
         (with-current-buffer
             (or
              (find-buffer-visiting entry-name)
              (let ((delay-mode-hooks t)
-                   (enable-local-variables nil))
+                   (enable-local-variables nil)
+                   ;; don't update recentf list
+                   (recentf-list nil))
                (find-file-noselect entry-name t ranger-show-literal)))
           (current-buffer))))))
 
