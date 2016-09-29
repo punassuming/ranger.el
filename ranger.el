@@ -335,8 +335,7 @@ preview window."
 (defvar ranger-preview-dir-hook '(;; ranger-to-dired
                                   ;; revert-buffer
                                   ranger-sort
-                                  ranger-hide-dotfiles
-                                  ranger-omit
+                                  ranger-omit-files
                                   ranger-truncate
                                   ranger-show-details
                                   ))
@@ -353,8 +352,7 @@ preview window."
                                  ;; revert-buffer
                                  dired-hide-details-mode
                                  ranger-sort
-                                 ranger-hide-dotfiles
-                                 ranger-omit
+                                 ranger-omit-files
                                  ranger-sub-window-setup
                                  ))
 
@@ -1095,39 +1093,25 @@ ranger-`CHAR'."
 (defun ranger-toggle-dotfiles ()
   "Show/hide dot-files."
   (interactive)
-  (if ranger-show-dotfiles ; if currently showing
-      (progn
-        (setq ranger-show-dotfiles nil)
-        (ranger-hide-dotfiles))
-    (progn
-      (setq ranger-show-dotfiles t)
-      (revert-buffer) ; otherwise just revert to re-show
-      ))
+  (setq ranger-show-dotfiles (not ranger-show-dotfiles))
   (ranger-setup)
   (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
 
 (defun ranger-toggle-details ()
   "Show/hide dot-files."
   (interactive)
-  (if ranger-deer-show-details ; if currently showing
-      (setq ranger-deer-show-details nil)
-    (progn
-      (setq ranger-deer-show-details t)
-      (revert-buffer) ; otherwise just revert to re-show
-      ))
+  (setq ranger-deer-show-details (not ranger-deer-show-details))
   (ranger-setup)
   (message (format "Show file details: %s"  ranger-deer-show-details)))
 
-(defun ranger-hide-dotfiles ()
-  "Hide dotfiles in directory. TODO add variable for files to hide."
-  (unless ranger-show-dotfiles
-    (dired-mark-if
-     (and (not (looking-at-p dired-re-dot))
-          (not (eolp))			; empty line
-          (let ((fn (dired-get-filename t t)))
-            (and fn (string-match-p  "^\\\." fn))))
-     nil)
-    (dired-do-kill-lines nil "")))
+(defun ranger-omit-files ()
+  "Quietly omit files in dired."
+  ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$")
+  (let ((dired-omit-verbose nil)
+        (dired-omit-files (if (not ranger-show-dotfiles)
+                              (concat dired-omit-files "\\|^\\.")
+                            dired-omit-files)))
+    (dired-omit-mode t)))
 
 (defun ranger-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -1152,13 +1136,6 @@ ranger-`CHAR'."
                     (when uppercasep "r")))
       (ranger-sort t)
       (ranger-refresh))))
-
-(defun ranger-omit ()
-  "Quietly omit files in dired."
-  (setq-local dired-omit-verbose nil)
-  ;; TODO get this to include ranger-hide-dotfiles
-  ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$\\|^\\.")
-  (dired-omit-mode t))
 
 (defun ranger-sort (&optional force)
   "Perform current sort on directory. Specify `FORCE' to sort even when
@@ -2562,8 +2539,7 @@ properly provides the modeline in dired mode. "
 
   (ranger-sort t)
   (ranger-show-flags)
-  (ranger-omit)
-  (ranger-hide-dotfiles)
+  (ranger-omit-files)
 
   ;; open new tab if ranger is in multiple frames.
   (if (> (length ranger-f-alist) 1)
