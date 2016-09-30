@@ -101,9 +101,8 @@
   :group 'ranger
   :type 'boolean)
 
-;; TODO switch naming convention from dotfiles to hidden
-(defcustom ranger-show-dotfiles t
-  "When t it will show dotfiles in directory."
+(defcustom ranger-show-hidden t
+  "When t it will show hidden files in directory."
   :group 'ranger
   :type 'boolean)
 
@@ -356,9 +355,6 @@ preview window."
                                  ranger-sub-window-setup
                                  ))
 
-;; TODO combine all dired appearance and sorting functions together
-;; TODO add persistent hide-details setting
-
 (defvar ranger-normal-mode-map
   (let ((map (make-sparse-keymap)))
     ;; basics
@@ -393,7 +389,6 @@ preview window."
 
     ;; navigation
     (define-key map "-"             'ranger-up-directory)
-    (define-key map "gg"            'ranger-goto-top)
     (define-key map "G"             'ranger-goto-bottom)
     (define-key map "h"             'ranger-up-directory)
     (define-key map "j"             'ranger-next-file)
@@ -418,23 +413,7 @@ preview window."
     (define-key map "f"             'ranger-travel)
 
     ;; going
-    (define-key map "gh"            'ranger-go-home)
-    (when (eq system-type 'windows-nt)
-      (define-key map "gD"          'ranger-show-drives))
-    ;; TODO map ge cd /etc
-    ;; TODO map gu cd /usr
-    ;; TODO map gd cd /dev
-    ;; TODO map gl cd -r .
-    ;; TODO map gL cd -r %f
-    ;; TODO map go cd /opt
-    ;; TODO map gv cd /var
-    ;; TODO map gm cd /media
-    ;; TODO map gM cd /mnt
-    ;; TODO map gs cd /srv
-    ;; TODO map gr cd /
-    ;; TODO map gR eval fm.cd(ranger.RANGERDIR)
-    ;; TODO map g/ cd /
-    ;; TODO map g? cd /usr/share/doc/ranger
+    (define-key map "g"             'ranger-go)
 
     ;; history
     (define-key map "zz"            'ranger-show-history)
@@ -443,8 +422,6 @@ preview window."
 
     ;; subtrees
     (define-key map "I"             'ranger-insert-subdir)
-    (define-key map "gj"             'ranger-next-subdir)
-    (define-key map "gk"             'ranger-prev-subdir)
 
     (define-key map ">" 'dired-next-dirline)
     (define-key map "<" 'dired-prev-dirline)
@@ -485,11 +462,7 @@ preview window."
     ;; TODO map zf   regexp filter
 
     ;; tabs
-    (define-key map "gn"            'ranger-new-tab)
     (define-key map (kbd "C-n") 'ranger-new-tab)
-    (define-key map "gT"            'ranger-prev-tab)
-    (define-key map "gt"            'ranger-next-tab)
-    (define-key map "gc"            'ranger-close-tab)
     (define-key map (kbd "C-w") 'ranger-close-tab)
     ;; TODO map <TAB>     tab_move 1
     ;; TODO map <S-TAB>   tab_move -1
@@ -1093,9 +1066,9 @@ ranger-`CHAR'."
 (defun ranger-toggle-dotfiles ()
   "Show/hide dot-files."
   (interactive)
-  (setq ranger-show-dotfiles (not ranger-show-dotfiles))
+  (setq ranger-show-hidden (not ranger-show-hidden))
   (ranger-setup)
-  (message (format "Show Dotfiles: %s"  ranger-show-dotfiles)))
+  (message (format "Show Dotfiles: %s"  ranger-show-hidden)))
 
 (defun ranger-toggle-details ()
   "Show/hide dot-files."
@@ -1406,11 +1379,64 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (ranger-prev-file (/ (window-height) 2)))
 
-(defun ranger-go-home ()
-  "Move to top of file list"
-  (interactive)
-  (goto-char (point-max))
-  (ranger-find-file "~/"))
+(defun ranger-go (path)
+  "Go subroutine"
+  (interactive
+   (list
+    (read-char-choice
+     "Go:
+e : /etc
+u : /usr
+d : /dev
+l : follow directory link
+L : follow selected file
+o : /opt
+v : /var
+h : ~/
+m : /media
+M : /mnt
+s : /srv
+r : /
+/ : /
+R : ranger.el location
+> "
+     '(?e ?u ?d ?l ?L ?o ?v ?m ?M ?s ?r ?R ?/ ?h ?g ?D ?j ?k ?T ?t ?n ?c))))
+  (message nil)
+  (let* ((c (char-to-string path))
+         (new-path
+          (cl-case (intern c)
+            ('e "/etc")
+            ('u "/usr")
+            ('d "/dev")
+            ('l (file-truename default-directory))
+            ('L (file-truename (dired-get-filename)))
+            ('o "/opt")
+            ('v "/var")
+            ('m "/media")
+            ('M "/mnt")
+            ('s "/srv")
+            ('r "/")
+            ('R (file-truename (file-name-directory (find-library-name "ranger.el"))))
+            ('h  "~/")
+            ('/ "/")))
+         (alt-option
+          (cl-case (intern c)
+            ;; Subdir Handlng
+            ('j 'ranger-next-subdir)
+            ('k 'ranger-prev-subdir)
+            ;; Tab Handling
+            ('n 'ranger-new-tab)
+            ('T 'ranger-prev-tab)
+            ('t 'ranger-next-tab)
+            ('c 'ranger-close-tab)
+            ('g 'ranger-goto-top))))
+    (when (and new-path (file-directory-p new-path))
+      (ranger-find-file new-path))
+    (when (eq system-type 'windows-nt)
+      (when (string-equal c "D")
+        (ranger-show-drives)))
+    (when alt-option
+      (call-interactively alt-option))))
 
 (defun ranger-next-file (arg)
   "Move lines in ranger and initiate updates to preview window."
@@ -2258,7 +2284,7 @@ CALLBACK is passed the received mouse event."
   (concat
    (propertize
     (format "%s / %s"
-            (if ranger-show-dotfiles ".." "")
+            (if ranger-show-hidden ".." "")
             ;; (if ranger-show-literal "raw" "act")
             ranger-parent-depth)
     'face 'font-lock-comment-face)
