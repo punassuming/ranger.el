@@ -1107,8 +1107,9 @@ ranger-`CHAR'."
 (defun ranger-omit-files ()
   "Quietly omit files in dired."
   ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$")
-  (let ((dired-omit-verbose nil)
-        (dired-omit-files (if (not ranger-show-dotfiles)
+  (setq-local dired-omit-verbose nil)
+  (let (
+        (dired-omit-files (if (not ranger-show-hidden)
                               (concat dired-omit-files "\\|^\\.")
                             dired-omit-files)))
     (dired-omit-mode t)))
