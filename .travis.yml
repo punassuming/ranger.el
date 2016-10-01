@@ -8,7 +8,6 @@ cache:
 
 env:
   matrix:
-    - EMACS_VERSION=24.3
     - EMACS_VERSION=24.4
     - EMACS_VERSION=24.5
     - EMACS_VERSION=25.1
