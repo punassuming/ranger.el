@@ -1081,8 +1081,7 @@ ranger-`CHAR'."
   "Quietly omit files in dired."
   ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$")
   (setq-local dired-omit-verbose nil)
-  (let (
-        (dired-omit-files (if (not ranger-show-hidden)
+  (let ((dired-omit-files (if (not ranger-show-hidden)
                               (concat dired-omit-files "\\|^\\.")
                             dired-omit-files)))
     (dired-omit-mode t)))
@@ -1384,21 +1383,19 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive
    (list
     (read-char-choice
-     "Go:
-e : /etc
-u : /usr
-d : /dev
-l : follow directory link
-L : follow selected file
-o : /opt
-v : /var
-h : ~/
-m : /media
-M : /mnt
-s : /srv
-r : /
-/ : /
-R : ranger.el location
+     "e   : /etc
+u   : /usr
+d   : /dev
+l   : follow directory link
+L   : follow selected file
+o   : /opt
+v   : /var
+h   : ~/
+m   : /media
+M   : /mnt
+s   : /srv
+r,/ : /
+R   : ranger . el location
 > "
      '(?e ?u ?d ?l ?L ?o ?v ?m ?M ?s ?r ?R ?/ ?h ?g ?D ?j ?k ?T ?t ?n ?c))))
   (message nil)

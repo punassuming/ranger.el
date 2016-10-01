@@ -3,11 +3,9 @@
 [![Join the chat at https://gitter.im/ralesi/ranger.el](https://badges.gitter.im/ralesi/ranger.el.svg)](https://gitter.im/ralesi/ranger.el?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![MELPA](http://melpa.org/packages/ranger-badge.svg)](http://melpa.org/#/ranger)
 
-*master*
-[![Master Build Status](https://travis-ci.org/ralesi/ranger.el.svg?branch=master)](https://travis-ci.org/ralesi/ranger.el)
-
-*develop*
-[![Develop Build Status](https://travis-ci.org/ralesi/ranger.el.svg?branch=develop)](https://travis-ci.org/ralesi/ranger.el)
+*Build Status*
+- **master** : [![Master Build Status](https://travis-ci.org/ralesi/ranger.el.svg?branch=master)](https://travis-ci.org/ralesi/ranger.el)
+- **develop** : [![Develop Build Status](https://travis-ci.org/ralesi/ranger.el.svg?branch=develop)](https://travis-ci.org/ralesi/ranger.el)
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 **Table of Contents**
