@@ -286,6 +286,9 @@ preview window."
 (defvar ranger-t-alist ()
   "List of tabs to keep track of in ranger.")
 
+(defvar ranger-undo-tab ()
+  "Last tab thaat was closed.")
+
 (defvar ranger-history-index 0)
 
 (defvar ranger-history-ring (make-ring ranger-history-length))
@@ -430,9 +433,8 @@ preview window."
     (define-key map "i"             'ranger-preview-toggle)
     (define-key map (kbd "C-j")     'ranger-scroll-page-down)
     (define-key map (kbd "C-k")     'ranger-scroll-page-up)
+    (define-key map "zp"            'ranger-toggle-details)
     ;; TODO map zc    toggle_option collapse_preview
-    ;; TODO map zi    toggle_option preview_images
-    ;; TODO map zp    toggle_option preview_files
     (define-key map "zi"            'ranger-toggle-literal)
     (define-key map "zf"            'ranger-toggle-scale-images)
 
@@ -463,20 +465,15 @@ preview window."
     ;; tabs
     (define-key map (kbd "C-n") 'ranger-new-tab)
     (define-key map (kbd "C-w") 'ranger-close-tab)
-    ;; TODO map <TAB>     tab_move 1
-    ;; TODO map <S-TAB>   tab_move -1
-    ;; TODO map <A-Right> tab_move 1
-    ;; TODO map <A-Left>  tab_move -1
-    ;; TODO map uq        tab_restore
-    ;; TODO map <a-1>     tab_open 1
-    ;; TODO map <a-2>     tab_open 2
-    ;; TODO map <a-3>     tab_open 3
-    ;; TODO map <a-4>     tab_open 4
-    ;; TODO map <a-5>     tab_open 5
-    ;; TODO map <a-6>     tab_open 6
-    ;; TODO map <a-7>     tab_open 7
-    ;; TODO map <a-8>     tab_open 8
-    ;; TODO map <a-9>     tab_open 9
+    (define-key map (kbd "TAB") 'ranger-next-tab)
+    (define-key map (kbd "S-TAB") 'ranger-prev-tab)
+    (define-key map (kbd "M-Right") 'ranger-next-tab)
+    (define-key map (kbd "M-Left") 'ranger-prev-tab)
+    (define-key map "uq" 'ranger-restore-tab)
+
+    ;; define M + number bindings to access tabs.
+    (cl-loop for num in '(1 2 3 4 5 6 7 8 9)
+             do (eval `(define-key map (kbd ,(concat "M-" (int-to-string num))) '(lambda() (interactive)(ranger-goto-tab ,num)))))
 
     ;; search
     (define-key map "/"             'ranger-search)
@@ -863,8 +860,25 @@ the idle timer fires are ignored."
   (let ((index (or index
                    ranger-current-tab)))
     (when index
+      (setq ranger-undo-tab (r--aget ranger-t-alist index))
       (r--aremove ranger-t-alist index)
       (ranger-prev-tab))))
+
+(defun ranger-restore-tab ()
+  (interactive)
+  (let* ((available-tabs (ranger--available-tabs))
+         (index (or (and available-tabs
+                         (apply 'min available-tabs))
+                    ranger-current-tab)))
+    (ranger--message "tab restored index : %s" index)
+    (when (and index
+               (<= index ranger-max-tabs)
+               ranger-undo-tab)
+      (r--aput ranger-t-alist
+               index
+               ranger-undo-tab)
+      (setq ranger-undo-tab nil)
+      (ranger-setup-preview))))
 
 (defun ranger-other-tab (dir &optional index)
   (interactive)
