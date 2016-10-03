@@ -63,6 +63,7 @@
 ;; version 0.9.8,   2015-10-04 multiple ranger window support, override dired
 ;; version 0.9.8.1, 2015-10-04 ranger is now a major mode
 ;; version 0.9.8.3, 2016-08-23 ranger-override-dired-mode
+;; version 0.9.8.4, 2016-10-02 more mappings to match ranger
 
 ;;; Code:
 
