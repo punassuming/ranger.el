@@ -457,8 +457,7 @@ preview window."
     (define-key map "zh"            'ranger-toggle-dotfiles)
     (define-key map (kbd "C-h")     'ranger-toggle-dotfiles)
     (define-key map "zp"            'ranger-minimal-toggle)
-    (define-key map "zd"            'ranger-toggle-details)
-    ;; TODO map zd    toggle_option sort_directories_first
+    (define-key map "zd"            'ranger-toggle-dir-first)
     ;; TODO map zf   regexp filter
 
     ;; tabs
@@ -1069,6 +1068,13 @@ ranger-`CHAR'."
   (setq ranger-show-hidden (not ranger-show-hidden))
   (ranger-setup)
   (message (format "Show Dotfiles: %s"  ranger-show-hidden)))
+
+(defun ranger-toggle-dir-first ()
+  "Sort / unsort directories first."
+  (interactive)
+  (setq ranger-listing-dir-first (not ranger-listing-dir-first))
+  (ranger-setup)
+  (message (format "Sort directories first: %s"  ranger-listing-dir-first)))
 
 (defun ranger-toggle-details ()
   "Show/hide dot-files."
@@ -2546,14 +2552,10 @@ properly provides the modeline in dired mode. "
     (progn
       (dired-hide-details-mode -1)))
 
-  ;; consider removing
-  ;; (auto-revert-mode)
-
   ;; truncate lines for primary window
   (ranger-truncate)
 
   ;; clear out everything if not in deer mode
-
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
   ;; hide details line at top - show symlink targets
