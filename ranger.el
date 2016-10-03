@@ -468,8 +468,8 @@ preview window."
     (define-key map (kbd "C-w") 'ranger-close-tab)
     (define-key map (kbd "TAB") 'ranger-next-tab)
     (define-key map (kbd "S-TAB") 'ranger-prev-tab)
-    (define-key map (kbd "M-Right") 'ranger-next-tab)
-    (define-key map (kbd "M-Left") 'ranger-prev-tab)
+    (define-key map (kbd "M-<Right>") 'ranger-next-tab)
+    (define-key map (kbd "M-<Left>") 'ranger-prev-tab)
     (define-key map "uq" 'ranger-restore-tab)
 
     ;; define M + number bindings to access tabs.
