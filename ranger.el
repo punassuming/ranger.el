@@ -1234,7 +1234,7 @@ ranger-`CHAR'."
       (delete-other-windows))
     (r--aput ranger-w-alist
              window
-             (cons (current-buffer) nil)
+             (cons (cons (current-buffer) (point)) nil)
              (null overwrite))))
 
 (defun ranger-find-file (&optional entry ignore-history)
@@ -2040,7 +2040,8 @@ fraction of the total frame size"
          (ranger-window-props
           (r--aget ranger-w-alist
                    (selected-window)))
-         (prev-buffer (car ranger-window-props))
+         (prev-buffer (caar ranger-window-props))
+         (prev-point (cdar ranger-window-props))
          (ranger-buffer (cdr ranger-window-props))
          (config
           (r--aget ranger-f-alist
@@ -2052,7 +2053,9 @@ fraction of the total frame size"
       (if minimal
           (when (and prev-buffer
                      (buffer-live-p prev-buffer))
-            (switch-to-buffer prev-buffer))
+            (switch-to-buffer prev-buffer)
+            (goto-char prev-point)
+            )
         (when (and config
                    (window-configuration-p config))
           (set-window-configuration config)
@@ -2143,8 +2146,9 @@ fraction of the total frame size"
   ;; TODO Try to manage new windows / frames created without killing ranger
   (let* ((ranger-window-props
           (r--aget ranger-w-alist
+                   (goto-char prev-point)
                    (selected-window)))
-         (prev-buffer (car ranger-window-props))
+         (prev-buffer (caar ranger-window-props))
          (minimal (r--fget ranger-minimal))
          (ranger-buffer (cdr ranger-window-props))
          (current (current-buffer))
@@ -2175,7 +2179,7 @@ fraction of the total frame size"
          (ranger-window-props
           (r--aget ranger-w-alist
                    (selected-window)))
-         (prev-buffer (car ranger-window-props))
+         (prev-buffer (caar ranger-window-props))
          (ranger-windows (r--akeys ranger-w-alist))
          (ranger-buffer (cdr ranger-window-props))
          (ranger-frames (r--akeys ranger-f-alist)))
@@ -2613,6 +2617,8 @@ properly provides the modeline in dired mode. "
 
 (defvar ranger--debug nil)
 (defvar ranger--debug-period 0.5)
+
+;; TODO make a ranger debug pane as the bottom window
 
 (defun ranger--message (format &rest args)
   (when ranger--debug
