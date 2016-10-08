@@ -2429,8 +2429,8 @@ properly provides the modeline in dired mode. "
         (when (and ranger-listing-dir-first
                    (not (string-match "[XStU]+" switches)))
           (if (string-match "r" switches)
-              (sort-regexp-fields -1 "^.*$" "[ ]*." (point) (point-max))
-            (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max))))
+                (sort-regexp-fields nil "^.*\n" "^[ ]*." (point) (point-max))
+            (sort-regexp-fields t "^.*\n" "^[ ]*." (point) (point-max))))
         (set-buffer-modified-p nil)))))
 
 ;;;###autoload
