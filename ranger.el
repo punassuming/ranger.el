@@ -345,7 +345,92 @@ preview window."
 
 (defun ranger-show-details ()
   "Show details."
-  (dired-hide-details-mode -1))
+  (ranger-mask-show-details)
+  ;; (dired-hide-details-mode -1)
+  ;; (ranger-mask-details)
+  )
+
+(defcustom ranger-attributes-display-mask '(t nil nil t t t t)
+  "Contols hiding/transforming columns with `sr-toggle-attributes'.
+If set, its value must be a list of symbols, one for each
+attributes column. If the symbol is nil, then the corresponding
+column will be hidden, and if it's not nil then the column will
+be left untouched. The symbol may also be the name of a function
+that takes one string argument and evaluates to a different
+string -- in this case this function will be used to transform
+the contents of the corresponding column and its result will be
+displayed instead."
+  :group 'ranger
+  :type '(repeat symbol))
+
+(defcustom ranger-attributes-hide-mask '(nil nil nil t nil nil nil)
+  "Contols hiding/transforming columns with `sr-toggle-attributes'.
+If set, its value must be a list of symbols, one for each
+attributes column. If the symbol is nil, then the corresponding
+column will be hidden, and if it's not nil then the column will
+be left untouched. The symbol may also be the name of a function
+that takes one string argument and evaluates to a different
+string -- in this case this function will be used to transform
+the contents of the corresponding column and its result will be
+displayed instead."
+  :group 'ranger
+  :type '(repeat symbol))
+
+(defun ranger-mask-attributes (beg end mask)
+  "Manage the hiding of attributes in region from BEG to END.
+Selective hiding of specific attributes can be controlled by customizing the
+`sr-attributes-display-mask' variable."
+  (let ((cursor beg) props)
+    (cl-labels ((ranger-make-display-props
+            (display-function-or-flag)
+            (cond ((functionp display-function-or-flag)
+                   `(display
+                     ,(apply display-function-or-flag
+                             (list (buffer-substring cursor (1- (point)))))))
+                  ((null display-function-or-flag) '(invisible t))
+                  (t nil))))
+      (if t
+          (block block
+            (mapc (lambda (do-display)
+                    (search-forward-regexp "\\w")
+                    (search-forward-regexp "\\s-")
+                    (forward-char -1)
+                    (setq props (ranger-make-display-props do-display))
+                    (when props
+                      (add-text-properties cursor (point) props))
+                    (setq cursor (point))
+                    (if (>= (point) end) (return-from block)))
+                  mask))
+        (unless (>= cursor end)
+          (add-text-properties cursor (1- end) '(invisible t)))))))
+
+(defun ranger-mask-details (mask)
+  "Manage the display of file attributes in the region from BEG to END.
+if HIDDENP is nil then shows file attributes in region, otherwise hides them."
+  (let ((inhibit-read-only t)
+        (beg (point-min))
+        (end (point-max))
+        (next))
+    (save-excursion
+      (goto-char beg)
+      (forward-line -1)
+      (while (and (null next) (< (point) end))
+        (forward-line 1)
+        (setq next (dired-move-to-filename)))
+      (while (and next (< next end))
+        (beginning-of-line)
+        (forward-char 1)
+        (remove-text-properties (point) next '(invisible t))
+        (remove-text-properties (point) next '(display))
+        (ranger-mask-attributes (point) next mask)
+        (forward-line 1)
+        (setq next (dired-move-to-filename))))))
+
+(defun ranger-mask-show-details ()
+  (ranger-mask-details ranger-attributes-display-mask))
+
+(defun ranger-mask-hide-details ()
+  (ranger-mask-details ranger-attributes-hide-mask))
 
 (defun ranger-truncate ()
   "Truncate lines."
@@ -1107,6 +1192,7 @@ ranger-`CHAR'."
   (interactive)
   (setq ranger-deer-show-details (not ranger-deer-show-details))
   (ranger-setup)
+  ;; (ranger-mask-details)
   (message (format "Show file details: %s"  ranger-deer-show-details)))
 
 (defun ranger-omit-files ()
@@ -1161,22 +1247,19 @@ ranger-`CHAR'."
   (interactive)
   (if (r--fget ranger-minimal)
       (message "Currently in deer mode. Previews are disabled.")
+    (setq ranger-preview-file (not ranger-preview-file))
     (if ranger-preview-file
         (progn
-          (when (and ranger-preview-window
-                     (eq (selected-frame) (window-frame ranger-preview-window))
-                     (window-live-p ranger-preview-window)
-                     (window-at-side-p ranger-preview-window 'right))
-            (ignore-errors
-              (delete-window ranger-preview-window)))
-          (dired-hide-details-mode -1)
-          (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
-          (setq ranger-preview-file nil))
+          (ranger-mask-hide-details)
+          (ranger-setup-preview))
       (progn
-        (setq ranger-preview-file t)
-        (dired-hide-details-mode t)
-        (setq dired-hide-details-hide-symlink-targets nil))
-      (ranger-setup-preview))))
+        (when (and ranger-preview-window
+                   (eq (selected-frame) (window-frame ranger-preview-window))
+                   (window-live-p ranger-preview-window)
+                   (window-at-side-p ranger-preview-window 'right))
+          (ignore-errors
+            (delete-window ranger-preview-window)))
+        (ranger-mask-show-details)))))
 
 (defun ranger-toggle-scale-images ()
   "Show/hide dot-files."
@@ -1876,7 +1959,9 @@ is set, show literally instead of actual buffer."
             (when (not (memq preview-buffer original-buffer-list))
               (add-to-list 'ranger-preview-buffers preview-buffer))
             (setq ranger-preview-window preview-window)
-            (dired-hide-details-mode t)))))))
+            (ranger-mask-hide-details)
+            ;; (dired-hide-details-mode t)
+            ))))))
 
 
 ;; utilities
@@ -2140,7 +2225,8 @@ fraction of the total frame size"
         (unless ranger-pre-omit-mode
           (dired-omit-mode -1))
         (setq dired-listing-switches ranger-pre-dired-listing)
-        (dired-hide-details-mode -1)
+        (ranger-mask-show-details)
+        ;; (dired-hide-details-mode -1)
         ;; revert ranger-mode
         ;; (setq ranger-mode nil)
         ;; hide details line at top
@@ -2574,12 +2660,7 @@ properly provides the modeline in dired mode. "
   ;; hide groups, show human readable file sizes
   (setq dired-listing-switches ranger-listing-switches)
 
-  (if (r--fget ranger-minimal)
-      (if ranger-deer-show-details
-          (dired-hide-details-mode -1)
-        (dired-hide-details-mode t))
-    (progn
-      (dired-hide-details-mode -1)))
+  ;; (ranger-mask-hide-details)
 
   ;; truncate lines for primary window
   (ranger-truncate)
@@ -2617,6 +2698,15 @@ properly provides the modeline in dired mode. "
   (ranger-set-modeline)
   (ranger-hide-the-cursor)
   (run-hooks 'ranger-mode-load-hook)
+
+  (if (r--fget ranger-minimal)
+      (if ranger-deer-show-details
+          (ranger-mask-show-details)
+        (ranger-mask-hide-details))
+    (progn
+      (if ranger-deer-show-details
+          (ranger-mask-show-details)
+        (ranger-mask-hide-details))))
 
   (ranger--message "Ranger loaded"))
 
