@@ -365,7 +365,7 @@ preview window."
     (define-key map "?"             'ranger-help)
     (define-key map "du"            'ranger-show-size)
     (define-key map "q"             'ranger-close)
-    (define-key map (kbd "<ESC>")   'ranger-close)
+    ;; (define-key map (kbd "<ESC>")   'ranger-close)
     (define-key map "ZZ"            'ranger-close)
     (define-key map "Q"             'ranger-disable)
     (define-key map "ZQ"             'ranger-disable)
@@ -460,7 +460,7 @@ preview window."
     (define-key map "z-"            'ranger-less-parents)
     (define-key map "zh"            'ranger-toggle-dotfiles)
     (define-key map (kbd "C-h")     'ranger-toggle-dotfiles)
-    (define-key map "zp"            'ranger-minimal-toggle)
+    (define-key map "zP"            'ranger-minimal-toggle)
     (define-key map "zd"            'ranger-toggle-dir-first)
     ;; TODO map zf   regexp filter
 
@@ -474,8 +474,18 @@ preview window."
     (define-key map "uq" 'ranger-restore-tab)
 
     ;; define M + number bindings to access tabs.
-    (cl-loop for num in '(1 2 3 4 5 6 7 8 9)
-             do (eval `(define-key map (kbd ,(concat "M-" (int-to-string num))) '(lambda() (interactive)(ranger-goto-tab ,num)))))
+    (define-key map "\M-1" '(lambda () (interactive) (ranger-goto-tab 1)))
+    (define-key map "\M-2" '(lambda () (interactive) (ranger-goto-tab 2)))
+    (define-key map "\M-3" '(lambda () (interactive) (ranger-goto-tab 3)))
+    (define-key map "\M-4" '(lambda () (interactive) (ranger-goto-tab 4)))
+    (define-key map "\M-5" '(lambda () (interactive) (ranger-goto-tab 5)))
+    (define-key map "\M-6" '(lambda () (interactive) (ranger-goto-tab 6)))
+    (define-key map "\M-7" '(lambda () (interactive) (ranger-goto-tab 7)))
+    (define-key map "\M-8" '(lambda () (interactive) (ranger-goto-tab 8)))
+    (define-key map "\M-9" '(lambda () (interactive) (ranger-goto-tab 9)))
+    (define-key map "\M-0" '(lambda () (interactive) (ranger-goto-tab 0)))
+    ;; (cl-loop for num in '(1 2 3 4 5 6 7 8 9)
+    ;;          do (eval `(define-key map (concat "\\M-" ,(number-to-string num)) '(lambda() (interactive)(ranger-goto-tab ,num)))))
 
     ;; search
     (define-key map "/"             'ranger-search)
@@ -2147,7 +2157,6 @@ fraction of the total frame size"
   ;; TODO Try to manage new windows / frames created without killing ranger
   (let* ((ranger-window-props
           (r--aget ranger-w-alist
-                   (goto-char prev-point)
                    (selected-window)))
          (prev-buffer (caar ranger-window-props))
          (minimal (r--fget ranger-minimal))
