@@ -350,7 +350,7 @@ preview window."
   ;; (ranger-mask-details)
   )
 
-(defcustom ranger-attributes-display-mask '(t nil nil t t t t)
+(defcustom ranger-attributes-display-mask '(t t t t t t t t)
   "Contols hiding/transforming columns with `sr-toggle-attributes'.
 If set, its value must be a list of symbols, one for each
 attributes column. If the symbol is nil, then the corresponding
@@ -363,7 +363,7 @@ displayed instead."
   :group 'ranger
   :type '(repeat symbol))
 
-(defcustom ranger-attributes-hide-mask '(nil nil nil t nil nil nil)
+(defcustom ranger-attributes-hide-mask '(nil nil nil nil nil nil nil nil)
   "Contols hiding/transforming columns with `sr-toggle-attributes'.
 If set, its value must be a list of symbols, one for each
 attributes column. If the symbol is nil, then the corresponding
