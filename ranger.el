@@ -97,6 +97,11 @@
   :group 'ranger
   :type 'boolean)
 
+(defcustom ranger-return-to-ranger t
+  "Return to ranger after killing edit buffer."
+  :group 'ranger
+  :type 'boolean)
+
 (defcustom ranger-cleanup-eagerly nil
   "Cleanup opened buffers upon `ranger-next-file' & `ranger-prev-file'."
   :group 'ranger
@@ -2255,7 +2260,9 @@ fraction of the total frame size"
       (ranger-disable)
       (find-file buffer-fn)
       (setq-local cursor-type t)
-      (setq header-line-format ranger-pre-header-format))
+      (setq header-line-format ranger-pre-header-format)
+      (when ranger-return-to-ranger
+        (add-hook 'kill-buffer-hook 'ranger nil t)))
      ((eq major-mode 'dired-mode)
       (if minimal
           (deer)
