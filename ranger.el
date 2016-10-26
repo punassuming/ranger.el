@@ -355,36 +355,31 @@ preview window."
   ;; (ranger-mask-details)
   )
 
-(defcustom ranger-attributes-display-mask '(t t t t t t t t)
-  "Contols hiding/transforming columns with `sr-toggle-attributes'.
-If set, its value must be a list of symbols, one for each
-attributes column. If the symbol is nil, then the corresponding
-column will be hidden, and if it's not nil then the column will
-be left untouched. The symbol may also be the name of a function
-that takes one string argument and evaluates to a different
-string -- in this case this function will be used to transform
-the contents of the corresponding column and its result will be
-displayed instead."
+(defcustom ranger-dired-display-mask '(t t t t t t t t)
+  "Contols hiding/transforming columns. If set, its value must be a list of
+symbols, one for each attributes column. If the symbol is nil, then the
+corresponding column will be hidden, and if it's not nil then the column will be
+left untouched. The symbol may also be the name of a function that takes one
+string argument and evaluates to a different string -- in this case this
+function will be used to transform the contents of the corresponding column and
+its result will be displayed instead."
   :group 'ranger
   :type '(repeat symbol))
 
-(defcustom ranger-attributes-hide-mask '(nil nil nil nil nil nil nil nil)
-  "Contols hiding/transforming columns with `sr-toggle-attributes'.
-If set, its value must be a list of symbols, one for each
-attributes column. If the symbol is nil, then the corresponding
-column will be hidden, and if it's not nil then the column will
-be left untouched. The symbol may also be the name of a function
-that takes one string argument and evaluates to a different
-string -- in this case this function will be used to transform
-the contents of the corresponding column and its result will be
-displayed instead."
+(defcustom ranger-dired-hide-mask '(nil nil nil nil nil nil nil t)
+  "Contols hiding/transforming columns. If set, its value must be a list of
+symbols, one for each attributes column. If the symbol is nil, then the
+corresponding column will be hidden, and if it's not nil then the column will be
+left untouched. The symbol may also be the name of a function that takes one
+string argument and evaluates to a different string -- in this case this
+function will be used to transform the contents of the corresponding column and
+its result will be displayed instead."
   :group 'ranger
   :type '(repeat symbol))
 
 (defun ranger-mask-attributes (beg end mask)
   "Manage the hiding of attributes in region from BEG to END.
-Selective hiding of specific attributes can be controlled by customizing the
-`sr-attributes-display-mask' variable."
+Selective hiding of specific attributes can be controlled by MASK."
   (let ((cursor beg) props)
     (cl-labels ((ranger-make-display-props
             (display-function-or-flag)
@@ -410,8 +405,7 @@ Selective hiding of specific attributes can be controlled by customizing the
           (add-text-properties cursor (1- end) '(invisible t)))))))
 
 (defun ranger-mask-details (mask)
-  "Manage the display of file attributes in the region from BEG to END.
-if HIDDENP is nil then shows file attributes in region, otherwise hides them."
+  "Manage the display of file attributes with `MASK'."
   (let ((inhibit-read-only t)
         (beg (point-min))
         (end (point-max))
@@ -432,10 +426,10 @@ if HIDDENP is nil then shows file attributes in region, otherwise hides them."
         (setq next (dired-move-to-filename))))))
 
 (defun ranger-mask-show-details ()
-  (ranger-mask-details ranger-attributes-display-mask))
+  (ranger-mask-details ranger-dired-display-mask))
 
 (defun ranger-mask-hide-details ()
-  (ranger-mask-details ranger-attributes-hide-mask))
+  (ranger-mask-details ranger-dired-hide-mask))
 
 (defun ranger-truncate ()
   "Truncate lines."
@@ -2711,9 +2705,7 @@ properly provides the modeline in dired mode. "
           (ranger-mask-show-details)
         (ranger-mask-hide-details))
     (progn
-      (if ranger-deer-show-details
-          (ranger-mask-show-details)
-        (ranger-mask-hide-details))))
+        (ranger-mask-hide-details)))
 
   (ranger--message "Ranger loaded"))
 
