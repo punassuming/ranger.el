@@ -111,9 +111,14 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-hidden-filter
-  "^\.|\.(?:pyc|pyo|bak|swp)$|^lost\+found$|^__(py)?cache__$"
+(defcustom ranger-hidden-regexp
+  "^\\."
   "Regexp of filenames to hide."
+  :group 'ranger
+  :type 'string)
+
+(defcustom ranger-omit-regexp "^\\.?#\\|^\\.$\\|^\\.\\.$"
+  "Regexp of omitted filetypes in ranger."
   :group 'ranger
   :type 'string)
 
@@ -342,7 +347,7 @@ preview window."
 (defvar ranger-preview-dir-hook '(;; ranger-to-dired
                                   ;; revert-buffer
                                   ranger-sort
-                                  ranger-omit-files
+                                  ranger-filter-files
                                   ranger-truncate
                                   ranger-show-details
                                   ))
@@ -355,10 +360,10 @@ preview window."
   )
 
 (defcustom ranger-dired-display-mask '(t t t t t t t t)
-  "Contols hiding/transforming columns. If set, its value must be a list of
-symbols, one for each attributes column. If the symbol is nil, then the
+  "Contols hiding/transforming columns.  If set, its value must be a list of
+symbols, one for each attributes column.  If the symbol is nil, then the
 corresponding column will be hidden, and if it's not nil then the column will be
-left untouched. The symbol may also be the name of a function that takes one
+left untouched.  The symbol may also be the name of a function that takes one
 string argument and evaluates to a different string -- in this case this
 function will be used to transform the contents of the corresponding column and
 its result will be displayed instead."
@@ -366,10 +371,10 @@ its result will be displayed instead."
   :type '(repeat symbol))
 
 (defcustom ranger-dired-hide-mask '(nil nil nil nil nil nil nil t)
-  "Contols hiding/transforming columns. If set, its value must be a list of
-symbols, one for each attributes column. If the symbol is nil, then the
+  "Contols hiding/transforming columns.  If set, its value must be a list of
+symbols, one for each attributes column.  If the symbol is nil, then the
 corresponding column will be hidden, and if it's not nil then the column will be
-left untouched. The symbol may also be the name of a function that takes one
+left untouched.  The symbol may also be the name of a function that takes one
 string argument and evaluates to a different string -- in this case this
 function will be used to transform the contents of the corresponding column and
 its result will be displayed instead."
@@ -438,7 +443,7 @@ Selective hiding of specific attributes can be controlled by MASK."
                                  ;; revert-buffer
                                  dired-hide-details-mode
                                  ranger-sort
-                                 ranger-omit-files
+                                 ranger-filter-files
                                  ranger-sub-window-setup
                                  ))
 
@@ -1212,14 +1217,33 @@ ranger-`CHAR'."
   ;; (ranger-mask-details)
   (message (format "Show file details: %s"  ranger-deer-show-details)))
 
-(defun ranger-omit-files ()
-  "Quietly omit files in dired."
-  ;; (setq-local dired-omit-files "^\\.?#\\|^\\.$\\|^\\.\\.$")
-  (setq-local dired-omit-verbose nil)
-  (let ((dired-omit-files (if (not ranger-show-hidden)
-                              (concat dired-omit-files "\\|^\\.")
-                            dired-omit-files)))
-    (dired-omit-mode t)))
+(defun ranger-filter-files ()
+  "Omit and filter files in ranger."
+  (let ((omit-re (if (not ranger-show-hidden)
+                     (concat ranger-omit-regexp
+                             "\\|"
+                             ranger-hidden-regexp)
+                            ranger-omit-regexp)))
+    (ranger-omit-files omit-re)))
+
+(defun ranger-omit-files (&optional regexp)
+  (interactive "sOmit files (regexp): ")
+  (let ((omit-re (or regexp ranger-omit-regexp))
+        (old-modified-p (buffer-modified-p))
+        count)
+    (or (string= omit-re "")
+        (let ((dired-marker-char 16))
+          (if (dired-mark-unmarked-files omit-re nil nil 'no-dir)
+              (progn
+                (setq count (dired-do-kill-lines nil ""))
+                (force-mode-line-update)))))
+    ;; Try to preserve modified state of buffer.  So `%*' doesn't appear
+    ;; in mode-line of omitted buffers.
+    ;; (set-buffer-modified-p (and old-modified-p
+    ;;                             (save-excursion
+    ;;                               (goto-char (point-min))
+    ;;                               (re-search-forward dired-re-mark nil t))))
+    count))
 
 (defun ranger-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -2694,7 +2718,7 @@ properly provides the modeline in dired mode. "
 
   (ranger-sort t)
   (ranger-show-flags)
-  (ranger-omit-files)
+  (ranger-filter-files)
 
   ;; open new tab if ranger is in multiple frames.
   (if (> (length ranger-f-alist) 1)
