@@ -80,7 +80,6 @@
 (require 'dired)
 (require 'hl-line)
 (require 'autorevert)
-(require 'bookmark)
 (require 'ring)
 
 (require 'subr-x)
@@ -97,7 +96,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-return-to-ranger t
+(defcustom ranger-return-to-ranger nil
   "Return to ranger after killing edit buffer."
   :group 'ranger
   :type 'boolean)
@@ -660,7 +659,25 @@ to not replace existing value."
 
 
 ;; data structures
-(cl-defstruct (ranger-window (:constructor ranger--track-window))
+
+(cl-defstruct (ranger
+               (:conc-name ranger-)
+               (:constructor make-ranger))
+  (id nil)
+  (window nil)
+  (frame nil)
+  (buffer nil)
+  (track-file nil)
+  (entry-buffer nil)
+  (window-conf nil)
+  (tab-index nil)
+  (history nil)
+  (minimal nil))
+               
+(ranger-id
+ (make-ranger))
+
+(cl-defstruct (ranger-window (:constructor ranger-track-window))
   prev-buffer curr-buffer curr-tab history)
 
 (defun ranger-track-window (window &optional prev curr tab)
@@ -893,7 +910,8 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
     (eshell)
     (kill-buffer tmp)
     (add-hook 'eshell-exit-hook
-              '(lambda () (unless (one-window-p) (delete-window))) nil t)))
+              '(lambda () (unless (one-window-p) (delete-window))
+                 (select-window 'ranger-window)) nil t)))
 
 
 ;;; delayed function creation
