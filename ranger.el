@@ -1,5 +1,4 @@
-;;; ranger.el --- Make dired more like ranger
-
+;;; ranger.el --- Make dired more like ranger -*- lexical-binding: t -*-
 ;; Copyright (C) 2015  Rich Alesi
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
@@ -56,18 +55,17 @@
 
 ;; version 0.9.1,   2015-07-19 changed package to ranger
 ;; version 0.9.2,   2015-07-26 improve exit from ranger, bookmark support
-;; version 0.9.4,   2015-07-31 deer mode, history navigation
-;; version 0.9.5,   2015-08-20 fixed most bugs when reverting from ranger
-;; version 0.9.6,   2015-09-11 delete all accessed buffers, add details to echo
-;; version 0.9.7,   2015-09-13 copy and paste functionality added
-;; version 0.9.8,   2015-10-04 multiple ranger window support, override dired
-;; version 0.9.8.1, 2015-10-04 ranger is now a major mode
-;; version 0.9.8.3, 2016-08-23 ranger-override-dired-mode
+;; version 0.9.3,   2015-07-31 deer mode, history navigation
+;; version 0.9.4,   2015-08-20 fixed most bugs when reverting from ranger
+;; version 0.9.5,   2015-09-11 delete all accessed buffers, add details to echo
+;; version 0.9.6,   2015-09-13 copy and paste functionality added
+;; version 0.9.7,   2015-10-04 multiple ranger window support, override dired
+;; version 0.9.8,   2015-10-04 ranger is now a major mode
+;; version 0.9.8.1, 2016-08-23 ranger-override-dired-mode
 ;; version 0.9.8.4, 2016-10-02 more mappings to match ranger
 
 ;;; Code:
 
-(declare-function dired-omit-mode "dired-x")
 (declare-function dired-kill-tree "dired-aux")
 (declare-function image-dired-display-window-height "image-dired")
 (declare-function image-dired-display-window-width "image-dired")
@@ -270,8 +268,6 @@ preview window."
 ;; declare used variables
 (defvar ranger-was-ranger)
 (defvar ranger-mode)
-(defvar dired-omit-verbose)
-(defvar dired-omit-mode)
 (defvar image-dired-temp-image-file)
 (defvar image-dired-cmd-create-temp-image-program)
 (defvar image-dired-cmd-create-temp-image-options)
@@ -312,7 +308,6 @@ preview window."
 (defvar ranger-pre-saved nil)
 (defvar ranger-pre-hl-mode nil)
 (defvar ranger-pre-arev-mode nil)
-(defvar ranger-pre-omit-mode nil)
 (defvar ranger-pre-dired-listing nil)
 
 (defvar ranger-preview-window nil)
@@ -2263,8 +2258,6 @@ fraction of the total frame size"
         (auto-revert-mode -1))
       (setq header-line-format ranger-pre-header-format)
       (when (derived-mode-p 'dired-mode)
-        (unless ranger-pre-omit-mode
-          (dired-omit-mode -1))
         (setq dired-listing-switches ranger-pre-dired-listing)
         (ranger-mask-show-details)
         ;; (dired-hide-details-mode -1)
@@ -2546,7 +2539,6 @@ properly provides the modeline in dired mode. "
            ))
     (with-eval-after-load "diminish"
       ;; (diminish 'ranger-mode)
-      (diminish 'dired-omit-mode)
       (diminish 'auto-revert-mode))
     (force-mode-line-update)))
 
@@ -2678,7 +2670,6 @@ properly provides the modeline in dired mode. "
     (setq ranger-pre-header-format header-line-format)
     (setq ranger-pre-hl-mode hl-line-mode)
     (setq ranger-pre-arev-mode auto-revert-mode)
-    (setq ranger-pre-omit-mode dired-omit-mode)
     (setq ranger-pre-dired-listing dired-listing-switches)
     (setq ranger-pre-saved t))
 
