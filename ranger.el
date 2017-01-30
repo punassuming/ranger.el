@@ -550,8 +550,8 @@ Selective hiding of specific attributes can be controlled by MASK."
     ;; tabs
     (define-key map (kbd "C-n") 'ranger-new-tab)
     (define-key map (kbd "C-w") 'ranger-close-tab)
-    (define-key map (kbd "TAB") 'ranger-next-tab)
-    (define-key map (kbd "S-TAB") 'ranger-prev-tab)
+    (define-key map (kbd "C-TAB") 'ranger-next-tab)
+    (define-key map (kbd "C-S-TAB") 'ranger-prev-tab)
     (define-key map (kbd "M-<Right>") 'ranger-next-tab)
     (define-key map (kbd "M-<Left>") 'ranger-prev-tab)
     (define-key map "uq" 'ranger-restore-tab)
@@ -2208,6 +2208,7 @@ fraction of the total frame size"
                      (ranger-frame-exists-p)))
         (message "Reverting all buffers")
         ;; remove all hooks and advices
+        ;; TODO use established dired-after-readin-hook
         (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
         (remove-hook 'window-configuration-change-hook 'ranger-window-check)
 
@@ -2754,13 +2755,13 @@ properly provides the modeline in dired mode. "
 
 (defun ranger--message (format &rest args)
   (when ranger--debug
-    (let (current-mes (curr))
+    (let (old-mess (current-message))
       (setq format (concat "(ranger): " format))
       (apply 'message format args)
       (redisplay)
       (sleep-for ranger--debug-period)
-      (when curr
-        (message curr)))))
+      (when old-mess
+        (message old-mess)))))
 
 ;;;###autoload
 (when ranger-override-dired
