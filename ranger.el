@@ -2301,7 +2301,7 @@ fraction of the total frame size"
       (message "Ranger window was overwritten. Redirecting window to new frame")
       (set-window-buffer nil ranger-buffer)
       (when current
-        (display-buffer-other-frame current)))
+        (display-buffer-pop-up-frame current '(inhibit-switch-frame . nil))))
      (t
       ;; nothing else to do
       ))))
