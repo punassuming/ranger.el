@@ -264,6 +264,11 @@ preview window."
   :group 'ranger
   :type 'boolean)
 
+(defcustom ranger-travel-use-counsel t
+  "Use counsel instead of helm for `ranger-travel'"
+  :group 'ranger
+  :type 'boolean)
+
 
 ;; declare used variables
 (defvar ranger-was-ranger)
@@ -1335,6 +1340,8 @@ ranger-`CHAR'."
   "Open a file or go to a directory in current buffer."
   (interactive)
   (cond
+   ((and (featurep 'counsel) ranger-travel-use-counsel)
+    (counsel-find-file (file-truename default-directory)))
    ((featurep 'helm)
     (helm-find-files-1 (file-truename default-directory)))
    (t
