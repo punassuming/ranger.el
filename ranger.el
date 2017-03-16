@@ -973,7 +973,7 @@ the idle timer fires are ignored."
   (interactive)
   (let ((index (or index
                    ranger-current-tab)))
-    (when index
+    (when (and index (> (length ranger-t-alist) 1))
       (setq ranger-undo-tab (r--aget ranger-t-alist index))
       (r--aremove ranger-t-alist index)
       (ranger-prev-tab))))
