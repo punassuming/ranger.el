@@ -2155,11 +2155,11 @@ fraction of the total frame size"
 (defun ranger-kill-buffer (buffer)
   "Delete unmodified buffers and any dired buffer"
   (when
-      ;; (and
+      (and
        (buffer-live-p buffer)
-           ;; (eq 'ranger-mode (buffer-local-value 'major-mode buffer))
-           ;; )
-    ;; (not (buffer-modified-p buffer))
+       (or (not (buffer-modified-p buffer))
+           (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+           (eq 'ranger-mode (buffer-local-value 'major-mode buffer))))
     (kill-buffer buffer)))
 
 
@@ -2359,12 +2359,16 @@ fraction of the total frame size"
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
   (interactive)
-  (cl-loop for buffer in ranger-parent-buffers do
+  (cl-loop for buffer in
+            (cl-remove-duplicates
+             (append
+              ranger-preview-buffers
+              ranger-parent-buffers
+              ranger-visited-buffers)
+             :test (lambda (x y) (or (null y) (eq x y)))
+             ) do
            (unless (get-buffer-window buffer t)
-             (kill-buffer-if-not-modified buffer)))
-  (cl-loop for buffer in ranger-preview-buffers do
-           (unless (get-buffer-window buffer t)
-             (kill-buffer-if-not-modified buffer))))
+             (ranger-kill-buffer buffer))))
 
 
 ;; header / mode line
