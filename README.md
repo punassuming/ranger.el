@@ -312,9 +312,9 @@ Or you can choose to kill the buffer just after you move to another entry in the
 
 ### Directory Listing
 
-You can choose to show dotfiles at ranger startup, toggled by `zh`.
+You can choose to show dotfiles or hiddne files at ranger startup, toggled by `zh`.
 ```el
-(setq ranger-show-dotfiles t)
+(setq ranger-show-hidden t)
 ```
 
 ### Window Decoration and Appearance
