@@ -2469,7 +2469,7 @@ CALLBACK is passed the received mouse event."
          (used-length (+ (length rhs) (length lhs)))
          (fringe-gap (if (eq fringe-mode 0) 2 0))
          (total-window-width (+ 3 (if minimal
-                                      (window-width ranger-window)
+                                      (window-width)
                                     (- (frame-width) fringe-gap))))
          (filler (make-string (max 0 (- total-window-width used-length)) (string-to-char " "))))
     (concat lhs filler rhs)))
