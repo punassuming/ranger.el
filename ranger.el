@@ -2658,6 +2658,7 @@ properly provides the modeline in dired mode. "
   (ranger-define-additional-maps)
 
   ;; load bookmarks
+  (require 'bookmark)
   (unless bookmark-alist
     (bookmark-maybe-load-default-file))
 
