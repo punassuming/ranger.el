@@ -951,7 +951,7 @@ the idle timer fires are ignored."
          (total-tabs
           (number-sequence 1 ranger-max-tabs))
          (available-tabs
-          (cl-remove-if '(lambda (tab) (member tab tabs)) total-tabs)))
+          (cl-remove-if (lambda (tab) (member tab tabs)) total-tabs)))
     available-tabs))
 
 (defun ranger-new-tab (&optional index no-refresh)
