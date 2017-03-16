@@ -2186,8 +2186,7 @@ fraction of the total frame size"
           (when (and prev-buffer
                      (buffer-live-p prev-buffer))
             (switch-to-buffer prev-buffer)
-            (goto-char prev-point)
-            )
+            (goto-char prev-point))
         (when (and config
                    (window-configuration-p config))
           (set-window-configuration config)
@@ -2198,12 +2197,11 @@ fraction of the total frame size"
 
       ;; revert appearance
       (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
-      (ranger-revert-appearance (or buffer (current-buffer)))
-      (ranger-revert-appearance ranger-buffer)
+      (ranger-revert-appearance (or buffer ranger-buffer))
       (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
       (setq ranger-pre-saved nil)
 
-      ;; if no more ranger frames
+      ;; if no more ranger frames or windows
       (when (not (or (ranger-windows-exists-p)
                      (ranger-frame-exists-p)))
         (message "Reverting all buffers")
