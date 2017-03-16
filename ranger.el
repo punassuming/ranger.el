@@ -2579,7 +2579,7 @@ properly provides the modeline in dired mode. "
 (defun deer-jump-other-window (&optional path)
   "Launch dired in a minimal ranger window in other window."
   (interactive)
-  (switch-to-buffer-other-window (current-buffer) 'norecord)
+  (switch-to-buffer-other-window nil 'norecord)
   (deer path))
 
 (defun deer-dual-pane (&optional left right)
