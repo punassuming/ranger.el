@@ -1977,7 +1977,7 @@ is set, show literally instead of actual buffer."
                        preview-buffer
                        `(ranger-display-buffer-at-side . ((side . right)
                                                           (slot . 1)
-                                                          ;; (inhibit-same-window . t)
+                                                          (inhibit-same-window . t)
                                                           (window-width . ,(- ranger-width-preview
                                                                               (min
                                                                                (- ranger-max-parent-width
@@ -2255,6 +2255,7 @@ fraction of the total frame size"
       ;; revert buffer local modes used in ranger
       (ranger--message "Reverting appearance to buffer : %s" buffer)
 
+      ;; BUG : dired auto revert adds header / . / .. when window not active
       (unless ranger-pre-hl-mode
         (hl-line-mode -1))
       (unless ranger-pre-arev-mode
@@ -2301,9 +2302,10 @@ fraction of the total frame size"
         (ranger)))
      ((not buffer-fn)
       (message "Ranger window was overwritten. Redirecting window to new frame")
-      (set-window-buffer nil ranger-buffer)
-      (when current
-        (display-buffer-pop-up-frame current '(inhibit-switch-frame . nil))))
+      (unless minimal
+        (set-window-buffer nil ranger-buffer)
+        (when current
+          (display-buffer-pop-up-frame current '(inhibit-switch-frame . nil)))))
      (t
       ;; nothing else to do
       ))))
@@ -2583,8 +2585,20 @@ properly provides the modeline in dired mode. "
 (defun deer-jump-other-window (&optional path)
   "Launch dired in a minimal ranger window in other window."
   (interactive)
-  (switch-to-buffer-other-window nil 'norecord)
-  (deer path))
+  (let* ((win-num (length (window-list-1)))
+         (oth-buf (and
+                   (> win-num 1)
+                   (window-buffer (next-window))))
+         (current-file-path (file-name-directory buffer-file-name)))
+    (switch-to-buffer-other-window nil 'norecord)
+    (deer (or path current-file-path))
+    (cond
+     ;; if window was added, delete
+     ((not (eq win-num (length (window-list-1))))
+      (add-hook 'kill-buffer-hook 'delete-window nil t))
+     ;; else restore previous buffer
+     (t
+      (add-hook 'kill-buffer-hook `(lambda ()(pop-to-buffer ,oth-buf)) nil t)))))
 
 (defun deer-dual-pane (&optional left right)
   "Launch dired in a minimal ranger window in other window."
