@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015  Rich Alesi
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.8.3
+;; Version: 0.9.8.5
 ;; Keywords: files, convenience, dired
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4"))
@@ -194,7 +194,7 @@
 
 ;; parent options
 (defcustom ranger-width-parents 0.12
-  "Fraction of frame width taken by parent windows"
+  "Fraction of frame width taken by parent windows."
   :group 'ranger
   :type 'float)
 
@@ -205,7 +205,7 @@
 
 ;;;###autoload
 (defcustom ranger-key [?\C-p]
-  "`dired-mode' key used to toggle `ranger-mode'"
+  "Key in `dired-mode' used to toggle `ranger-mode'."
   :group 'ranger
   :type 'sexp)
 
@@ -284,10 +284,10 @@ preview window."
 (defvar ranger-frame nil)
 
 (defvar ranger-w-alist ()
-  "List of windows using ranger")
+  "List of windows using ranger.")
 
 (defvar ranger-f-alist ()
-  "List of frames using ranger")
+  "List of frames using ranger.")
 
 (defvar ranger-t-alist ()
   "List of tabs to keep track of in ranger.")
@@ -320,7 +320,7 @@ preview window."
 (defvar ranger-parent-dirs nil)
 
 (defvar ranger-visited-buffers ()
-  "List of buffers visited in ranger")
+  "List of buffers visited in ranger.")
 
 ;; frame specific variables
 (defvar ranger-minimal nil)
@@ -448,14 +448,14 @@ Selective hiding of specific attributes can be controlled by MASK."
 (defvar ranger-normal-mode-map
   (let ((map (make-sparse-keymap)))
     ;; basics
-    (define-key map "?"             'ranger-help)
-    (define-key map "du"            'ranger-show-size)
-    (define-key map "q"             'ranger-close)
-    ;; (define-key map (kbd "<ESC>")   'ranger-close)
-    (define-key map "ZZ"            'ranger-close)
-    (define-key map "Q"             'ranger-disable)
+    (define-key map "?"              'ranger-help)
+    (define-key map "du"             'ranger-show-size)
+    (define-key map "q"              'ranger-close)
+    ;; (define-key map (kbd "<ESC>") 'ranger-close)
+    (define-key map "ZZ"             'ranger-close)
+    (define-key map "Q"              'ranger-disable)
     (define-key map "ZQ"             'ranger-disable)
-    (define-key map (kbd "C-r")     'ranger-refresh)
+    (define-key map (kbd "C-r")      'ranger-refresh)
 
     ;; bookmarks
     (define-key map (kbd "`")       'ranger-goto-mark)
@@ -551,13 +551,13 @@ Selective hiding of specific attributes can be controlled by MASK."
     ;; TODO map zf   regexp filter
 
     ;; tabs
-    (define-key map (kbd "C-n") 'ranger-new-tab)
-    (define-key map (kbd "C-w") 'ranger-close-tab)
-    (define-key map (kbd "C-TAB") 'ranger-next-tab)
-    (define-key map (kbd "C-S-TAB") 'ranger-prev-tab)
+    (define-key map (kbd "C-n")       'ranger-new-tab)
+    (define-key map (kbd "C-w")       'ranger-close-tab)
+    (define-key map (kbd "C-TAB")     'ranger-next-tab)
+    (define-key map (kbd "C-S-TAB")   'ranger-prev-tab)
     (define-key map (kbd "M-<Right>") 'ranger-next-tab)
-    (define-key map (kbd "M-<Left>") 'ranger-prev-tab)
-    (define-key map "uq" 'ranger-restore-tab)
+    (define-key map (kbd "M-<Left>")  'ranger-prev-tab)
+    (define-key map "uq"              'ranger-restore-tab)
 
     ;; define M + number bindings to access tabs.
     (define-key map "\M-1" '(lambda () (interactive) (ranger-goto-tab 1)))
