@@ -1663,8 +1663,8 @@ R   : ranger . el location
            (file-date (format-time-string "%Y-%m-%d %H:%m"
                                           (nth 5 fattr)))
            (file-perm (nth 8 fattr))
-           (cur-pos (line-number-at-pos (point)))
-           (final-pos (- (line-number-at-pos (point-max)) 1))
+           (cur-pos (- (line-number-at-pos (point)) 1))
+           (final-pos (- (line-number-at-pos (point-max)) 2))
            (position (format "%3d/%-3d"
                              cur-pos
                              final-pos))
