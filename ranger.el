@@ -1337,11 +1337,19 @@ ranger-`CHAR'."
 (defun ranger-travel ()
   "Open a file or go to a directory in current buffer."
   (interactive)
-  (cond
-   ((featurep 'helm)
-    (helm-find-files-1 (file-truename default-directory)))
-   (t
-    (call-interactively 'ido-find-file))))
+  (let ((prompt "Travel: "))
+    (cond
+     ((featurep 'helm)
+      (ranger-find-file (helm-read-file-name prompt)))
+     ((featurep 'ivy)
+      (ivy-read prompt 'read-file-name-internal
+                :matcher #'counsel--find-file-matcher
+                :action
+                (lambda (x)
+                  (with-ivy-window
+                    (ranger-find-file (expand-file-name x default-directory))))))
+     (t
+      (ranger-find-file (ido-read-file-name prompt))))))
 
 (defun ranger-up-directory ()
   "Move to parent directory."
