@@ -2594,19 +2594,19 @@ properly provides the modeline in dired mode. "
   "Launch dired in a minimal ranger window in other window."
   (interactive)
   (let* ((win-num (length (window-list-1)))
-         (oth-buf (and
-                   (> win-num 1)
-                   (window-buffer (next-window))))
+         (next-buffer (and (> win-num 1)
+                           (window-buffer (next-window))))
          (current-file-path (file-name-directory buffer-file-name)))
-    (switch-to-buffer-other-window nil 'norecord)
+    (switch-to-buffer-other-window next-buffer)
     (deer (or path current-file-path))
     (cond
      ;; if window was added, delete
      ((not (eq win-num (length (window-list-1))))
-      (add-hook 'kill-buffer-hook 'delete-window nil t))
+      (message "adding delete window hook")
+      (add-hook 'kill-buffer-hook #'delete-window t t))
      ;; else restore previous buffer
      (t
-      (add-hook 'kill-buffer-hook `(lambda ()(pop-to-buffer ,oth-buf)) nil t)))))
+      (add-hook 'kill-buffer-hook `(lambda ()(pop-to-buffer ,oth-buf)) t t)))))
 
 (defun deer-dual-pane (&optional left right)
   "Launch dired in a minimal ranger window in other window."
@@ -2669,11 +2669,10 @@ properly provides the modeline in dired mode. "
   (interactive)
   (let ((dir default-directory))
     (ranger-revert-appearance (current-buffer))
-    ;; (ranger-disable)
     (remove-hook 'dired-mode-hook 'ranger-override-dired-fn)
     (remove-hook 'window-configuration-change-hook 'ranger-window-check)
     ;; (setq-local ranger-wdired t)
-    (dired-mode)
+    (dired-mode dir)
     ))
 
 (defun ranger-setup ()
