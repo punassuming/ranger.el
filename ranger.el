@@ -2662,7 +2662,10 @@ properly provides the modeline in dired mode. "
 (defun ranger-disable ()
   "Interactively disable ranger-mode."
   (interactive)
-  (ranger-revert))
+  ;; don't kill ranger buffer if open somewhere else
+  (if (> (length (get-buffer-window-list)) 1)
+      (delete-window)
+    (ranger-revert)))
 
 (defun ranger-to-dired ()
   "toggle from ranger to dired in directory." ;
