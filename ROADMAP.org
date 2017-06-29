@@ -1,0 +1,333 @@
+#+TITLE: Ranger.el Roadmap
+
+* New Features
+** From sunrise-commander
+*** Separate history stack for each ranger instance.
+*** In deer, use C-c C-s to cycle between twin pane horizontal, vertical, or single pane.
+*** Refine contents in current directory using flex matching
+*** Sticky filtering that persists across directory paths
+*** Virtual mode - allow saving of virtual directories:
+if you want to name your virtual
+;; directories like *.svrm just add to your .emacs file a line like the
+;; following:
+;;
+;;     (add-to-list 'auto-mode-alist '("\\.srvm\\'" . sr-virtual-mode))
+*** Terminal auto-completion with tags:
+ Additionally, the following substitutions are automagically
+;; performed in `eshell' and `term-line-mode':
+;;     %f - expands to the currently selected file in the left pane
+;;     %F - expands to the currently selected file in the right pane
+;;     %m - expands to the list of paths of all marked files in the left pane
+;;     %M - expands to the list of paths of all marked files in the right pane
+;;     %n - expands to the list of names of all marked files in the left pane
+;;     %N - expands to the list of names of all marked files in the right pane
+;;     %d - expands to the current directory in the left pane
+;;     %D - expands to the current directory in the right pane
+;;     %a - expands to the list of paths of all marked files in the active pane
+;;     %A - expands to the current directory in the active pane
+;;     %p - expands to the list of paths of all marked files in the passive pane
+;;     %P - expands to the current directory in the passive pane
+*** Navigate deer tab in other window with M-hjkl in eshell terminal.
+*** Toggle and hide columns in dired display
+ sr-attributes-display-mask nil
+  "Contols hiding/transforming columns with `sr-toggle-attributes'.
+If set, its value must be a list of symbols, one for each
+attributes column. If the symbol is nil, then the corresponding
+column will be hidden, and if it's not nil then the column will
+be left untouched. The symbol may also be the name of a function
+that takes one string argument and evaluates to a different
+string -- in this case this function will be used to transform
+the contents of the corresponding column and its result will be
+displayed instead."
+*** Hooks
+(defcustom sr-init-hook nil
+  "List of functions to be called before the Sunrise panes are displayed."
+  :group 'sunrise
+  :type 'hook
+  :options '(auto-insert))
+
+(defcustom sr-start-hook nil
+  "List of functions to be called after the Sunrise panes are displayed."
+  :group 'sunrise
+  :type 'hook
+  :options '(auto-insert))
+
+(defcustom sr-refresh-hook nil
+  "List of functions to be called every time a pane is refreshed."
+  :group 'sunrise
+  :type 'hook
+  :options '(auto-insert))
+
+(defcustom sr-quit-hook nil
+  "List of functions to be called after the Sunrise panes are hidden."
+  :group 'sunrise
+  :type 'hook
+  :options '(auto-insert))
+*** Method in SR
+Defines mode and then uses macro to reimplement all settings upon change.  Does not use 
+* Structs
+** Issues with current system
+
+ - Usage of alist with hard defined cons position makes it very difficult to add more tracked parameters within the object
+ - Tabs are not allocated within a ranger instance, making to possibility of different tabs per window impossible.
+   - Should make it possible to either keep the same tabs (reserve currently used tabs in other window) across all windows, or make separate tab instance.
+ - Yank / Paste ring should be universal ring. 
+  
+*** TODO Need yank / paste ring to allow access of older entries. 
+
+
+** Examples from other files
+
+*** Perspectives
+    
+ #+BEGIN_SRC emacs-lisp
+ ;; Perspective struct:
+
+ (defstruct (perspective
+             (:conc-name persp-)
+             (:constructor make-persp))
+   (name "")
+   (buffers nil)
+   (window-conf nil)
+   ;; reserved parameters: dont-save-to-file, persp-file.
+   (parameters nil)
+   (weak nil)
+   (auto nil)
+   (hidden nil))
+
+ #+END_SRC
+
+
+
+
+** Structures
+
+*** Tabs
+*** Windows
+*** Instances
+*** 
+
+* From Ranger
+** Move to recycle bin / .Trash with DD
+** Archive opening
+** Ranger ex commands alternatives
+*** :compress
+*** :extract
+*** :filter (accessible through zf) or F
+*** :delete
+*** mkdir
+*** touch
+*** chmod
+*** :rename
+** Column ratio : 1,3,4
+** Cd to directory from eshell
+** preview_files
+** preview_directories
+** Option of other shell to access with "S"
+** "f" : filter
+** "dc" : get cumulative size
+** "cw" : rename file
+** toggle VCS on specific directory
+** ~ : view mode
+** w : taskiew_open
+   
+** Change the line mode
+map Mf linemode filename
+map Mi linemode fileinfo
+map Mm linemode mtime
+map Mp linemode permissions
+map Ms linemode sizemtime
+map Mt linemode metatitle
+* eshell imlpementation  
+open from eshell and update prompt.
+** deer (alt+k)
+** M-#, go up directory
+** a : append_path
+** A : append absolute path
+** i : insert path
+** I : insert absolute path
+** c : cd into current path and quit
+** C : cd into selected path and quit
+** r : open file
+* Dired goodies
+** emacs-async
+- toggle with za
+** download file to current dir
+** rsync implementation
+#+BEGIN_SRC emacs-lisp 
+;;;###autoload
+(defun ora-dired-rsync (dest)
+  (interactive
+   (list
+    (expand-file-name
+     (read-file-name
+      "Rsync to:"
+      (dired-dwim-target-directory)))))
+  ;; store all selected files into "files" list
+  (let ((files (dired-get-marked-files
+                nil current-prefix-arg))
+        ;; the rsync command
+        (tmtxt/rsync-command
+         "rsync -arvz --progress "))
+    ;; add all selected file names as arguments
+    ;; to the rsync command
+    (dolist (file files)
+      (setq tmtxt/rsync-command
+            (concat tmtxt/rsync-command
+                    (shell-quote-argument file)
+                    " ")))
+    ;; append the destination
+    (setq tmtxt/rsync-command
+          (concat tmtxt/rsync-command
+                  (shell-quote-argument dest)))
+    ;; run the async shell command
+    (async-shell-command tmtxt/rsync-command "*rsync*")
+    ;; finally, switch to that window
+    (other-window 1)))
+
+(define-key dired-mode-map "Y" 'ora-dired-rsync)
+#+END_SRC
+** rename toggle case - ~
+- use commands accessible from % u and % l in dired
+** default file manager
+- dired-recursive-deletes : always
+- dired-recursive-copies : always
+- dired-dwim-target : t
+- delete-by-moving-to-trash t
+- trash-directory : ~/.Trash
+- open in desktop
+#+BEGIN_SRC emacs-lisp
+(defun ergoemacs-open-in-desktop ()
+  "Show current file in desktop (OS's file manager)."
+  (interactive)
+  (cond
+   ((string-equal system-type "windows-nt")
+    (w32-shell-execute "explore" (replace-regexp-in-string "/" "\\" default-directory t t)))
+   ((string-equal system-type "darwin") (shell-command "open ."))
+   ((string-equal system-type "gnu/linux")
+    (let ((process-connection-type nil)) (start-process "" nil "xdg-open" "."))
+    ;; (shell-command "xdg-open .") ;; 2013-02-10 this sometimes froze emacs till the folder is closed. ? with nautilus
+    ) ))
+#+END_SRC
+** wdired rename filename
+#+BEGIN_SRC emacs-lisp
+  (defun my-mark-file-name-for-rename ()
+    "Mark file name on current line except its extension"
+    (interactive)
+
+    ;; get the file file name first
+    ;; full-name: full file name
+    ;; extension: extension of the file
+    ;; base-name: file name without extension
+    (let ((full-name (file-name-nondirectory (dired-get-filename)))
+          extension base-name)
+
+      ;; check if it's a dir or a file
+      ;; TODO not use if, use switch case check for symlink
+      (if (file-directory-p full-name)
+          (progn
+            ;; if file name is directory, mark file name should mark the whole
+            ;; file name
+            (call-interactively 'end-of-line) ;move the end of line
+            (backward-char (length full-name)) ;back to the beginning
+            (set-mark (point))
+            (forward-char (length full-name)))
+        (progn
+          ;; if current file is a file, mark file name mark only the base name,
+          ;; exclude the extension
+          (setq extension (file-name-extension full-name))
+          (setq base-name (file-name-sans-extension full-name))
+          (call-interactively 'end-of-line)
+          (backward-char (length full-name))
+          (set-mark (point))
+          (forward-char (length base-name))))))
+
+  (defun my-mark-file-name-forward ()
+    "Mark file name on the next line"
+    (interactive)
+    (deactivate-mark)
+    (next-line)
+    (my-mark-file-name-for-rename))
+
+  (defun my-mark-file-name-backward ()
+    "Mark file name on the next line"
+    (interactive)
+    (deactivate-mark)
+    (previous-line)
+    (my-mark-file-name-for-rename))
+
+(eval-after-load 'wdired
+  (define-key wdired-mode-map (kbd "TAB") 'my-mark-file-name-forward)
+  (define-key wdired-mode-map (kbd "S-<tab>") 'my-mark-file-name-backward)
+  (define-key wdired-mode-map (kbd "s-a") 'my-mark-file-name-for-rename))
+#+END_SRC
+** dired-rainbow
+   
+** use real ls
+   
+also add toggle option
+#+BEGIN_SRC emacs-lisp
+(require 'ls-lisp)
+(setq ls-lisp-use-insert-directory-program t)
+(setq insert-directory-program "C:/Program Files/Git/usr/bin/ls.exe")
+#+END_SRC
+
+
+** dired-compress-files-alist
+update with 7zip information
+
+** shells
+- open multiple shells in dired
+* ls-lisp optimization
+#+begin_src emacs-lisp
+(setq ls-lisp-format-time-list
+      '("%Y-%m-%d %H:%M"
+        "%Y-%m-%d %H:%M"))
+
+(setq ls-lisp-dirs-first nil)
+(setq ls-lisp-verbosity '(uid gid links))
+#+end_src
+
+* TODO Milestones [0/19]
+- [ ] Switch to data structure to store ranger parameters
+- [ ] Improve ivy / helm usage
+  - [ ] provide alternate actions
+- [ ] Mappings
+  - [ ] map zc toggle_option collapse_preview
+  - [ ] undo copy - uy
+  - [ ] remove from copy - yr
+  - [ ] undo cut - ud
+  - [ ] remove from cut - dr
+  - [ ] Add emacs style bindings
+  - [ ] paste link - pl
+  - [ ] map zf   regexp filter
+- [ ] Dired extras (make with Spacemacs)
+  - [ ] Dired-narrow
+  - [ ] Dired-filter
+  - [ ] Dired-rainbow
+- [ ] visual mode bindings don't seem to work
+- [ ] dired-sort-other only does this:
+- [ ] Tab reimplementation
+  - [ ] make separate tabs for each ranger window
+  - [ ] uniquify
+  - [ ] unique sessions (each deer folder will show all sessions)
+- [ ] reenter deer if navigating to directory.
+- [ ] make separate buffer of directory if more than one already exists.
+- [ ] closing one deer window disables both
+- [ ] use established dired-after-readin-hook
+- [ ] Try to manage new windows / frames created without killing ranger
+- [ ] deal with new-frame command
+- [ ] Async commands
+  - [ ] Copy
+  - [ ] Cut
+- [ ] Remove ranger-truncate (what command truncates lines?)
+- [ ] Ranger width - derive from ratio setting
+- [ ] Hydra usage
+  - [ ] Reimplement z menu
+  - [ ] Reimplement g menu
+  - [ ] bookmarks listing
+- [ ] Debug / Compilation fixes
+  - [ ] make a ranger debug pane as the bottom window
+  - [ ] When to use eval-when-compile vs require?
+  - [ ] Show ranger sessions in buffer list
+- [ ] Virtual mode (from grep / pt)
