@@ -2737,6 +2737,9 @@ properly provides the modeline in dired mode. "
   (ranger-show-flags)
   (ranger-filter-files)
 
+  ;; omit files after buffer refresh
+  (add-hook 'dired-after-readin-hook 'ranger-filter-files nil t)
+
   ;; open new tab if ranger is in multiple frames.
   (if (> (length ranger-f-alist) 1)
       (ranger-new-tab nil t)
