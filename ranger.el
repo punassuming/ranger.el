@@ -1558,7 +1558,7 @@ s   : /srv
 r,/ : /
 R   : ranger . el location
 > "
-     '(?e ?u ?d ?l ?L ?o ?v ?m ?M ?s ?r ?R ?/ ?h ?g ?D ?j ?k ?T ?t ?n ?c))))
+     '(?q ?e ?u ?d ?l ?L ?o ?v ?m ?M ?s ?r ?R ?/ ?h ?g ?D ?j ?k ?T ?t ?n ?c))))
   (message nil)
   (let* ((c (char-to-string path))
          (new-path
@@ -1588,6 +1588,8 @@ R   : ranger . el location
             ('t 'ranger-next-tab)
             ('c 'ranger-close-tab)
             ('g 'ranger-goto-top))))
+    (when (string-equal c "q")
+      (keyboard-quit))
     (when (and new-path (file-directory-p new-path))
       (ranger-find-file new-path))
     (when (eq system-type 'windows-nt)
