@@ -470,7 +470,6 @@ Selective hiding of specific attributes can be controlled by MASK."
     (define-key map (kbd "TAB")   'ranger-mark)
     (define-key map (kbd "\"")    'dired-mark-files-regexp)
     (define-key map (kbd "uv")    'dired-unmark-all-files)
-    (define-key map (kbd "t")     'dired-toggle-marks)
     (define-key map "t"           'ranger-toggle-mark)
 
     ;; dired commands
