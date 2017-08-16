@@ -584,7 +584,8 @@ Selective hiding of specific attributes can be controlled by MASK."
     ;; file opening
     (define-key map "ws"            'ranger-open-file-vertically)
     (define-key map "wv"            'ranger-open-file-horizontally)
-    (define-key map "wf"            'ranger-open-file-frame)
+    (define-key map "wf"            'ranger-open-file-new-frame)
+    (define-key map "wj"            'ranger-open-file-other-window)
     (define-key map "we"            'ranger-open-in-external-app)
 
     ;; mouse
@@ -1415,30 +1416,35 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
 
 ;; TODO closing one deer window disables both
 (defun ranger-open-file (&optional mode)
-  "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
+      "Find file in ranger buffer.  `ENTRY' can be used as path or filename, else will use
 currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring on change"
-  (let ((marked-files (dired-get-marked-files)))
-    (cl-loop for find-name in marked-files do
-             (let ((dir-p (file-directory-p find-name))
-                   (min (r--fget ranger-minimal)))
-               (when (and find-name)
-                 (cl-case mode
-                   ('frame
-                    (let ((goto-frame (make-frame)))
-                      (select-frame-set-input-focus goto-frame)))
-                   ('horizontal
-                    (when (or min (not  dir-p))
-                      (unless min
-                        (ranger-disable))
-                      (split-window-right)
-                      (windmove-right)))
-                   ('vertical
-                    (when (or min (not dir-p))
-                      (unless min
-                        (ranger-disable))
-                      (split-window-below)
-                      (windmove-down))))
-                 (ranger-find-file find-name))))))
+      (let ((marked-files (dired-get-marked-files)))
+        (cl-loop for find-name in marked-files do
+                 (let ((dir-p (file-directory-p find-name))
+                       (min (r--fget ranger-minimal)))
+                   (when (and find-name)
+                     (cl-case mode
+                       ('frame
+                        (let ((goto-frame (make-frame)))
+                          (select-frame-set-input-focus goto-frame)))
+                       ('horizontal
+                        (when (or min (not  dir-p))
+                          (unless min
+                            (ranger-disable))
+                          (split-window-right)
+                          (windmove-right)))
+                       ('vertical
+                        (when (or min (not dir-p))
+                          (unless min
+                            (ranger-disable))
+                          (split-window-below)
+                          (windmove-down)))
+                       ('other
+                        (when (or min (not dir-p))
+                          (unless min
+                            (ranger-disable))
+                          (other-window 1))))
+                     (ranger-find-file find-name))))))
 
 ;; idea taken from http://ergoemacs.org/emacs/emacs_dired_open_file_in_ext_apps.html
 (defun ranger-open-in-external-app ()
@@ -1469,10 +1475,15 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
   (interactive)
   (ranger-open-file 'vertical))
 
-(defun ranger-open-file-frame ()
-  "Open current file as a split with previously opened window"
+(defun ranger-open-file-new-frame ()
+  "Open current file in a new frame."
   (interactive)
   (ranger-open-file 'frame))
+
+(defun ranger-open-file-other-window ()
+  "Open current file in `other-window'."
+  (interactive)
+  (ranger-open-file 'other))
 
 (defun ranger-insert-subdir ()
   "Insert subdir from selected folder."
