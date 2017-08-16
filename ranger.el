@@ -539,6 +539,11 @@ Selective hiding of specific attributes can be controlled by MASK."
     ;; TODO paste link - pl
     (define-key map "p?"            'ranger-show-copy-contents)
 
+    ;; copy names and paths
+    (define-key map "yp"            'ranger-copy-absolute-file-paths)
+    (define-key map "yd"            'ranger-copy-current-dir-path)
+    (define-key map "yn"            'ranger-copy-filename)
+
     ;; settings
     (define-key map "o"             'ranger-sort-criteria)
     (define-key map "z+"            'ranger-more-parents)
@@ -899,6 +904,32 @@ Otherwise, with a prefix arg, mark files on the next ARG lines."
              (ranger--get-file-sizes fileset)
              (propertize (string-join fileset "\n") 'face 'font-lock-comment-face)
              )))
+
+
+;;; copy names and paths
+
+(defun ranger-copy-absolute-file-paths (&optional arg)
+  "Copy absolute file path(s) into the kill ring.
+
+Copies either the paths of the marked files (separated by spaces)
+or the path of the currently selected file. See
+`dired-copy-filename-as-kill'."
+  (interactive "P")
+  (dired-copy-filename-as-kill (or arg 0)))
+
+(defun ranger-copy-current-dir-path ()
+  "Copy the current directory's (`default-directory''s) absolute
+path."
+  (interactive)
+  (message (kill-new (expand-file-name default-directory))))
+
+(defalias 'ranger-copy-filename 'dired-copy-filename-as-kill
+  "Copy file name(s) into the kill ring.
+
+Copies either the names of the marked files (separated by spaces)
+or the name of the currently selected file.")
+
+
 
 (defun ranger-pop-eshell (&optional arg)
   "Create an eshell window below selected window, working directory."
