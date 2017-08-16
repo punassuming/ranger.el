@@ -2638,11 +2638,13 @@ properly provides the modeline in dired mode. "
   "Launch dired in a minimal ranger window in other window."
   (interactive)
   (let* ((win-num (length (window-list-1)))
+         (buffer-dir (file-name-directory
+                             (or buffer-file-name
+                                 default-directory)))
          (next-buffer (and (> win-num 1)
-                           (window-buffer (next-window))))
-         (current-file-path (file-name-directory buffer-file-name)))
+                           (window-buffer (next-window)))))
     (switch-to-buffer-other-window next-buffer)
-    (deer (or path current-file-path))
+    (deer (or path buffer-dir))
     (cond
      ;; if window was added, delete
      ((not (eq win-num (length (window-list-1))))
@@ -2650,7 +2652,8 @@ properly provides the modeline in dired mode. "
       (add-hook 'kill-buffer-hook #'delete-window t t))
      ;; else restore previous buffer
      (t
-      (add-hook 'kill-buffer-hook `(lambda ()(pop-to-buffer ,oth-buf)) t t)))))
+      (add-hook 'kill-buffer-hook
+                `(lambda () (pop-to-buffer ,next-buffer)) t t)))))
 
 (defun deer-dual-pane (&optional left right)
   "Launch dired in a minimal ranger window in other window."
