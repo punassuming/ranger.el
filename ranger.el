@@ -1086,9 +1086,10 @@ the idle timer fires are ignored."
 ranger-`CHAR'."
   (interactive "cm-")
   (let ((mark-letter (char-to-string mark)))
-    (bookmark-set (concat "ranger-" mark-letter))
-    (message "Bookmarked directory %s as `ranger-%s'"
-             default-directory mark-letter)))
+    (unless (string= mark-letter "")
+      (bookmark-set (concat "ranger-" mark-letter))
+      (message "Bookmarked directory %s as `ranger-%s'"
+               default-directory mark-letter))))
 
 (defun ranger-remove-mark ()
   (interactive)
