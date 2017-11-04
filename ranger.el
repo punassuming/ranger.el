@@ -313,6 +313,8 @@ preview window."
 (defvar ranger-preview-window nil)
 (defvar ranger-preview-buffers ()
   "List with buffers of previewed files.")
+(defvar ranger-preview-original-buffers ()
+  "List with buffers of previewed files opened prior to ranger starting.")
 
 (defvar ranger-parent-windows nil)
 (defvar ranger-parent-buffers ()
@@ -681,7 +683,7 @@ to not replace existing value."
   (tab-index nil)
   (history nil)
   (minimal nil))
-               
+
 (ranger-id
  (make-ranger))
 
@@ -2048,8 +2050,9 @@ is set, show literally instead of actual buffer."
               (when ranger-modify-header
                 (setq header-line-format `(:eval (,ranger-header-func))))
               (ranger-hide-the-cursor))
-            (when (not (memq preview-buffer original-buffer-list))
-              (add-to-list 'ranger-preview-buffers preview-buffer))
+            (if (not (memq preview-buffer original-buffer-list))
+                (add-to-list 'ranger-preview-buffers preview-buffer)
+              (add-to-list 'ranger-preview-original-buffers preview-buffer))
             (setq ranger-preview-window preview-window)
             ;; (ranger-hide-details)
             (ranger-hide-details)
@@ -2283,7 +2286,9 @@ fraction of the total frame size"
 
           (if ranger-cleanup-on-disable
               (mapc 'ranger-kill-buffer all-ranger-buffers)
-            (mapc 'ranger-revert-appearance all-ranger-buffers)))
+            (mapc 'ranger-revert-appearance all-ranger-buffers))
+          ;; Revert ranger buffers which were open prior to ranger starting
+          (mapc 'ranger-revert-appearance ranger-preview-original-buffers))
 
         ;; kill preview buffer
         (when (get-buffer "*ranger-prev*")
