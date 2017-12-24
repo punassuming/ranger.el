@@ -1760,8 +1760,7 @@ R   : ranger . el location
 (defun ranger-sub-window-setup ()
   "Parent window options."
   ;; allow mouse click to jump to that directory
-  (make-local-variable 'mouse-1-click-follows-link)
-  (setq mouse-1-click-follows-link nil)
+  (setq-local mouse-1-click-follows-link nil)
   (local-set-key (kbd  "<mouse-1>") 'ranger-find-file)
   ;; set header-line
   (when ranger-modify-header
@@ -2039,7 +2038,7 @@ is set, show literally instead of actual buffer."
               )
             (with-current-buffer preview-buffer
               (setq-local cursor-type nil)
-              (setq mouse-1-click-follows-link nil)
+              (setq-local mouse-1-click-follows-link nil)
               (local-set-key (kbd  "<mouse-1>") #'(lambda ()
                                                     (interactive)
                                                     (select-window ranger-window)
