@@ -1423,6 +1423,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
           (progn
             (ranger--message "opening directory: %s" find-name)
             (ranger-save-window-settings)
+            (ranger--message "settings saved: %s" find-name)
             (unless ignore-history
               (ranger-update-history find-name))
             (switch-to-buffer
@@ -1437,7 +1438,9 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
                 (r--fset ranger-minimal t)
               (r--fset ranger-minimal nil))
             (ranger-parent-child-select)
+            (ranger--message "setting up ranger windows: %s" find-name)
             (ranger-mode)
+            (ranger--message "DONE")
             ;; (dired-unadvertise find-name)
             )
         (progn
@@ -2779,8 +2782,11 @@ properly provides the modeline in dired mode. "
   ;; clear out everything if not in deer mode
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
-  (ranger-sort t)
+  ;; (ranger-sort t)
+  (ranger--message "sorting")
   (ranger-show-flags)
+  (ranger--message "setting flags")
+  (ranger--message "starting filter")
   (ranger-filter-files)
 
   ;; omit files after buffer refresh
@@ -2819,7 +2825,8 @@ properly provides the modeline in dired mode. "
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
   ;; (setq dired-hide-details-hide-symlink-targets nil)
 
-  (ranger--message "Ranger loaded"))
+  (ranger--message "Ranger loaded")
+  )
 
 (defun ranger-hide-the-cursor ()
   (when (and buffer-read-only ranger-hide-cursor)
@@ -2827,7 +2834,7 @@ properly provides the modeline in dired mode. "
   (hl-line-mode t))
 
 (defvar ranger--debug nil)
-(defvar ranger--debug-period 0.5)
+(defvar ranger--debug-period 1.5)
 
 ;; TODO make a ranger debug pane as the bottom window
 
