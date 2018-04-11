@@ -448,150 +448,148 @@ Selective hiding of specific attributes can be controlled by MASK."
 (defvar ranger-normal-mode-map
   (let ((map (make-sparse-keymap)))
     ;; basics
-    (define-key map "?"              'ranger-help)
-    (define-key map "du"             'ranger-show-size)
-    (define-key map "q"              'ranger-close)
-    ;; (define-key map (kbd "<ESC>") 'ranger-close)
-    (define-key map "ZZ"             'ranger-close)
-    (define-key map "Q"              'ranger-disable)
-    (define-key map "ZQ"             'ranger-disable)
-    (define-key map (kbd "C-r")      'ranger-refresh)
+    (define-key map "?"                'ranger-help)
+    (define-key map "du"               'ranger-show-size)
+    (define-key map "q"                'ranger-close)
+    ;; (define-key map (kbd "<ESC>")   'ranger-close)
+    (define-key map "ZZ"               'ranger-close)
+    (define-key map "Q"                'ranger-disable)
+    (define-key map "ZQ"               'ranger-disable)
+    (define-key map (kbd "C-r")        'ranger-refresh)
 
     ;; bookmarks
-    (define-key map (kbd "`")       'ranger-goto-mark)
-    (define-key map (kbd "'")       'ranger-goto-mark)
-    (define-key map "B"             'ranger-show-bookmarks)
-    (define-key map "m"             'ranger-create-mark)
-    (define-key map "um"            'ranger-remove-mark)
+    (define-key map (kbd "`")          'ranger-goto-mark)
+    (define-key map (kbd "             '") 'ranger-goto-mark)
+    (define-key map "B"                'ranger-show-bookmarks)
+    (define-key map "m"                'ranger-create-mark)
+    (define-key map "um"               'ranger-remove-mark)
 
     ;; marking
-    (define-key map "v"           'dired-toggle-marks)
-    (define-key map (kbd "C-SPC") 'ranger-mark)
-    (define-key map (kbd "TAB")   'ranger-mark)
-    (define-key map (kbd "\"")    'dired-mark-files-regexp)
-    (define-key map (kbd "uv")    'dired-unmark-all-files)
-    (define-key map "t"           'ranger-toggle-mark)
+    (define-key map "v"                'dired-toggle-marks)
+    (define-key map (kbd "C-SPC")      'ranger-mark)
+    (define-key map (kbd "TAB")        'ranger-mark)
+    (define-key map (kbd "\"")         'dired-mark-files-regexp)
+    (define-key map (kbd "uv")         'dired-unmark-all-files)
+    (define-key map "t"                'ranger-toggle-mark)
 
     ;; dired commands
-    (define-key map "!"           'dired-do-shell-command)
-    (define-key map "D"           'dired-do-delete)
-    (define-key map "R"           'dired-do-rename)
+    (define-key map "!"                'dired-do-shell-command)
+    (define-key map "D"                'dired-do-delete)
+    (define-key map "R"                'dired-do-rename)
 
     ;; navigation
-    (define-key map "-"             'ranger-up-directory)
-    (define-key map "G"             'ranger-goto-bottom)
-    (define-key map "h"             'ranger-up-directory)
-    (define-key map "j"             'ranger-next-file)
-    (define-key map "k"             'ranger-prev-file)
-    (define-key map "l"             'ranger-find-file)
-    (define-key map (kbd "C-f")     'ranger-page-down)
-    (define-key map (kbd "C-b")     'ranger-page-up)
-    (define-key map "J"             'ranger-half-page-down)
-    (define-key map "K"             'ranger-half-page-up)
-    (define-key map (kbd "C-d")     'ranger-half-page-down)
-    (define-key map (kbd "C-u")     'ranger-half-page-up)
-    (define-key map [left]          'ranger-up-directory)
-    (define-key map [down]          'ranger-next-file)
-    (define-key map [up]            'ranger-prev-file)
-    (define-key map [right]         'ranger-find-file)
-    (define-key map (kbd "RET")     'ranger-find-file)
+    (define-key map "-"                'ranger-up-directory)
+    (define-key map "G"                'ranger-goto-bottom)
+    (define-key map "h"                'ranger-up-directory)
+    (define-key map "j"                'ranger-next-file)
+    (define-key map "k"                'ranger-prev-file)
+    (define-key map "l"                'ranger-find-file)
+    (define-key map (kbd "C-f")        'ranger-page-down)
+    (define-key map (kbd "C-b")        'ranger-page-up)
+    (define-key map "J"                'ranger-half-page-down)
+    (define-key map "K"                'ranger-half-page-up)
+    (define-key map (kbd "C-d")        'ranger-half-page-down)
+    (define-key map (kbd "C-u")        'ranger-half-page-up)
+    (define-key map [left]             'ranger-up-directory)
+    (define-key map [down]             'ranger-next-file)
+    (define-key map [up]               'ranger-prev-file)
+    (define-key map [right]            'ranger-find-file)
+    (define-key map (kbd "RET")        'ranger-find-file)
 
     ;; jumping around
-    (define-key map "["             'ranger-prev-parent)
-    (define-key map "]"             'ranger-next-parent)
-    (define-key map "}"             'ranger-find-file)
-    (define-key map "f"             'ranger-travel)
+    (define-key map "["                'ranger-prev-parent)
+    (define-key map "]"                'ranger-next-parent)
+    (define-key map "}"                'ranger-find-file)
+    (define-key map "f"                'ranger-travel)
 
     ;; going
-    (define-key map "g"             'ranger-go)
+    (define-key map "g"                'ranger-go)
 
     ;; history
-    (define-key map "zz"            'ranger-show-history)
-    (define-key map "H"             'ranger-prev-history)
-    (define-key map "L"             'ranger-next-history)
+    (define-key map "zz"               'ranger-show-history)
+    (define-key map "H"                'ranger-prev-history)
+    (define-key map "L"                'ranger-next-history)
 
     ;; subtrees
-    (define-key map "I"             'ranger-insert-subdir)
+    (define-key map "I"                'ranger-insert-subdir)
 
-    (define-key map ">" 'dired-next-dirline)
-    (define-key map "<" 'dired-prev-dirline)
+    (define-key map ">"                'dired-next-dirline)
+    (define-key map "<"                'dired-prev-dirline)
 
     ;; preview windows
-    (define-key map "i"             'ranger-preview-toggle)
-    (define-key map (kbd "C-j")     'ranger-scroll-page-down)
-    (define-key map (kbd "C-k")     'ranger-scroll-page-up)
-    (define-key map "zp"            'ranger-toggle-details)
+    (define-key map "i"                'ranger-preview-toggle)
+    (define-key map (kbd "C-j")        'ranger-scroll-page-down)
+    (define-key map (kbd "C-k")        'ranger-scroll-page-up)
+    (define-key map "zp"               'ranger-toggle-details)
     ;; TODO map zc    toggle_option collapse_preview
-    (define-key map "zi"            'ranger-toggle-literal)
-    (define-key map "zf"            'ranger-toggle-scale-images)
+    (define-key map "zi"               'ranger-toggle-literal)
+    (define-key map "zf"               'ranger-toggle-scale-images)
 
     ;; copy and paste
-    (define-key map "yy"            'ranger-copy)
+    (define-key map "yy"               'ranger-copy)
     ;; TODO undo copy - uy
-    (define-key map "ya"            'ranger-copy-append)
+    (define-key map "ya"               'ranger-copy-append)
     ;; TODO remove from copy - yr
-    (define-key map "dd"            'ranger-cut)
+    (define-key map "dd"               'ranger-cut)
     ;; TODO undo cut - ud
-    (define-key map "da"            'ranger-cut-append)
+    (define-key map "da"               'ranger-cut-append)
     ;; TODO remove from cut - dr
-    (define-key map "pp"            'ranger-paste)
-    (define-key map "po"            'ranger-paste-over)
+    (define-key map "pp"               'ranger-paste)
+    (define-key map "po"               'ranger-paste-over)
     ;; TODO paste link - pl
-    (define-key map "p?"            'ranger-show-copy-contents)
+    (define-key map "p?"               'ranger-show-copy-contents)
 
     ;; copy names and paths
-    (define-key map "yp"            'ranger-copy-absolute-file-paths)
-    (define-key map "yd"            'ranger-copy-current-dir-path)
-    (define-key map "yn"            'ranger-copy-filename)
+    (define-key map "yp"               'ranger-copy-absolute-file-paths)
+    (define-key map "yd"               'ranger-copy-current-dir-path)
+    (define-key map "yn"               'ranger-copy-filename)
 
     ;; settings
-    (define-key map "o"             'ranger-sort-criteria)
-    (define-key map "z+"            'ranger-more-parents)
-    (define-key map "z-"            'ranger-less-parents)
-    (define-key map "zh"            'ranger-toggle-dotfiles)
-    (define-key map (kbd "C-h")     'ranger-toggle-dotfiles)
-    (define-key map "zP"            'ranger-minimal-toggle)
-    (define-key map "zd"            'ranger-toggle-dir-first)
+    (define-key map "o"                'ranger-sort-criteria)
+    (define-key map "z+"               'ranger-more-parents)
+    (define-key map "z-"               'ranger-less-parents)
+    (define-key map "zh"               'ranger-toggle-dotfiles)
+    (define-key map (kbd "C-h")        'ranger-toggle-dotfiles)
+    (define-key map "zP"               'ranger-minimal-toggle)
+    (define-key map "zd"               'ranger-toggle-dir-first)
     ;; TODO map zf   regexp filter
 
     ;; tabs
-    (define-key map (kbd "C-n")       'ranger-new-tab)
-    (define-key map (kbd "C-w")       'ranger-close-tab)
-    (define-key map (kbd "C-TAB")     'ranger-next-tab)
-    (define-key map (kbd "C-S-TAB")   'ranger-prev-tab)
-    (define-key map (kbd "M-<Right>") 'ranger-next-tab)
-    (define-key map (kbd "M-<Left>")  'ranger-prev-tab)
-    (define-key map "uq"              'ranger-restore-tab)
+    (define-key map (kbd "C-n")        'ranger-new-tab)
+    (define-key map (kbd "C-w")        'ranger-close-tab)
+    (define-key map (kbd "C-TAB")      'ranger-next-tab)
+    (define-key map (kbd "C-S-TAB")    'ranger-prev-tab)
+    (define-key map (kbd "M-<Right>")  'ranger-next-tab)
+    (define-key map (kbd "M-<Left>")   'ranger-prev-tab)
+    (define-key map "uq"               'ranger-restore-tab)
 
     ;; define M + number bindings to access tabs.
-    (define-key map "\M-1" '(lambda () (interactive) (ranger-goto-tab 1)))
-    (define-key map "\M-2" '(lambda () (interactive) (ranger-goto-tab 2)))
-    (define-key map "\M-3" '(lambda () (interactive) (ranger-goto-tab 3)))
-    (define-key map "\M-4" '(lambda () (interactive) (ranger-goto-tab 4)))
-    (define-key map "\M-5" '(lambda () (interactive) (ranger-goto-tab 5)))
-    (define-key map "\M-6" '(lambda () (interactive) (ranger-goto-tab 6)))
-    (define-key map "\M-7" '(lambda () (interactive) (ranger-goto-tab 7)))
-    (define-key map "\M-8" '(lambda () (interactive) (ranger-goto-tab 8)))
-    (define-key map "\M-9" '(lambda () (interactive) (ranger-goto-tab 9)))
-    (define-key map "\M-0" '(lambda () (interactive) (ranger-goto-tab 0)))
-    ;; (cl-loop for num in '(1 2 3 4 5 6 7 8 9)
-    ;;          do (eval `(define-key map (concat "\\M-" ,(number-to-string num)) '(lambda() (interactive)(ranger-goto-tab ,num)))))
+    (define-key map "\M-1"             '(lambda () (interactive) (ranger-goto-tab 1)))
+    (define-key map "\M-2"             '(lambda () (interactive) (ranger-goto-tab 2)))
+    (define-key map "\M-3"             '(lambda () (interactive) (ranger-goto-tab 3)))
+    (define-key map "\M-4"             '(lambda () (interactive) (ranger-goto-tab 4)))
+    (define-key map "\M-5"             '(lambda () (interactive) (ranger-goto-tab 5)))
+    (define-key map "\M-6"             '(lambda () (interactive) (ranger-goto-tab 6)))
+    (define-key map "\M-7"             '(lambda () (interactive) (ranger-goto-tab 7)))
+    (define-key map "\M-8"             '(lambda () (interactive) (ranger-goto-tab 8)))
+    (define-key map "\M-9"             '(lambda () (interactive) (ranger-goto-tab 9)))
+    (define-key map "\M-0"             '(lambda () (interactive) (ranger-goto-tab 0)))
 
     ;; search
-    (define-key map "/"             'ranger-search)
-    (define-key map "n"             'ranger-search-next)
-    (define-key map "N"             'ranger-search-previous)
+    (define-key map "/"                'ranger-search)
+    (define-key map "n"                'ranger-search-next)
+    (define-key map "N"                'ranger-search-previous)
 
     ;; utilities
-    (define-key map (kbd "C-c C-e") 'wdired-change-to-wdired-mode)
-    (define-key map "S"             'ranger-pop-eshell)
+    (define-key map (kbd "C-c C-e")    'wdired-change-to-wdired-mode)
+    (define-key map "S"                'ranger-pop-eshell)
 
     ;; file opening
-    (define-key map "ws"            'ranger-open-file-vertically)
-    (define-key map "wv"            'ranger-open-file-horizontally)
-    (define-key map "wf"            'ranger-open-file-new-frame)
-    (define-key map "wj"            'ranger-open-file-other-window)
-    (define-key map "we"            'ranger-open-in-external-app)
+    (define-key map "ws"               'ranger-open-file-vertically)
+    (define-key map "wv"               'ranger-open-file-horizontally)
+    (define-key map "wf"               'ranger-open-file-new-frame)
+    (define-key map "wj"               'ranger-open-file-other-window)
+    (define-key map "we"               'ranger-open-in-external-app)
 
     ;; mouse
     (define-key map (kbd  "<mouse-1>") 'ranger-find-file)
@@ -2622,9 +2620,12 @@ properly provides the modeline in dired mode. "
         ;; check sorting mode and sort with directories first
         (when (and ranger-listing-dir-first
                    (not (string-match "[XStU]+" switches)))
-          (if (string-match "r" switches)
-                (sort-regexp-fields nil "^.*\n" "^[ ]*." (point) (point-max))
-            (sort-regexp-fields t "^.*\n" "^[ ]*." (point) (point-max))))
+          ;; [d]rwxrwxrwx should come before [-]rw-rw-rw-
+          (sort-regexp-fields (not (string-match "r" switches))
+                              "^.*\n"
+                              "^[ ]*."
+                              (point)
+                              (point-max)))
         (set-buffer-modified-p nil)))))
 
 ;;;###autoload
