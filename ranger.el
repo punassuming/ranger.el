@@ -679,7 +679,7 @@ to not replace existing value."
   (tab-index nil)
   (history nil)
   (minimal nil))
-               
+
 (ranger-id
  (make-ranger))
 
@@ -1424,6 +1424,7 @@ currently selected file in ranger. `IGNORE-HISTORY' will not update history-ring
             (ranger--message "settings saved: %s" find-name)
             (unless ignore-history
               (ranger-update-history find-name))
+            (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
             (switch-to-buffer
              ;; TODO make separate buffer of directory if more than one already exists.
              (or (car (or (dired-buffers-for-dir find-name) ()))
@@ -2783,7 +2784,7 @@ properly provides the modeline in dired mode. "
   ;; clear out everything if not in deer mode
   (add-to-list 'ranger-visited-buffers ranger-buffer)
 
-  ;; (ranger-sort t)
+  (ranger-sort t)
   (ranger--message "sorting")
   (ranger-show-flags)
   (ranger--message "setting flags")
@@ -2824,6 +2825,8 @@ properly provides the modeline in dired mode. "
 
   ;; hide details line at top - show symlink targets
   (funcall 'add-to-invisibility-spec 'dired-hide-details-information)
+  (funcall 'add-to-invisibility-spec 'dired-hide-details-hide-information-lines)
+
   ;; (setq dired-hide-details-hide-symlink-targets nil)
 
   (ranger--message "Ranger loaded")
@@ -2873,8 +2876,9 @@ properly provides the modeline in dired mode. "
 \\{ranger-mode-map}"
   :group 'ranger
   (setq-local cursor-type nil)
+  ;; (setq-local ranger-mode nil)
   (use-local-map ranger-mode-map)
-  (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
+  ;; (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
   (ranger-setup)
   (add-hook 'window-configuration-change-hook 'ranger-window-check)
   (setq-local mouse-1-click-follows-link nil)
