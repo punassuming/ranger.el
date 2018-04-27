@@ -1,8 +1,8 @@
 ;;; ranger.el --- Make dired more like ranger -*- lexical-binding: t -*-
-;; Copyright (C) 2015  Rich Alesi
+;; Copyright (C) 2015-2017  Rich Alesi
 
 ;; Author : Rich Alesi <https://github.com/ralesi>
-;; Version: 0.9.8.5
+;; Version: 0.9.8.6
 ;; Keywords: files, convenience, dired
 ;; Homepage: https://github.com/ralesi/ranger
 ;; Package-Requires: ((emacs "24.4"))
@@ -2571,7 +2571,7 @@ CALLBACK is passed the received mouse event."
                (+ lm 1
                   (* num (+
                           ;; account for graphical margin
-                          3
+                          (if window-divider-mode 2 3)
                           ;; account for scroll bar and fringe
                           (if (eq fringe-mode 0) -2 0)
                           (if scroll-bar-mode 3 0)))))))
