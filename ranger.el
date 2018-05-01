@@ -728,8 +728,8 @@ to not replace existing value."
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    (evil-set-initial-state 'ranger-mode 'motion)
-    (evil-make-overriding-map ranger-mode-map 'motion)
+    ;; (evil-set-initial-state 'ranger-mode 'motion)
+    ;; (evil-make-overriding-map ranger-mode-map 'motion)
     (evil-normalize-keymaps)
 
     ;; allow cursor to be cleared
