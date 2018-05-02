@@ -110,15 +110,28 @@
   :type 'boolean)
 
 (defcustom ranger-hidden-regexp
-  "^\\."
+  '("^\\.")
   "Regexp of filenames to hide."
   :group 'ranger
-  :type 'string)
+  :type 'list)
 
-(defcustom ranger-omit-regexp "^\\.?#\\|^\\.$\\|^\\.\\.$"
+(defcustom ranger-omit-regexp
+  '(;; dot files
+    "^\\.?#\\|^\\.$\\|^\\.\\.$"
+    ;; vcs folders
+    "^\\.\\(git\\|hg\\|svn\\)$"
+    ;; compiled files
+    "\\.\\(pyc\\|o\\|elc\\|lock\\|css.map\\)$"
+    ;; generated files, caches or local pkgs
+    "^\\(node_modules\\|vendor\\|.\\(project\\|cask\\|yardoc\\|sass-cache\\)\\)$"
+    ;; org-mode folders
+    "^\\.\\(sync\\|export\\|attach\\)$"
+    "~$"
+    "^#.*#$"
+    )
   "Regexp of omitted filetypes in ranger."
   :group 'ranger
-  :type 'string)
+  :type 'list)
 
 (defcustom ranger-history-length 30
   "Length of history ranger will track."
@@ -728,8 +741,8 @@ to not replace existing value."
   ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    ;; (evil-set-initial-state 'ranger-mode 'motion)
-    ;; (evil-make-overriding-map ranger-mode-map 'motion)
+    (evil-set-initial-state 'ranger-mode 'normal)
+    (evil-make-overriding-map ranger-mode-map 'normal)
     (evil-normalize-keymaps)
 
     ;; allow cursor to be cleared
@@ -1248,15 +1261,14 @@ ranger-`CHAR'."
 (defun ranger-filter-files ()
   "Omit and filter files in ranger."
   (let ((omit-re (if (not ranger-show-hidden)
-                     (concat ranger-omit-regexp
-                             "\\|"
+                     (append ranger-omit-regexp
                              ranger-hidden-regexp)
                             ranger-omit-regexp)))
     (ranger-omit-files omit-re)))
 
 (defun ranger-omit-files (&optional regexp)
   (interactive "sOmit files (regexp): ")
-  (let ((omit-re (or regexp ranger-omit-regexp))
+  (let ((omit-re (mapconcat 'concat ranger-omit-regexp "\\|"))
         (old-modified-p (buffer-modified-p))
         count)
     (or (string= omit-re "")
