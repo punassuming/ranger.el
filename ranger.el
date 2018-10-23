@@ -104,10 +104,18 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-show-hidden t
+(defcustom ranger-show-hidden 'hidden
   "When t it will show hidden files in directory."
   :group 'ranger
-  :type 'boolean)
+  :type '(radio (const :tag "Show All Files" :value 'format)
+                (const :tag "Hide Common Files" :value 'prefer)
+                (const :tag "Hide All Dotfiles" :value 'hidden)))
+
+(defcustom ranger-format-regexp
+  '("^\\.?#\\|^\\.$\\|^\\.\\.$")
+  "Regexp of filenames to hide."
+  :group 'ranger
+  :type 'list)
 
 (defcustom ranger-hidden-regexp
   '("^\\.")
@@ -115,9 +123,8 @@
   :group 'ranger
   :type 'list)
 
-(defcustom ranger-omit-regexp
-  '(;; dot files
-    "^\\.?#\\|^\\.$\\|^\\.\\.$"
+(defcustom ranger-prefer-regexp
+  '(
     ;; vcs folders
     "^\\.\\(git\\|hg\\|svn\\)$"
     ;; compiled files
@@ -126,10 +133,11 @@
     "^\\(node_modules\\|vendor\\|.\\(project\\|cask\\|yardoc\\|sass-cache\\)\\)$"
     ;; org-mode folders
     "^\\.\\(sync\\|export\\|attach\\)$"
+    ;; backup files
     "~$"
     "^#.*#$"
     )
-  "Regexp of omitted filetypes in ranger."
+  "Regexp of custom filetypes to omit in ranger."
   :group 'ranger
   :type 'list)
 
@@ -175,7 +183,7 @@
   :group 'ranger
   :type 'boolean)
 
-(defcustom ranger-listing-switches "-alGh"
+(defcustom ranger-listing-switches "-alhF"
   "Default listing switchs for dired buffer."
   :group 'ranger
   :type 'string)
@@ -441,9 +449,11 @@ Selective hiding of specific attributes can be controlled by MASK."
         (setq next (dired-move-to-filename))))))
 
 (defun ranger-mask-show-details ()
+  (interactive)
   (ranger-mask-details ranger-dired-display-mask))
 
 (defun ranger-mask-hide-details ()
+  (interactive)
   (ranger-mask-details ranger-dired-hide-mask))
 
 (defun ranger-truncate ()
@@ -472,7 +482,7 @@ Selective hiding of specific attributes can be controlled by MASK."
 
     ;; bookmarks
     (define-key map (kbd "`")          'ranger-goto-mark)
-    (define-key map (kbd "             '") 'ranger-goto-mark)
+    (define-key map (kbd "'")          'ranger-goto-mark)
     (define-key map "B"                'ranger-show-bookmarks)
     (define-key map "m"                'ranger-create-mark)
     (define-key map "um"               'ranger-remove-mark)
@@ -482,7 +492,7 @@ Selective hiding of specific attributes can be controlled by MASK."
     (define-key map (kbd "C-SPC")      'ranger-mark)
     (define-key map (kbd "TAB")        'ranger-mark)
     (define-key map (kbd "\"")         'dired-mark-files-regexp)
-    (define-key map (kbd "uv")         'dired-unmark-all-files)
+    (define-key map (kbd "uv")         'dired-unmark-all-marks)
     (define-key map "t"                'ranger-toggle-mark)
 
     ;; dired commands
@@ -629,7 +639,7 @@ Selective hiding of specific attributes can be controlled by MASK."
     (define-key map (kbd "C-SPC")      'ranger-toggle-mark)
     (define-key map (kbd "TAB")        'ranger-mark)
     (define-key map (kbd "\"")         'dired-mark-files-regexp)
-    ;; (define-key map (kbd "uv")         'dired-unmark-all-files)
+    ;; (define-key map (kbd "uv")         'dired-unmark-all-marks)
 
     ;; dired commands
     (define-key map (kbd "C-x du")                'ranger-show-size)
@@ -886,13 +896,9 @@ to not replace existing value."
   (when ranger-key
     (define-key ranger-mode-map ranger-key 'ranger-to-dired))
 
-  ;; TODO visual mode bindings don't seem to work
-  ;; normalize keymaps to work with evil mode
   (with-eval-after-load "evil"
     ;; turn off evilified buffers for evilify usage
-    (evil-set-initial-state 'ranger-mode 'normal)
-    (evil-make-overriding-map ranger-mode-map 'normal)
-    (evil-normalize-keymaps)
+    (evil-set-initial-state 'ranger-mode 'motion)
 
     ;; allow cursor to be cleared
     (when ranger-hide-cursor
@@ -903,6 +909,17 @@ to not replace existing value."
 
   ;; make sure isearch is cleared before we delete the buffer on exit
   (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
+
+;; TODO visual mode bindings don't seem to work
+;; normalize keymaps to work with evil mode
+
+(add-hook 'ranger-mode-hook #'ranger--normalize-keymaps)
+
+(defun ranger--normalize-keymaps ()
+  (when (boundp 'evil-mode)
+    ;; turn off evilified buffers for evilify usage
+    (evil-make-overriding-map ranger-mode-map 'motion)
+    (evil-normalize-keymaps)))
 
 ;; wdired integration
 (eval-after-load 'wdired
@@ -1388,7 +1405,10 @@ ranger-`CHAR'."
 (defun ranger-toggle-dotfiles ()
   "Show/hide dot-files."
   (interactive)
-  (setq ranger-show-hidden (not ranger-show-hidden))
+  (setq ranger-show-hidden (cl-case ranger-show-hidden
+                             ('format 'prefer)
+                             ('prefer 'hidden)
+                             ('hidden 'format)))
   (ranger-setup)
   (message (format "Show Dotfiles: %s"  ranger-show-hidden)))
 
@@ -1409,21 +1429,24 @@ ranger-`CHAR'."
 
 (defun ranger-filter-files ()
   "Omit and filter files in ranger."
-  (let ((omit-re (if (not ranger-show-hidden)
-                     (append ranger-omit-regexp
-                             ranger-hidden-regexp)
-                            ranger-omit-regexp)))
-    (ranger-omit-files omit-re)))
+  (let ((omit-re (append ranger-format-regexp
+                         (cl-case ranger-show-hidden
+                           ('prefer ranger-prefer-regexp)
+                           ('hidden ranger-prefer-regexp ranger-hidden-regexp)))))
+                 (ranger-omit-files omit-re)))
 
-(defun ranger-omit-files (&optional regexp)
-  (interactive "sOmit files (regexp): ")
-  (let ((omit-re (mapconcat 'concat ranger-omit-regexp "\\|"))
+(defun ranger-omit-files (regexp)
+  (interactive)
+  (let ((omit-re (mapconcat 'concat regexp "\\|"))
         (old-modified-p (buffer-modified-p))
         count)
     (or (string= omit-re "")
         (let ((dired-marker-char 16))
           (if (dired-mark-unmarked-files omit-re nil nil 'no-dir)
               (progn
+                (ranger--message "deleting hidden files")
+                ;; (redisplay)
+                ;; (sleep-for 0.2)
                 (setq count (dired-do-kill-lines nil ""))
                 (force-mode-line-update)))))
     ;; Try to preserve modified state of buffer.  So `%*' doesn't appear
@@ -1463,6 +1486,7 @@ ranger-`CHAR'."
 `ranger-persistent-sort' is nil."
   ;; TODO dired-sort-other only does this:
   ;;   (setq dired-actual-switches switches)
+  (setq-local ls-lisp-dirs-first ranger-listing-dir-first)
   (dired-sort-other
    (concat dired-listing-switches
            (when (or force
@@ -2396,71 +2420,73 @@ fraction of the total frame size"
          (config
           (r--aget ranger-f-alist
                    (window-frame))))
-    (when (or config
-              prev-buffer)
-      (r--aremove ranger-w-alist (selected-window))
+    (if (or config prev-buffer)
+        (progn
+          (r--aremove ranger-w-alist (selected-window))
 
-      (if minimal
-          (when (and prev-buffer
-                     (buffer-live-p prev-buffer))
-            (switch-to-buffer prev-buffer)
-            (goto-char prev-point))
-        (when (and config
-                   (window-configuration-p config))
-          (set-window-configuration config)
-          (r--aremove ranger-f-alist (window-frame))))
+          (if minimal
+              (when (and prev-buffer
+                         (buffer-live-p prev-buffer))
+                (switch-to-buffer prev-buffer)
+                (goto-char prev-point))
+            (when (and config
+                       (window-configuration-p config))
+              (set-window-configuration config)
+              (r--aremove ranger-f-alist (window-frame))))
 
-      ;; TODO make separate tabs for each ranger window
-      ;; (r--aremove ranger-t-alist ranger-current-tab)
+          ;; TODO make separate tabs for each ranger window
+          ;; (r--aremove ranger-t-alist ranger-current-tab)
 
-      ;; revert appearance
-      (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
-      (ranger-revert-appearance (or buffer ranger-buffer))
-      (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
-      (setq ranger-pre-saved nil)
+          ;; revert appearance
+          (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
+          (ranger-revert-appearance (or buffer ranger-buffer))
+          (advice-add 'dired-readin :after #'ranger-setup-dired-buffer)
+          (setq ranger-pre-saved nil)
 
-      ;; if no more ranger frames or windows
-      (when (not (or (ranger-windows-exists-p)
-                     (ranger-frame-exists-p)))
-        (message "Reverting all buffers")
-        ;; remove all hooks and advices
-        ;; TODO use established dired-after-readin-hook
-        (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
-        (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+          ;; if no more ranger frames or windows
+          (when (not (or (ranger-windows-exists-p)
+                         (ranger-frame-exists-p)))
+            (message "Reverting all buffers")
+            ;; remove all hooks and advices
+            ;; TODO use established dired-after-readin-hook
+            (advice-remove 'dired-readin #'ranger-setup-dired-buffer)
+            (remove-hook 'window-configuration-change-hook 'ranger-window-check)
 
-        ;; revert setting for minimal
-        (r--fset ranger-minimal nil)
+            ;; revert setting for minimal
+            (r--fset ranger-minimal nil)
 
-        ;; delete and cleanup buffers
-        (let ((all-ranger-buffers
-               (cl-remove-duplicates
-                (append
-                 ranger-preview-buffers
-                 ranger-parent-buffers
-                 ranger-visited-buffers
-                 (list ranger-buffer))
-                :test (lambda (x y) (or (null y) (eq x y)))
-                )))
-          (ranger--message "Cleaning all buffers : %s" all-ranger-buffers)
+            ;; delete and cleanup buffers
+            (let ((all-ranger-buffers
+                   (cl-remove-duplicates
+                    (append
+                     ranger-preview-buffers
+                     ranger-parent-buffers
+                     ranger-visited-buffers
+                     (list ranger-buffer))
+                    :test (lambda (x y) (or (null y) (eq x y)))
+                    )))
+              (ranger--message "Cleaning all buffers : %s" all-ranger-buffers)
 
-          (if ranger-cleanup-on-disable
-              (mapc 'ranger-kill-buffer all-ranger-buffers)
-            (mapc 'ranger-revert-appearance all-ranger-buffers)))
+              (if ranger-cleanup-on-disable
+                  (mapc 'ranger-kill-buffer all-ranger-buffers)
+                (mapc 'ranger-revert-appearance all-ranger-buffers)))
 
-        ;; kill preview buffer
-        (when (get-buffer "*ranger-prev*")
-          (kill-buffer (get-buffer "*ranger-prev*")))
+            ;; kill preview buffer
+            (when (get-buffer "*ranger-prev*")
+              (kill-buffer (get-buffer "*ranger-prev*")))
 
-        (setq ranger-f-alist ())
-        (setq ranger-w-alist ())
+            (setq ranger-f-alist ())
+            (setq ranger-w-alist ())
 
-        ;; clear variables
-        (setq ranger-preview-buffers ()
-              ranger-visited-buffers ()
-              ranger-parent-buffers ()))
+            ;; clear variables
+            (setq ranger-preview-buffers ()
+                  ranger-visited-buffers ()
+                  ranger-parent-buffers ()))
 
-      ;; clear ranger-show-file-details information
-      (message "%s" ""))))
+          ;; clear ranger-show-file-details information
+          (message "%s" ""))
+      ;; config is gone, kill buffer
+      )))
 
 (defun ranger-revert-appearance (buffer)
   "Revert the `BUFFER' to pre-ranger defaults without closing ranger session."
@@ -2552,8 +2578,8 @@ fraction of the total frame size"
       ;; when still in ranger's window, make sure ranger's primary window and buffer are still here.
       (when ranger-window-props
         ;; Unless selected window does not have ranger buffer
-        (when (and  (memq (selected-window) ranger-windows)
-                    (not (eq major-mode 'ranger-mode)))
+        (when (and (memq (selected-window) ranger-windows)
+                   (not (eq major-mode 'ranger-mode)))
           (ranger--message
            "Window Check : Ranger window is not the selected window
 ** buffer: %s: %s
@@ -2566,8 +2592,11 @@ fraction of the total frame size"
 
 (defun ranger-windows-exists-p ()
   "Test if any ranger-windows are live."
-  (mapcar 'window-live-p
-          (r--akeys ranger-w-alist)))
+  (member t 
+          (mapcar (lambda (l)
+                    (and (window-live-p (car l))
+                         (buffer-live-p (cddr l))))
+                  ranger-w-alist)))
 
 (defun ranger-frame-exists-p ()
   "Test if any ranger-frames are live."
@@ -2779,14 +2808,14 @@ properly provides the modeline in dired mode. "
                            (progn (forward-line 1) (point)))
           (forward-line 1))
         ;; check sorting mode and sort with directories first
-        (when (and ranger-listing-dir-first
-                   (not (string-match "[XStU]+" switches)))
-          ;; [d]rwxrwxrwx should come before [-]rw-rw-rw-
-          (sort-regexp-fields (not (string-match "r" switches))
-                              "^.*\n"
-                              "^[ ]*."
-                              (point)
-                              (point-max)))
+        ;; (when (and ranger-listing-dir-first
+        ;;            (not (string-match "[XStU]+" switches)))
+        ;;   ;; [d]rwxrwxrwx should come before [-]rw-rw-rw-
+        ;;   (sort-regexp-fields (not (string-match "r" switches))
+        ;;                       "^.*\n"
+        ;;                       "^[ ]*."
+        ;;                       (point)
+        ;;                       (point-max)))
         (set-buffer-modified-p nil)))))
 
 ;;;###autoload
@@ -2893,6 +2922,22 @@ properly provides the modeline in dired mode. "
 (defun ranger-setup ()
   "Setup all associated ranger windows."
   (interactive)
+
+  ;; (setq eshell-ls-use-in-dired t)
+  (setq ls-lisp-ignore-case nil)
+  (setq ls-lisp-verbosity nil)
+  (setq ls-lisp-uid-s-fmt "%-8s")
+  (setq ls-lisp-gid-s-fmt "%-8s")
+  ;; don't mix dotfiles with directories
+  (setq ls-lisp-UCA-like-collation nil)
+  ;; (setq ls-lisp-use-insert-directory-program nil)
+
+  (setq ls-lisp-format-time-list
+        '("%Y-%m-%d %H:%M"
+          "%Y-%m-%d %H:%M"))
+
+  (setq ls-lisp-use-insert-directory-program nil)
+  (require 'ls-lisp)
 
   (unless (derived-mode-p 'dired-mode)
     (error "Run it from dired buffer"))
