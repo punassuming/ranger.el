@@ -587,16 +587,18 @@ Selective hiding of specific attributes can be controlled by MASK."
     (define-key map "uq"               'ranger-restore-tab)
 
     ;; define M + number bindings to access tabs.
-    (define-key map "\M-1"             '(lambda () (interactive) (ranger-goto-tab 1)))
-    (define-key map "\M-2"             '(lambda () (interactive) (ranger-goto-tab 2)))
-    (define-key map "\M-3"             '(lambda () (interactive) (ranger-goto-tab 3)))
-    (define-key map "\M-4"             '(lambda () (interactive) (ranger-goto-tab 4)))
-    (define-key map "\M-5"             '(lambda () (interactive) (ranger-goto-tab 5)))
-    (define-key map "\M-6"             '(lambda () (interactive) (ranger-goto-tab 6)))
-    (define-key map "\M-7"             '(lambda () (interactive) (ranger-goto-tab 7)))
-    (define-key map "\M-8"             '(lambda () (interactive) (ranger-goto-tab 8)))
-    (define-key map "\M-9"             '(lambda () (interactive) (ranger-goto-tab 9)))
-    (define-key map "\M-0"             '(lambda () (interactive) (ranger-goto-tab 0)))
+    (define-key map "\M-1" '(lambda () (interactive) (ranger-goto-tab 1)))
+    (define-key map "\M-2" '(lambda () (interactive) (ranger-goto-tab 2)))
+    (define-key map "\M-3" '(lambda () (interactive) (ranger-goto-tab 3)))
+    (define-key map "\M-4" '(lambda () (interactive) (ranger-goto-tab 4)))
+    (define-key map "\M-5" '(lambda () (interactive) (ranger-goto-tab 5)))
+    (define-key map "\M-6" '(lambda () (interactive) (ranger-goto-tab 6)))
+    (define-key map "\M-7" '(lambda () (interactive) (ranger-goto-tab 7)))
+    (define-key map "\M-8" '(lambda () (interactive) (ranger-goto-tab 8)))
+    (define-key map "\M-9" '(lambda () (interactive) (ranger-goto-tab 9)))
+    (define-key map "\M-0" '(lambda () (interactive) (ranger-goto-tab 0)))
+    ;; (cl-loop for num in '(1 2 3 4 5 6 7 8 9)
+    ;;          do (eval `(define-key map (concat "\\M-" ,(number-to-string num)) '(lambda() (interactive)(ranger-goto-tab ,num)))))
 
     ;; search
     (define-key map "/"                'ranger-search)
@@ -1445,8 +1447,6 @@ ranger-`CHAR'."
           (if (dired-mark-unmarked-files omit-re nil nil 'no-dir)
               (progn
                 (ranger--message "deleting hidden files")
-                ;; (redisplay)
-                ;; (sleep-for 0.2)
                 (setq count (dired-do-kill-lines nil ""))
                 (force-mode-line-update)))))
     ;; Try to preserve modified state of buffer.  So `%*' doesn't appear
