@@ -2872,11 +2872,12 @@ properly provides the modeline in dired mode. "
 
 (defun ranger-minimal-toggle ()
   (interactive)
-  (let ((minimal (r--fget ranger-minimal)))
+  (let ((minimal (r--fget ranger-minimal))
+        (dir default-directory))
     (ranger-revert)
     (if minimal
-        (ranger)
-      (deer))))
+        (ranger dir)
+      (deer dir))))
 
 ;;;###autoload
 (defun ranger (&optional path)
