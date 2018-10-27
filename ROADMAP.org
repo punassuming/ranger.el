@@ -325,14 +325,14 @@ open from eshell and update prompt.
 - [ ] Switch to data structure to store ranger parameters
 - [ ] Improve ivy / helm usage
   - [ ] provide alternate actions
-- [ ] Mappings
+- [-] Mappings
   - [ ] map zc toggle_option collapse_preview
   - [ ] undo copy - uy
   - [ ] remove from copy - yr
   - [ ] undo cut - ud
   - [ ] remove from cut - dr
   - [ ] Add emacs style bindings
-  - [ ] paste link - pl
+  - [X] paste link - pl
   - [ ] map zf   regexp filter
 - [ ] Dired extras (make with Spacemacs)
   - [ ] Dired-narrow
