@@ -2689,10 +2689,14 @@ CALLBACK is passed the received mouse event."
 (defun ranger--header-rhs ()
   (concat
    (propertize
-    (format "%s / %s"
-            (if ranger-show-hidden ".." "")
+    (format "[%s]%s"
+            
             ;; (if ranger-show-literal "raw" "act")
-            ranger-parent-depth)
+            ranger-parent-depth
+            (cl-case ranger-show-hidden
+              ('format "..")
+              ('prefer "._")
+              ('hidden "__")))
     'face 'font-lock-comment-face)
    (when (> (length ranger-t-alist) 1)
      (format " %s" (ranger--header-tabs)))
