@@ -2163,8 +2163,13 @@ fraction of the total frame size"
     (setq new-window (split-window current-window window-size side))
 
     (set-window-parameter new-window 'window-slot slot)
-    (window--display-buffer
-     buffer new-window 'window alist display-buffer-mark-dedicated)
+    (if (version< emacs-version "27")
+        (window--display-buffer buffer new-window 'window alist display-buffer-mark-dedicated)
+      ;; optional argument `display-buffer-mark-dedicated' was removed in emacs 27 development branch
+      ;; (as of 2019-01-14). This is a temporary fix to be re-evaluated once emacs
+      ;; 27 development reaches the pretest phase. (docstring to be re-evaluated
+      ;; as well)
+      (window--display-buffer buffer new-window 'window alist))
     ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
     ;; )
     ))
