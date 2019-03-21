@@ -1,6 +1,54 @@
 #+TITLE: Ranger.el Roadmap
 
-* New Features
+* Architecture
+** Files
+Break down into separate files
+** Structs
+*** Issues with current system
+
+ - Usage of alist with hard defined cons position makes it very difficult to add more tracked parameters within the object
+ - Tabs are not allocated within a ranger instance, making to possibility of different tabs per window impossible.
+   - Should make it possible to either keep the same tabs (reserve currently used tabs in other window) across all windows, or make separate tab instance.
+ - Yank / Paste ring should be universal ring.
+
+**** TODO Need yank / paste ring to allow access of older entries.
+
+
+*** Examples from other files
+
+**** Perspectives
+
+ #+BEGIN_SRC emacs-lisp
+ ;; Perspective struct:
+
+ (defstruct (perspective
+             (:conc-name persp-)
+             (:constructor make-persp))
+   (name "")
+   (buffers nil)
+   (window-conf nil)
+   ;; reserved parameters: dont-save-to-file, persp-file.
+   (parameters nil)
+   (weak nil)
+   (auto nil)
+   (hidden nil))
+
+ #+END_SRC
+
+
+
+
+*** Structures
+
+**** Tabs
+**** Windows
+**** Instances
+** FormatSpec for headerline / bottom
+** Utilize Hydra's if installed
+** Utilize Ivy / Helm if installed
+
+* Features and Notes
+There are a lot of other file management tools for Emacs, and want to make sure we utilize some of the other ones to maximize Ranger's effectiveness
 ** From sunrise-commander
 *** Separate history stack for each ranger instance.
 *** In deer, use C-c C-s to cycle between twin pane horizontal, vertical, or single pane.
@@ -64,97 +112,46 @@ displayed instead."
   :type 'hook
   :options '(auto-insert))
 *** Method in SR
-Defines mode and then uses macro to reimplement all settings upon change.  Does not use 
-* Structs
-** Issues with current system
+Defines mode and then uses macro to reimplement all settings upon change.  Does not use
 
- - Usage of alist with hard defined cons position makes it very difficult to add more tracked parameters within the object
- - Tabs are not allocated within a ranger instance, making to possibility of different tabs per window impossible.
-   - Should make it possible to either keep the same tabs (reserve currently used tabs in other window) across all windows, or make separate tab instance.
- - Yank / Paste ring should be universal ring. 
-  
-*** TODO Need yank / paste ring to allow access of older entries. 
+** From Ranger
+*** Move to recycle bin / .Trash with DD
+*** Archive opening
+*** Ranger ex commands alternatives
+**** :compress
+**** :extract
+**** :filter (accessible through zf) or F
+**** :delete
+**** mkdir
+**** touch
+**** chmod
+**** :rename
+*** Column ratio : 1,3,4
+*** Cd to directory from eshell
+*** preview_files
+*** preview_directories
+*** Option of other shell to access with "S"
+*** "f" : filter
+*** "dc" : get cumulative size
+*** "cw" : rename file
+*** toggle VCS on specific directory
+*** ~ : view mode
+*** w : taskiew_open
 
-
-** Examples from other files
-
-*** Perspectives
-    
- #+BEGIN_SRC emacs-lisp
- ;; Perspective struct:
-
- (defstruct (perspective
-             (:conc-name persp-)
-             (:constructor make-persp))
-   (name "")
-   (buffers nil)
-   (window-conf nil)
-   ;; reserved parameters: dont-save-to-file, persp-file.
-   (parameters nil)
-   (weak nil)
-   (auto nil)
-   (hidden nil))
-
- #+END_SRC
-
-
-
-
-** Structures
-
-*** Tabs
-*** Windows
-*** Instances
-*** 
-
-* From Ranger
-** Move to recycle bin / .Trash with DD
-** Archive opening
-** Ranger ex commands alternatives
-*** :compress
-*** :extract
-*** :filter (accessible through zf) or F
-*** :delete
-*** mkdir
-*** touch
-*** chmod
-*** :rename
-** Column ratio : 1,3,4
-** Cd to directory from eshell
-** preview_files
-** preview_directories
-** Option of other shell to access with "S"
-** "f" : filter
-** "dc" : get cumulative size
-** "cw" : rename file
-** toggle VCS on specific directory
-** ~ : view mode
-** w : taskiew_open
-   
-** Change the line mode
+*** Change the line mode
 map Mf linemode filename
 map Mi linemode fileinfo
 map Mm linemode mtime
 map Mp linemode permissions
 map Ms linemode sizemtime
 map Mt linemode metatitle
-* eshell imlpementation  
-open from eshell and update prompt.
-** deer (alt+k)
-** M-#, go up directory
-** a : append_path
-** A : append absolute path
-** i : insert path
-** I : insert absolute path
-** c : cd into current path and quit
-** C : cd into selected path and quit
-** r : open file
-* Dired goodies
-** emacs-async
+
+** Dired goodies
+*** emacs-async
 - toggle with za
-** download file to current dir
-** rsync implementation
-#+BEGIN_SRC emacs-lisp 
+*** download file to current dir
+*** rsync implementation
+#+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun ora-dired-rsync (dest)
   (interactive
@@ -187,9 +184,9 @@ open from eshell and update prompt.
 
 (define-key dired-mode-map "Y" 'ora-dired-rsync)
 #+END_SRC
-** rename toggle case - ~
+*** rename toggle case - ~
 - use commands accessible from % u and % l in dired
-** default file manager
+*** default file manager
 - dired-recursive-deletes : always
 - dired-recursive-copies : always
 - dired-dwim-target : t
@@ -209,7 +206,7 @@ open from eshell and update prompt.
     ;; (shell-command "xdg-open .") ;; 2013-02-10 this sometimes froze emacs till the folder is closed. ? with nautilus
     ) ))
 #+END_SRC
-** wdired rename filename
+*** wdired rename filename
 #+BEGIN_SRC emacs-lisp
   (defun my-mark-file-name-for-rename ()
     "Mark file name on current line except its extension"
@@ -261,10 +258,10 @@ open from eshell and update prompt.
   (define-key wdired-mode-map (kbd "S-<tab>") 'my-mark-file-name-backward)
   (define-key wdired-mode-map (kbd "s-a") 'my-mark-file-name-for-rename))
 #+END_SRC
-** dired-rainbow
-   
-** use real ls
-   
+*** dired-rainbow
+
+*** use real ls
+
 also add toggle option
 #+BEGIN_SRC emacs-lisp
 (require 'ls-lisp)
@@ -273,12 +270,13 @@ also add toggle option
 #+END_SRC
 
 
-** dired-compress-files-alist
+*** dired-compress-files-alist
 update with 7zip information
 
-** shells
+*** shells
 - open multiple shells in dired
-* ls-lisp optimization
+
+** ls-lisp optimization
 #+begin_src emacs-lisp
 (setq ls-lisp-format-time-list
       '("%Y-%m-%d %H:%M"
@@ -287,7 +285,7 @@ update with 7zip information
 (setq ls-lisp-dirs-first nil)
 (setq ls-lisp-verbosity '(uid gid links))
 #+end_src
-** ediff from within ranger
+*** ediff from within ranger
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
 (defun ora-ediff-files ()
@@ -310,6 +308,18 @@ update with 7zip information
                       (set-window-configuration wnd))))
       (error "no more than 2 files should be marked"))))
 #+end_src
+
+** eshell imlpementation - look into deer bindings in ZSH
+open from eshell and update prompt.
+*** deer (alt+k)
+*** M-#, go up directory
+*** a : append_path
+*** A : append absolute path
+*** i : insert path
+*** I : insert absolute path
+*** c : cd into current path and quit
+*** C : cd into selected path and quit
+*** r : open file
 
 * TODO Milestones [0/19]
 - [ ] Switch to data structure to store ranger parameters
