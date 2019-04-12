@@ -2350,7 +2350,7 @@ fraction of the total frame size"
 
     (set-window-parameter new-window 'window-slot slot)
     (window--display-buffer
-     buffer new-window 'window alist display-buffer-mark-dedicated)
+     buffer new-window 'window alist)
     ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
     ;; )
     ))
@@ -2592,7 +2592,7 @@ fraction of the total frame size"
 
 (defun ranger-windows-exists-p ()
   "Test if any ranger-windows are live."
-  (member t 
+  (member t
           (mapcar (lambda (l)
                     (and (window-live-p (car l))
                          (buffer-live-p (cddr l))))
@@ -2690,7 +2690,7 @@ CALLBACK is passed the received mouse event."
   (concat
    (propertize
     (format "[%s]%s"
-            
+
             ;; (if ranger-show-literal "raw" "act")
             ranger-parent-depth
             (cl-case ranger-show-hidden
