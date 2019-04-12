@@ -2327,32 +2327,12 @@ fraction of the total frame size"
          new-window
          reuse-window)
 
-    ;; (walk-window-tree
-    ;;  (lambda (window)
-    ;;    (progn
-    ;;      (when (not (eq current-window window))
-    ;;        (when (eq (window-parameter window 'window-slot) slot)
-    ;;          (setq reuse-window window))
-    ;;        (when (eq (window-parameter window 'window-slot) (+ slot 1))
-    ;;          (setq current-window window))
-    ;;        )))
-    ;;  nil nil 'nomini)
-
-    ;; (if reuse-window
-    ;;     (progn
-    ;;       (shrink-window (-  window-size (window-width reuse-window)) t)
-    ;;       ;; (set-window-parameter reuse-window 'window-slot slot)
-    ;;       (window--display-buffer
-    ;;        buffer reuse-window 'reuse alist display-buffer-mark-dedicated)
-    ;;       )
-    ;; (remove-hook 'window-configuration-change-hook 'ranger-window-check)
+    ;; new window
     (setq new-window (split-window current-window window-size side))
-
+    ;; set parameters
     (set-window-parameter new-window 'window-slot slot)
-    (window--display-buffer
-     buffer new-window 'window alist)
-    ;; (add-hook 'window-configuration-change-hook 'ranger-window-check)
-    ;; )
+    ;; now set up the window
+    (window--display-buffer buffer new-window 'window alist)
     ))
 
 (defun ranger-show-flags ()
