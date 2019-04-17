@@ -240,6 +240,11 @@
   :group 'ranger
   :type 'float)
 
+(defcustom ranger-footer-format " %d %m%w%s %c %f %p"
+  "Format for footer display. "
+  :group 'ranger
+  :type 'string)
+
 (defcustom ranger-preview-delay 0.05
   "Time in seconds to delay running preview file functions."
   :group 'ranger
@@ -1853,8 +1858,6 @@ R   : ranger . el location
   (interactive "^p")
   (ranger-next-file (- 0 arg)))
 
-(defun ranger--footer-spec ())
-
 (defun ranger-show-size ()
   "Show directory size."
   (interactive)
@@ -1865,22 +1868,18 @@ R   : ranger . el location
   (ranger-update-current-file)
   (ranger-details-message-delayed))
 
-(defun ranger-details-message (&optional sizes)
+(defun ranger--footer-spec (&optional sizes)
   "Echo file details."
-  (when (dired-get-filename nil t)
     (let* ((entry (dired-get-filename nil t))
            ;; enable to troubleshoot speeds
            ;; (sizes t)
            (filename (file-name-nondirectory entry))
            (fattr (file-attributes entry))
-           (fwidth (frame-width))
            (file-size (if sizes (concat "File "
                                         (file-size-human-readable (nth 7 fattr))) "Press \'du\' for size info."))
            (dir-size (if sizes (concat "Dir " (ranger--get-file-sizes
                                                (ranger--get-file-listing
-                                                dired-directory)
-                                               ;; (list dired-directory)
-                                               ))
+                                                dired-directory)))
                        ""))
            (user (nth 2 fattr))
            (file-mount
@@ -1901,29 +1900,45 @@ R   : ranger . el location
            (filedir-size (if sizes (ranger--get-file-sizes
                                     (ranger--get-file-listing dired-directory))
                            ""))
-           (file-date (format-time-string "%Y-%m-%d %H:%m"
-                                          (nth 5 fattr)))
+           (file-date
+            (propertize
+             (format-time-string "%Y-%m-%d %H:%m"
+                                 (nth 5 fattr))
+             'face 'font-lock-warning-face))
            (file-perm (nth 8 fattr))
            (cur-pos (- (line-number-at-pos (point)) 1))
            (final-pos (- (line-number-at-pos (point-max)) 2))
            (position (format "%3d/%-3d"
                              cur-pos
                              final-pos))
-           (footer-spec (ranger--footer-spec))
-           (lhs (format
-                 " %s %s"
-                 (propertize file-date 'face 'font-lock-warning-face)
-                 file-perm))
-           (rhs (format
-                 "%s %s %s %s"
-                 file-size
-                 dir-size
-                 file-mount
-                 position
-                 ))
-           (fringe-gap (if (or (eq fringe-mode 0)
-                               (eq (cdr-safe fringe-mode) 0)
-                               (eq (car-safe fringe-mode) 0)) 1 0))
+           (space "&&&")
+           (footer-spec
+             `(
+              (?U . ,user)
+              (?c . ,dir-size)
+              (?d . ,file-date)
+              (?f . ,file-mount)
+              (?m . ,file-perm)
+              (?p . ,position)
+              (?s . ,file-size)
+              (?u . ,filedir-size)
+              (?w . ,space)
+              )))
+      footer-spec
+      ))
+
+(defun ranger-details-message (&optional sizes)
+  "Echo file details."
+  (when (and (dired-get-filename nil t) ranger-footer-format)
+    (let* ((fwidth (frame-width))
+           (spec (ranger--footer-spec sizes))
+           (footer (format-spec
+                    ranger-footer-format
+                    spec))
+           (parts (split-string footer "&&&"))
+           (lhs (nth 0 parts))
+           (rhs (and (> (length parts) 1) (nth 1 parts)))
+           (fringe-gap (if (eq fringe-mode 0) 4 2))
            (space (- fwidth
                      fringe-gap
                      (length lhs)))
