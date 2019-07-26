@@ -393,8 +393,8 @@ usage.
 
  Key Binding   | Description
  ------------- | -----------
- `ws`          | exit ranger and open selected file in vertical split
- `wv`          | exit ranger and open selected file in horizontal split
+ `ws`          | exit ranger and open selected file in horizontal split
+ `wv`          | exit ranger and open selected file in vertical split
  `wf`          | exit ranger and open selected file in new frame
  `we`          | open the selected file in external app
 
