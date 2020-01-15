@@ -499,6 +499,7 @@ Selective hiding of specific attributes can be controlled by MASK."
     (define-key map "!"                'dired-do-shell-command)
     (define-key map "D"                'dired-do-delete)
     (define-key map "R"                'dired-do-rename)
+    (define-key map "+"                'mkdir)
 
     ;; navigation
     (define-key map "-"                'ranger-up-directory)
