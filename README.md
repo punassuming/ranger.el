@@ -277,7 +277,7 @@ starting WDired mode. This leaves more room for editing the file names.
  Key Binding   | Description
  ------------- | -----------
  `;+`/`+`      | create directory
- `;=`          | diff: current file and asks for 2nd file
+ `;=`/`=`      | diff: current file and asks for 2nd file
  `;g`          | revert current buffer, with file on disk
  `;k`          | kill (hide) marked lines, `C-r` to unhide
 
