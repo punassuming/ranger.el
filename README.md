@@ -333,6 +333,7 @@ can be accessed by pressing: `B`.
  ------------- | -----------
  `` ` ``/`'`   | go to bookmark
  `m`           | set bookmark
+ `um`          | delete bookmark
  `B`           | show the bookmarks prompt
 
 
