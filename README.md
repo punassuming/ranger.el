@@ -276,8 +276,8 @@ starting WDired mode. This leaves more room for editing the file names.
 
  Key Binding   | Description
  ------------- | -----------
- `;+`          | create directory
- `;=`          | diff: current file and asks for 2nd file
+ `;+`/`+`      | create directory
+ `;=`/`=`      | diff: current file and asks for 2nd file
  `;g`          | revert current buffer, with file on disk
  `;k`          | kill (hide) marked lines, `C-r` to unhide
 
@@ -333,6 +333,7 @@ can be accessed by pressing: `B`.
  ------------- | -----------
  `` ` ``/`'`   | go to bookmark
  `m`           | set bookmark
+ `um`          | delete bookmark
  `B`           | show the bookmarks prompt
 
 
@@ -393,8 +394,8 @@ usage.
 
  Key Binding   | Description
  ------------- | -----------
- `ws`          | exit ranger and open selected file in vertical split
- `wv`          | exit ranger and open selected file in horizontal split
+ `ws`          | exit ranger and open selected file in horizontal split
+ `wv`          | exit ranger and open selected file in vertical split
  `wf`          | exit ranger and open selected file in new frame
  `we`          | open the selected file in external app
 
