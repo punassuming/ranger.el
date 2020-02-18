@@ -1,4 +1,4 @@
-#+TITLE: Ranger.el Roadmap
+#+TITLE: Ranger.el Development Milestones
 
 * Architecture
 ** Files
@@ -364,3 +364,30 @@ open from eshell and update prompt.
   - [ ] When to use eval-when-compile vs require?
   - [ ] Show ranger sessions in buffer list
 - [ ] Virtual mode (from grep / pt)
+
+
+* Data Structure support
+
+On initiation, save window config (if minimal) as well as current window of ranger window.  
+
+** Window Struct
+*** window-config (for restoration)
+*** ranger-window
+*** ranger-buffer
+*** old-buffer (for restoration)
+*** minimal mode (identify if deer / ranger activated)
+*** history
+*** current tab accessed
+** Tab Struct
+*** Name
+*** Path
+*** Used
+*** Visible
+* Better keybindings
+* Improved virtual buffer support
+
+Virtual buffers are those created that do not represent a particular directory path.
+
+** 
+* Paste into folder option
+
