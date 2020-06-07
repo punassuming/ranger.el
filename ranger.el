@@ -50,6 +50,8 @@
 ;;  - current tab
 ;;  - history
 ;;  - current-file
+;;  - cloasing last ranger does not clear variables
+;;  - multiple ranger windows
 
 ;;; HISTORY
 
@@ -1046,7 +1048,7 @@ name clashes."
         (suffix 1))
     (while (file-exists-p new-target)
       (setq new-target
-            (concat base-target "~"
+            (concat target-file "~"
                     (number-to-string suffix)))
       (setq suffix (1+ suffix))
       (ranger--message "Renamed file would be: %s" new-target))
