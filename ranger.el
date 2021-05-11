@@ -1170,7 +1170,7 @@ or the name of the currently selected file.")
     (kill-buffer tmp)
     (add-hook 'eshell-exit-hook
               '(lambda () (unless (one-window-p) (delete-window))
-                 (select-window 'ranger-window)) nil t)))
+                 (select-window ranger-window)) nil t)))
 
 
 ;;; delayed function creation
