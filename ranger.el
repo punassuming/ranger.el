@@ -292,7 +292,6 @@ preview window."
   :group 'ranger
   :type 'boolean)
 
-
 ;; declare used variables
 (defvar ranger-was-ranger)
 (defvar ranger-mode)
@@ -821,7 +820,6 @@ non-nil, set buffer local variable as well."
 (defmacro r--fclear (parameter)
   `(r--fset ,parameter nil))
 
-
 ;;; alist helpers
 
 (defun r--aget (alist key)
@@ -847,7 +845,6 @@ to not replace existing value."
   "Remove KEY's key-value-pair from ALIST."
   `(setq ,alist (delq (assoc ,key ,alist) ,alist)))
 
-
 ;; data structures
 
 (cl-defstruct (ranger
@@ -892,7 +889,6 @@ to not replace existing value."
 ;; (ranger-track-window (selected-window) (current-buffer) (current-buffer) 1)
 ;; (ranger-make-tab 2 "hsello" "d:/tabs")
 
-
 ;; mappings
 
 ;;;###autoload
@@ -951,7 +947,6 @@ to not replace existing value."
          (ranger-mode)))))
 
 
-
 
 ;; copy / paste
 (defun ranger-show-copy-ring (copy-index)
@@ -1131,7 +1126,6 @@ name clashes."
   (interactive)
   (ranger-paste-as-symlink t))
 
-
 ;;; copy names and paths
 
 (defun ranger-copy-absolute-file-paths (&optional arg)
@@ -1155,7 +1149,6 @@ path."
 Copies either the names of the marked files (separated by spaces)
 or the name of the currently selected file.")
 
-
 
 (defun ranger-pop-eshell (&optional arg)
   "Create an eshell window below selected window, working directory."
@@ -1172,7 +1165,6 @@ or the name of the currently selected file.")
               '(lambda () (unless (one-window-p) (delete-window))
                  (select-window 'ranger-window)) nil t)))
 
-
 ;;; delayed function creation
 
 (defmacro ranger-define-delayed (func-sym delay)
@@ -1200,7 +1192,6 @@ the idle timer fires are ignored."
 (ranger-define-delayed ranger-details-message ranger-footer-delay)
 (ranger-define-delayed ranger-setup-preview ranger-preview-delay)
 
-
 ;;tabs
 
 (defun ranger--available-tabs ()
@@ -1294,7 +1285,6 @@ the idle timer fires are ignored."
       (setq ranger-current-tab index)
       (ranger-find-file (cdr tab)))))
 
-
 ;; searching
 
 (defun ranger-search ()
@@ -1318,7 +1308,6 @@ the idle timer fires are ignored."
       (evil-search-previous)
     (isearch-repeat-backward)))
 
-
 ;; marks
 
 (defun ranger-show-bookmarks ()
@@ -1378,7 +1367,6 @@ ranger-`CHAR'."
               (file-directory-p (cdr (cadr bm))))
          (replace-regexp-in-string "ranger-" "" (car bm))))
    bookmark-alist " "))
-
 ;; ring utilities
 
 (defun ranger--ring-elements (ring)
@@ -1395,7 +1383,6 @@ ranger-`CHAR'."
     (dotimes (idx (ring-length ring) listing)
       (setq listing (append (cons idx (ring-ref ring idx)) listing)))))
 
-
 ;; history
 
 (defun ranger-show-history (history)
@@ -1429,7 +1416,6 @@ ranger-`CHAR'."
   (interactive)
   (ranger-jump-history 1))
 
-
 ;; primary window functions
 
 (defun ranger-refresh ()
@@ -1539,7 +1525,6 @@ ranger-`CHAR'."
                      ranger-persistent-sort)
              ranger-sorting-switches))))
 
-
 ;; preview windows functions
 
 (defun ranger-preview-toggle ()
@@ -1591,7 +1576,6 @@ ranger-`CHAR'."
   (interactive)
   (scroll-other-window '-))
 
-
 ;; dired navigation
 
 ;; TODO reenter deer if navigating to  directory.
@@ -1997,7 +1981,6 @@ R   : ranger . el location
             (dired-get-filename nil t)
             dired-directory) nil t))
 
-
 
 ;; parent window functions
 (defun ranger-sub-window-setup ()
@@ -2127,7 +2110,6 @@ slot)."
               (dired-next-line 1))))
       (message "No parent directory."))))
 
-
 ;; window creation subroutines
 (defun ranger-dir-buffer (entry preview)
   "Open `ENTRY' in dired buffer. Run `PREVIEW' or parent hooks."
@@ -2303,7 +2285,6 @@ is set, show literally instead of actual buffer."
             (ranger-hide-details)
             ))))))
 
-
 ;; utilities
 (defun ranger-parent-directory (entry)
   "Find the parent directory of `ENTRY'."
@@ -2440,7 +2421,6 @@ fraction of the total frame size"
         (goto-char (point-min))
         (search-forward (string ?\x00) nil t 1)))))
 
-
 ;; cleanup and reversion
 
 (defun ranger-kill-buffer (buffer)
@@ -2453,7 +2433,6 @@ fraction of the total frame size"
            (eq 'ranger-mode (buffer-local-value 'major-mode buffer))))
     (kill-buffer buffer)))
 
-
 
 (defun ranger-revert (&optional buffer)
   "Revert ranger settings."
@@ -2666,7 +2645,6 @@ fraction of the total frame size"
            (unless (get-buffer-window buffer t)
              (ranger-kill-buffer buffer))))
 
-
 ;; header / mode line
 (defun ranger--dir-relative ()
   "Return the topmost directory name in path"
