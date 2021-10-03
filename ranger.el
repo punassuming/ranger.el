@@ -1600,17 +1600,19 @@ ranger-`CHAR'."
   (interactive)
   (let ((prompt "Travel: "))
     (cond
-     ((featurep 'helm)
+     ((bound-and-true-p helm-mode)
       (ranger-find-file (helm-read-file-name prompt)))
-     ((featurep 'ivy)
+     ((bound-and-true-p ivy-mode)
       (ivy-read prompt 'read-file-name-internal
                 :matcher #'counsel--find-file-matcher
                 :action
                 (lambda (x)
                   (with-ivy-window
                     (ranger-find-file (expand-file-name x default-directory))))))
+     ((bound-and-true-p ido-mode)
+      (ranger-find-file (ido-read-file-name prompt)))
      (t
-      (ranger-find-file (ido-read-file-name prompt))))))
+      (ranger-find-file (read-file-name prompt))))))
 
 (defun ranger-up-directory ()
   "Move to parent directory."
