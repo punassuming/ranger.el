@@ -2649,8 +2649,9 @@ fraction of the total frame size"
 
 (defun ranger-frame-exists-p ()
   "Test if any ranger-frames are live."
-  (mapcar 'frame-live-p
-          (r--akeys ranger-f-alist)))
+  (member t
+          (mapcar 'frame-live-p
+                  (r--akeys ranger-f-alist))))
 
 (defun ranger-kill-buffers-without-window ()
   "Will kill all ranger buffers that are not displayed in any window."
