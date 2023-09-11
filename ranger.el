@@ -2200,39 +2200,63 @@ is set, show literally instead of actual buffer."
           (current-buffer))))))
 
 (defun ranger-setup-image-preview (entry-name)
-  "Setup and maybe resize image"
+  "Setup and maybe resize image."
   (when ranger-image-fit-window
     (require 'image-dired))
-  (let* ((new-file (expand-file-name image-dired-temp-image-file))
-         (file (expand-file-name entry-name))
-         (width (* ranger-width-preview ranger-image-scale-ratio (image-dired-display-window-width)))
-         (height (image-dired-display-window-height))
-         (image-type 'jpeg)
-         command ret success)
-    (if (and (not (eq (image-type-from-file-header entry-name) 'gif))
-             ranger-image-fit-window)
-        (progn
-          (setq command
-                (format-spec
-                 image-dired-cmd-create-temp-image-options
-                 (list
-                  (cons ?p image-dired-cmd-create-temp-image-program)
-                  (cons ?w width)
-                  (cons ?h height)
-                  (cons ?f file)
-                  (cons ?t new-file))))
-          (setq ret (call-process shell-file-name nil nil nil
-                                  shell-command-switch command))
-          (when (= 0 ret)
-            (setq success 1))))
-    (with-current-buffer (image-dired-create-display-image-buffer)
+  (let* ((file (expand-file-name entry-name))
+	 (image-dimensions (image-size (create-image file nil nil :scale 1) :pixels))
+
+	 (max-width (floor (* (frame-pixel-width) ranger-width-preview)))
+         (max-height (frame-pixel-height))
+	 (scaled-width nil)
+	 (scaled-height nil)
+	 (temp-scaled nil))
+    ;; Resizing calculations to fit properly to the window
+    ;; if width < height
+    (cond ((< (car image-dimensions) (cdr image-dimensions))
+	     (setq scaled-width (/ (* (car image-dimensions) max-height) (cdr image-dimensions)))
+	     (setq scaled-height max-height )
+	     ;;if new width > max-width
+	     (if (> scaled-width max-width)
+		 (progn
+		   (setq scaled-height (/ (* scaled-height max-width) scaled-width))
+		   (setq scaled-width max-width))))
+	  ;; if width > height
+	  ((> (car image-dimensions) (cdr image-dimensions))
+	   (setq scaled-width max-width)
+	   (setq scaled-height (/ (* (cdr image-dimensions) max-width) (car image-dimensions)))
+	   ;; If new height > max-height
+	   (if (> scaled-height max-height)
+	   (progn
+	     (setq scaled-width (/ (* scaled-width max-height) scaled-height))
+	     (setq scaled-height max-height))))
+	  ;; If height == width
+	  ((eq (car image-dimensions) (cdr image-dimensions))
+	   (setq scaled-width max-width)
+	   (setq scaled-height max-width)
+	   ;; if new-width > max-height
+	   (cond ((> scaled-width max-height)
+		  (setq temp-scaled scaled-width)
+		  (setq scaled-width max-height)
+		  (setq scaled-height (/ (* scaled-height scaled-width) temp-scaled)))
+
+		 ;; if new height > max-width
+		 ((> scaled-height max-width)
+		  (setq temp-scaled scaled-height)
+		  (setq scaled-height max-width)
+		  (setq scaled-width (/ (* scaled-width scaled-height) temp-scaled))))))
+
+    ;; display image in buffer
+    (with-current-buffer (get-buffer-create image-dired-display-image-buffer)
       (let ((inhibit-read-only t))
         (erase-buffer)
         (clear-image-cache)
-        (image-dired-insert-image (if success
-                                      image-dired-temp-image-file
-                                    file)
-                                  image-type 0 0)
+        (insert-image (create-image file
+                                    nil nil
+				    :width scaled-width
+				    :height scaled-height
+				    :scale 0.94)
+                      "image")
         (goto-char (point-min))
         (image-dired-update-property 'original-file-name file))
       image-dired-display-image-buffer)))
