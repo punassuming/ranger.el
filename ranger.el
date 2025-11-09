@@ -311,6 +311,9 @@ preview window."
 (defvar ranger-buffer nil)
 (defvar ranger-frame nil)
 
+;; store the old cursor type
+(defvar ranger-cursor-type cursor-type)
+
 (defvar ranger-w-alist ()
   "List of windows using ranger.")
 
@@ -2605,7 +2608,7 @@ fraction of the total frame size"
       (message "File opened, exiting ranger")
       (ranger-disable)
       (find-file buffer-fn)
-      (setq-local cursor-type t)
+      (setq-local cursor-type ranger-cursor-type)
       (setq header-line-format ranger-pre-header-format)
       (when ranger-return-to-ranger
         (add-hook 'kill-buffer-hook 'ranger nil t)))
