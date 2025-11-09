@@ -923,7 +923,7 @@ to not replace existing value."
           ad-do-it))))
 
   ;; make sure isearch is cleared before we delete the buffer on exit
-  (add-hook 'ranger-mode-hook '(lambda () (setq isearch--current-buffer nil))))
+  (add-hook 'ranger-mode-hook #'(lambda () (setq isearch--current-buffer nil))))
 
 ;; TODO visual mode bindings don't seem to work
 ;; normalize keymaps to work with evil mode
@@ -1172,8 +1172,8 @@ or the name of the currently selected file.")
     (eshell)
     (kill-buffer tmp)
     (add-hook 'eshell-exit-hook
-              '(lambda () (unless (one-window-p) (delete-window))
-                 (select-window 'ranger-window)) nil t)))
+              #'(lambda () (unless (one-window-p) (delete-window))
+                  (select-window 'ranger-window)) nil t)))
 
 
 ;;; delayed function creation
