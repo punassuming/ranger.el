@@ -2983,8 +2983,9 @@ properly provides the modeline in dired mode. "
   (interactive)
   ;; don't kill ranger buffer if open somewhere else
   (if (> (length (get-buffer-window-list)) 1)
-      ((delete-window)
-       (delete-window ranger-preview-window))
+      (progn
+        (delete-window)
+        (delete-window ranger-preview-window))
     (ranger-revert)))
 
 (defun ranger-to-dired ()
