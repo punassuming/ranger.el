@@ -276,11 +276,7 @@ Outputs a string that will show up on the header-line."
 
 ;;;###autoload
 (defcustom ranger-override-dired nil
-  "When non-nil, indicates the desired override behavior for dired.
-To actually enable the override, call (ranger-override-dired-mode t) in your init file.
-- t: Use `deer' mode (minimal ranger) when opening directories
-- `ranger': Use full `ranger' mode when opening directories  
-- nil: Use standard dired (no override)"
+  "When non-nil, load `deer' whenever dired is loaded."
   :group 'ranger
   :type '(radio (const :tag "Deer" :value t)
                 (const :tag "Ranger" :value ranger)
@@ -3167,10 +3163,9 @@ properly provides the modeline in dired mode. "
       (when old-mess
         (message old-mess)))))
 
-;; Users who want ranger-override-dired-mode should enable it explicitly
-;; in their configuration, e.g., (when ranger-override-dired (ranger-override-dired-mode t))
-;; Removing autoload to prevent premature activation during package loading
-;; which can cause void-variable errors with hydra integration.
+;;;###autoload
+(when ranger-override-dired
+  (ranger-override-dired-mode t))
 
 ;;;###autoload
 (defun ranger-override-dired-fn ()
@@ -3210,9 +3205,14 @@ properly provides the modeline in dired mode. "
   "Check if hydra is available and enabled."
   (and ranger-use-hydra (require 'hydra nil t)))
 
-;; Define hydra menus when hydra is available
-(with-eval-after-load 'hydra
-  (defhydra ranger-hydra-go (:color blue :hint nil)
+;; Define hydra menus when hydra is available.
+;; Using eval-and-compile to ensure hydra definitions are available at both
+;; compile and load time, preventing void-variable errors when ranger-override-dired
+;; triggers autoload before hydra is explicitly loaded.
+(eval-and-compile
+  (when (require 'hydra nil t)
+    (with-no-warnings
+      (defhydra ranger-hydra-go (:color blue :hint nil)
     "
 ^Navigate^          ^Special^           ^Tabs^
 ^^^^^^^^-----------------------------------------------------------------
@@ -3294,7 +3294,7 @@ _q_: quit
     ("+" ranger-more-parents)
     ("-" ranger-less-parents)
     ("z" ranger-show-history :color blue)
-    ("q" nil :color blue)))
+    ("q" nil :color blue)))))
 
 ;; Setup function to remap keys when hydra is enabled
 ;; This function is defined outside with-eval-after-load so it's always available
