@@ -276,7 +276,11 @@ Outputs a string that will show up on the header-line."
 
 ;;;###autoload
 (defcustom ranger-override-dired nil
-  "When non-nil, load `deer' whenever dired is loaded."
+  "When non-nil, indicates the desired override behavior for dired.
+To actually enable the override, call (ranger-override-dired-mode t) in your init file.
+- t: Use `deer' mode (minimal ranger) when opening directories
+- `ranger': Use full `ranger' mode when opening directories  
+- nil: Use standard dired (no override)"
   :group 'ranger
   :type '(radio (const :tag "Deer" :value t)
                 (const :tag "Ranger" :value ranger)
@@ -3163,9 +3167,10 @@ properly provides the modeline in dired mode. "
       (when old-mess
         (message old-mess)))))
 
-;;;###autoload
-(when ranger-override-dired
-  (ranger-override-dired-mode t))
+;; Users who want ranger-override-dired-mode should enable it explicitly
+;; in their configuration, e.g., (when ranger-override-dired (ranger-override-dired-mode t))
+;; Removing autoload to prevent premature activation during package loading
+;; which can cause void-variable errors with hydra integration.
 
 ;;;###autoload
 (defun ranger-override-dired-fn ()
