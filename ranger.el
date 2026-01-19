@@ -3205,14 +3205,14 @@ properly provides the modeline in dired mode. "
   "Check if hydra is available and enabled."
   (and ranger-use-hydra (require 'hydra nil t)))
 
-;; Define hydra menus when hydra is available.
-;; Using eval-and-compile to ensure hydra definitions are available at both
-;; compile and load time, preventing void-variable errors when ranger-override-dired
-;; triggers autoload before hydra is explicitly loaded.
-(eval-and-compile
-  (when (require 'hydra nil t)
-    (with-no-warnings
-      (defhydra ranger-hydra-go (:color blue :hint nil)
+;; Define hydra menus when hydra is loaded.
+;; Using with-eval-after-load ensures hydra definitions are only created
+;; when hydra is actually loaded, preventing void-variable errors during
+;; byte-compilation or when ranger-override-dired triggers autoload
+;; before hydra is explicitly loaded.
+(with-eval-after-load 'hydra
+  (with-no-warnings
+    (defhydra ranger-hydra-go (:color blue :hint nil)
     "
 ^Navigate^          ^Special^           ^Tabs^
 ^^^^^^^^-----------------------------------------------------------------
@@ -3253,8 +3253,8 @@ _q_: quit
     ("D" ranger-toggle-dotfiles)
     ("q" nil))
 
-  (defhydra ranger-hydra-sort (:color blue :hint nil)
-    "
+    (defhydra ranger-hydra-sort (:color blue :hint nil)
+      "
 ^Sort By^           ^Order^
 ^^^^^^^^-----------------------------------------------------------------
 _n_: name           _N_: name (reverse)
@@ -3264,20 +3264,20 @@ _t_: modified time  _T_: modified time (reverse)
 _c_: created time   _C_: created time (reverse)
 _q_: quit
 "
-    ("n" (ranger-sort-criteria ?n))
-    ("N" (ranger-sort-criteria ?N))
-    ("e" (ranger-sort-criteria ?e))
-    ("E" (ranger-sort-criteria ?E))
-    ("s" (ranger-sort-criteria ?s))
-    ("S" (ranger-sort-criteria ?S))
-    ("t" (ranger-sort-criteria ?t))
-    ("T" (ranger-sort-criteria ?T))
-    ("c" (ranger-sort-criteria ?c))
-    ("C" (ranger-sort-criteria ?C))
-    ("q" nil))
+      ("n" (ranger-sort-criteria ?n))
+      ("N" (ranger-sort-criteria ?N))
+      ("e" (ranger-sort-criteria ?e))
+      ("E" (ranger-sort-criteria ?E))
+      ("s" (ranger-sort-criteria ?s))
+      ("S" (ranger-sort-criteria ?S))
+      ("t" (ranger-sort-criteria ?t))
+      ("T" (ranger-sort-criteria ?T))
+      ("c" (ranger-sort-criteria ?c))
+      ("C" (ranger-sort-criteria ?C))
+      ("q" nil))
 
-  (defhydra ranger-hydra-settings (:color amaranth :hint nil)
-    "
+    (defhydra ranger-hydra-settings (:color amaranth :hint nil)
+      "
 ^Toggle^            ^Preview^           ^Parents^          ^Other^
 ^^^^^^^^-----------------------------------------------------------------
 _h_: hidden files   _i_: literal        _+_: more parents  _z_: history
@@ -3285,19 +3285,18 @@ _d_: dirs first     _f_: fit images     _-_: less parents
 _P_: deer mode      _p_: details
 _q_: quit
 "
-    ("h" ranger-toggle-dotfiles)
-    ("d" ranger-toggle-dir-first)
-    ("P" ranger-minimal-toggle :color blue)
-    ("i" ranger-toggle-literal)
-    ("f" ranger-toggle-scale-images)
-    ("p" ranger-toggle-details)
-    ("+" ranger-more-parents)
-    ("-" ranger-less-parents)
-    ("z" ranger-show-history :color blue)
-    ("q" nil :color blue)))))
+      ("h" ranger-toggle-dotfiles)
+      ("d" ranger-toggle-dir-first)
+      ("P" ranger-minimal-toggle :color blue)
+      ("i" ranger-toggle-literal)
+      ("f" ranger-toggle-scale-images)
+      ("p" ranger-toggle-details)
+      ("+" ranger-more-parents)
+      ("-" ranger-less-parents)
+      ("z" ranger-show-history :color blue)
+      ("q" nil :color blue))))
 
 ;; Setup function to remap keys when hydra is enabled
-;; This function is defined outside with-eval-after-load so it's always available
 (defun ranger--setup-hydra-keys ()
   "Remap g and o keys to use hydra menus when hydra is enabled.
 This function is called from ranger-mode-hook to conditionally
