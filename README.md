@@ -66,6 +66,9 @@ file system. The preview window takes some of the ideas from
 [Peep-Dired](https://github.com/asok/peep-dired), to display previews for the
 selected files, in the primary dired buffer.
 
+If you'd like to support development, you can leave a tip on Ko-fi:
+https://ko-fi.com/rich_alesi
+
 ## Installation
 
 Ranger requires **Emacs 27.1 or later**. Once you have setup
