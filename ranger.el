@@ -968,6 +968,22 @@ to not replace existing value."
                   (ranger-mode)))
               '((name . ranger-wdired-abort)))
 
+  (advice-add 'wdired-finish-edit :before
+              (lambda (&rest _)
+                (when (and ranger-was-ranger
+                           (= (line-number-at-pos (point-min)) 1)
+                           (save-excursion
+                             (goto-char (point-min))
+                             (dired-move-to-filename)))
+                  ;; Insert an empty line at the top so wdired-finish-edit's
+                  ;; reverse loop doesn't skip changes made to line 1.
+                  (save-excursion
+                    (goto-char (point-min))
+                    (let ((inhibit-read-only t))
+                      (insert "
+")))))
+              '((name . ranger-fix-wdired-finish-edit-bobp)))
+
   (advice-add 'wdired-finish-edit :after
               (lambda (&rest _args)
                 (when ranger-was-ranger
